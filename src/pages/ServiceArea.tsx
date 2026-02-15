@@ -1,0 +1,48 @@
+import { MapPin } from "lucide-react";
+import AnimatedSection from "@/components/AnimatedSection";
+import SectionHeading from "@/components/SectionHeading";
+import GoldButton from "@/components/GoldButton";
+
+const areas = ["Hyattsville, MD", "Laurel, MD", "Annapolis, MD", "Upper Marlboro, MD 20772"];
+
+const ServiceArea = () => (
+  <main className="pt-20">
+    <section className="py-20 md:py-28">
+      <div className="container">
+        <SectionHeading title="Serving Maryland & Surrounding Areas" />
+        <div className="max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+            {areas.map((area, i) => (
+              <AnimatedSection key={area} delay={i * 0.1}>
+                <div className="glass-card p-6 flex items-center gap-3">
+                  <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
+                  <span className="font-display uppercase tracking-wider">{area}</span>
+                </div>
+              </AnimatedSection>
+            ))}
+          </div>
+
+          <AnimatedSection>
+            <div className="aspect-video rounded-sm overflow-hidden border border-border/30">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d198744.0!2d-76.8!3d38.9!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89b7b6e1e42b0b0f%3A0x1!2sUpper%20Marlboro%2C%20MD%2020772!5e0!3m2!1sen!2sus!4v1700000000000"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                title="Service Area Map"
+              />
+            </div>
+          </AnimatedSection>
+
+          <div className="text-center mt-10">
+            <GoldButton to="/contact">Schedule Service in Your Area</GoldButton>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+);
+
+export default ServiceArea;
