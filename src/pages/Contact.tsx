@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Phone, Mail, Send } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import SectionHeading from "@/components/SectionHeading";
+import contactBg from "@/assets/contact-bg.jpg";
 
 const Contact = () => {
   const [formData, setFormData] = useState({ name: "", email: "", phone: "", message: "" });
@@ -15,10 +16,21 @@ const Contact = () => {
 
   return (
     <main className="pt-20">
+      {/* Hero banner */}
+      <section className="relative py-20 md:py-28">
+        <img src={contactBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-background/88" />
+        <div className="container relative z-10 text-center">
+          <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
+            Contact Us
+          </h1>
+          <p className="text-muted-foreground max-w-2xl mx-auto">Get in touch for professional detailing services.</p>
+          <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
+        </div>
+      </section>
+
       <section className="py-20 md:py-28">
         <div className="container max-w-4xl">
-          <SectionHeading title="Contact Us" subtitle="Get in touch for professional detailing services." />
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <AnimatedSection>
               <div className="space-y-8">

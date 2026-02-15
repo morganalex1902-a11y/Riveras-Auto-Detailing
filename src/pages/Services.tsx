@@ -1,6 +1,7 @@
 import AnimatedSection from "@/components/AnimatedSection";
 import SectionHeading from "@/components/SectionHeading";
 import GoldButton from "@/components/GoldButton";
+import servicesBg from "@/assets/services-bg.jpg";
 
 const allServices = [
   {
@@ -31,9 +32,21 @@ const allServices = [
 
 const Services = () => (
   <main className="pt-20">
+    {/* Hero banner */}
+    <section className="relative py-20 md:py-28">
+      <img src={servicesBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-background/88" />
+      <div className="container relative z-10 text-center">
+        <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
+          Our Services
+        </h1>
+        <p className="text-muted-foreground max-w-2xl mx-auto">Premium detailing solutions for dealerships and discerning clients.</p>
+        <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
+      </div>
+    </section>
+
     <section className="py-20 md:py-28">
       <div className="container">
-        <SectionHeading title="Our Services" subtitle="Premium detailing solutions for dealerships and discerning clients." />
         <div className="space-y-8 max-w-4xl mx-auto">
           {allServices.map((s, i) => (
             <AnimatedSection key={s.title} delay={i * 0.08}>
