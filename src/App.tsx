@@ -40,6 +40,7 @@ const App = () => (
               "serviceOffered": ["N/C Delivery", "U/C Delivery", "U/C Detail", "Tint Removal", "Showroom Car Preparation", "Complementary Lot Wash"]
             })}</script>
           </Helmet>
+          <ScrollToTop />
           <PageLoader>
             <Navbar />
             <Routes>
