@@ -16,6 +16,7 @@ import FAQ from "./pages/FAQ";
 import ServiceArea from "./pages/ServiceArea";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import ScrollToTop from "@/components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
