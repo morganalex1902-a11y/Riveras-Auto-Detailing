@@ -1,15 +1,26 @@
 import { MapPin } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
-import SectionHeading from "@/components/SectionHeading";
 import GoldButton from "@/components/GoldButton";
+import serviceAreaBg from "@/assets/service-area-bg.jpg";
 
 const areas = ["Hyattsville, MD", "Laurel, MD", "Annapolis, MD", "Upper Marlboro, MD 20772"];
 
 const ServiceArea = () => (
   <main className="pt-20">
+    {/* Hero banner */}
+    <section className="relative py-20 md:py-28">
+      <img src={serviceAreaBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-background/85" />
+      <div className="container relative z-10 text-center">
+        <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
+          Serving Maryland & Surrounding Areas
+        </h1>
+        <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
+      </div>
+    </section>
+
     <section className="py-20 md:py-28">
       <div className="container">
-        <SectionHeading title="Serving Maryland & Surrounding Areas" />
         <div className="max-w-3xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
             {areas.map((area, i) => (
