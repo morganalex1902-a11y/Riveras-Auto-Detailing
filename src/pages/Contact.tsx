@@ -24,7 +24,7 @@ const Contact = () => {
           <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
             Contact Us
           </h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto">Get in touch for professional detailing services in the DMV Area – DC, Maryland & Virginia.</p>
+          <p className="text-muted-foreground max-w-2xl mx-auto">Get in touch for professional detailing services in the DMV Area.</p>
           <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
         </div>
       </section>

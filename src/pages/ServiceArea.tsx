@@ -30,7 +30,7 @@ const ServiceArea = () => (
       <div className="absolute inset-0 bg-background/85" />
       <div className="container relative z-10 text-center">
         <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
-          Service Areas: DMV, DC, Maryland & Virginia
+          Service Areas: DMV Area
         </h1>
         <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
       </div>
