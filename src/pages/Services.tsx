@@ -126,7 +126,7 @@ const Services = () => (
         <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
           Our Services
         </h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">Premium detailing solutions for dealerships and discerning clients.</p>
+        <p className="text-muted-foreground max-w-2xl mx-auto">Premium detailing solutions serving the DMV Area – DC, Maryland & Virginia.</p>
         <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
       </div>
     </section>

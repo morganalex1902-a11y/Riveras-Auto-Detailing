@@ -132,7 +132,7 @@ const Index = () => {
         <div className="container max-w-4xl">
           <SectionHeading
             title="Officially Licensed & Certified"
-            subtitle="Authorized to serve Maryland's leading dealerships"
+            subtitle="Serving the DMV Area – DC, Maryland & Virginia"
           />
           <AnimatedSection>
             <div className="glass-card p-8 md:p-12">
