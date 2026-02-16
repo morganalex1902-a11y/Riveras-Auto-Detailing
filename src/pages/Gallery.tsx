@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import SectionHeading from "@/components/SectionHeading";
+import GalleryLightbox from "@/components/GalleryLightbox";
 
 import galleryInterior from "@/assets/gallery-interior-clean.png";
 import galleryVacuum from "@/assets/gallery-vacuum.png";
@@ -23,34 +25,47 @@ const images = [
   { src: galleryDealership, alt: "Dealership partner" },
 ];
 
-const Gallery = () => (
-  <main className="pt-20">
-    <section className="py-20 md:py-28">
-      <div className="container">
-        <SectionHeading title="Gallery" subtitle="See the results of our precision detailing work." />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {images.map((img, i) => (
-            <motion.div
-              key={i}
-              className="relative overflow-hidden group aspect-[4/3] bg-card"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.08 }}
-            >
-              <img
-                src={img.src}
-                alt={img.alt}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary transition-colors duration-300" />
-            </motion.div>
-          ))}
+const Gallery = () => {
+  const [selectedImage, setSelectedImage] = useState<number | null>(null);
+
+  return (
+    <main className="pt-20">
+      <section className="py-20 md:py-28">
+        <div className="container">
+          <SectionHeading title="Gallery" subtitle="See the results of our precision detailing work." />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {images.map((img, i) => (
+              <motion.div
+                key={i}
+                className="relative overflow-hidden group aspect-[4/3] bg-card cursor-pointer"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.08 }}
+                onClick={() => setSelectedImage(i)}
+              >
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary transition-colors duration-300" />
+              </motion.div>
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
-  </main>
-);
+      </section>
+
+      {selectedImage !== null && (
+        <GalleryLightbox
+          images={images}
+          currentIndex={selectedImage}
+          onClose={() => setSelectedImage(null)}
+        />
+      )}
+    </main>
+  );
+};
 
 export default Gallery;

@@ -40,6 +40,80 @@ const About = () => (
         </div>
       </div>
     </section>
+
+    {/* Our Mission Section */}
+    <section className="py-20 md:py-28">
+      <div className="container max-w-4xl">
+        <SectionHeading title="Our Mission" subtitle="" />
+        <div className="space-y-6">
+          {[
+            "Provide the best service to our clients to keep the Prestige of your brand.",
+            "Commitment to keep the highest standards for our services in every vehicle we clean.",
+            "Use the best and highest quality chemicals that warrants satisfaction to our customers.",
+            "Always have a manager on duty to inspect and approve the service quality.",
+            "Expertise in every single detailer.",
+          ].map((item, i) => (
+            <AnimatedSection key={i} delay={i * 0.08}>
+              <div className="glass-card p-6 md:p-8">
+                <div className="flex gap-4">
+                  <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
+                  <p className="text-muted-foreground leading-relaxed">{item}</p>
+                </div>
+              </div>
+            </AnimatedSection>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    {/* Why Outsourcing Section */}
+    <section className="section-darker py-20 md:py-28">
+      <div className="container max-w-4xl">
+        <SectionHeading title="Why Outsourcing" subtitle="Dealers save on:" />
+        <div className="space-y-6">
+          {[
+            { title: "Liability", desc: "We provide our own insurance that covers our services and detailers" },
+            { title: "Efficiency", desc: "Our staff are well trained" },
+            { title: "Responsibility", desc: "We take responsibility for mistakes and correct them" },
+            { title: "Overtime Costs", desc: "No need to pay overtime to your own staff" },
+          ].map((item, i) => (
+            <AnimatedSection key={item.title} delay={i * 0.08}>
+              <div className="glass-card p-6 md:p-8">
+                <div className="w-10 h-[2px] bg-primary mb-4" />
+                <h3 className="font-display text-lg uppercase tracking-wider mb-3">{item.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
+              </div>
+            </AnimatedSection>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    {/* Why Us Section */}
+    <section className="py-20 md:py-28">
+      <div className="container max-w-4xl">
+        <SectionHeading title="Why Us" subtitle="" />
+        <div className="space-y-6">
+          {[
+            "We are a committed Company with more than 12 years of experience serving 22 Car Dealers in the Baltimore and D.C. area. Brands like: Mercedes Benz, Lexus, Toyota, Ford, Nissan, and more.",
+            "We know what it takes to serve Brands that expect high standards and quality labor.",
+            "We offer quality over quantity respecting all services.",
+            "Our garages, cars and detailers are covered under our insurance policy.",
+            "Our staff are required to look professional.",
+            "Manager on duty every single day we operate.",
+          ].map((item, i) => (
+            <AnimatedSection key={i} delay={i * 0.08}>
+              <div className="glass-card p-6 md:p-8">
+                <div className="flex gap-4">
+                  <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
+                  <p className="text-muted-foreground leading-relaxed">{item}</p>
+                </div>
+              </div>
+            </AnimatedSection>
+          ))}
+        </div>
+      </div>
+    </section>
   </main>
 );
 

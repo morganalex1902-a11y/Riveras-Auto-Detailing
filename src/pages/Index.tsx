@@ -1,20 +1,21 @@
 import { Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import AnimatedSection from "@/components/AnimatedSection";
 import SectionHeading from "@/components/SectionHeading";
 import GoldButton from "@/components/GoldButton";
+import GalleryLightbox from "@/components/GalleryLightbox";
 import heroBg from "@/assets/hero-bg.jpg";
 import ctaBg from "@/assets/cta-bg.jpg";
 
 const services = [
-  { title: "N/C Delivery", desc: "Professional prep before delivery." },
-  { title: "U/C Delivery", desc: "Under-car detailing & presentation." },
-  { title: "U/C Detail", desc: "Thorough undercarriage cleaning." },
-  { title: "Tint Removal", desc: "Clean removal without damage." },
-  { title: "Showroom Preparation", desc: "High-level presentation detailing." },
-  { title: "Lot Wash", desc: "Routine dealership maintenance wash." },
+  { title: "N/C Delivery", price: "$35.00", desc: "Professional prep before delivery." },
+  { title: "U/C Delivery", price: "$25.00", desc: "Under-car detailing & presentation." },
+  { title: "U/C Detail", price: "$120.00", desc: "Thorough undercarriage cleaning." },
+  { title: "Tint Removal", price: "$75.00", desc: "Clean removal without damage." },
+  { title: "Showroom Preparation", price: "$40.00", desc: "High-level presentation detailing." },
+  { title: "Lot Wash", price: "$20.00", desc: "Routine dealership maintenance wash." },
 ];
 
 const steps = [
@@ -24,10 +25,18 @@ const steps = [
 ];
 
 const Index = () => {
+  const [showCertificate, setShowCertificate] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
+
+  const certificateImages = [
+    {
+      src: "https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2F01c620b487a54185b48d67db8b5326a5?format=webp&width=800&height=1200",
+      alt: "State of Maryland Articles of Organization Certificate"
+    }
+  ];
 
   return (
     <main>
@@ -80,9 +89,12 @@ const Index = () => {
               <AnimatedSection key={s.title} delay={i * 0.1}>
                 <div className="glass-card p-8 group hover:border-primary/50 transition-all duration-300">
                   <div className="w-10 h-[2px] bg-primary mb-4 group-hover:w-16 transition-all duration-300" />
-                  <h3 className="font-display text-xl uppercase tracking-wider mb-2 text-foreground">
-                    {s.title}
-                  </h3>
+                  <div className="flex items-baseline gap-3 mb-2">
+                    <h3 className="font-display text-xl uppercase tracking-wider text-foreground">
+                      {s.title}
+                    </h3>
+                    <span className="text-primary font-semibold whitespace-nowrap">{s.price}</span>
+                  </div>
                   <p className="text-muted-foreground text-sm">{s.desc}</p>
                 </div>
               </AnimatedSection>
@@ -112,6 +124,37 @@ const Index = () => {
         </div>
       </section>
 
+      {/* OFFICIAL STATEMENT */}
+      <section className="section-darker py-20 md:py-28">
+        <div className="container max-w-4xl">
+          <SectionHeading
+            title="Officially Licensed & Certified"
+            subtitle="Authorized to serve Maryland's leading dealerships"
+          />
+          <AnimatedSection>
+            <div className="glass-card p-8 md:p-12">
+              <div className="flex flex-col items-center">
+                <img
+                  src="https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2F01c620b487a54185b48d67db8b5326a5?format=webp&width=800&height=1200"
+                  alt="State of Maryland Articles of Organization Certificate"
+                  className="w-full max-w-md rounded-lg shadow-lg border border-primary/20 mb-8 cursor-pointer hover:shadow-xl hover:border-primary/50 transition-all duration-300"
+                  onClick={() => setShowCertificate(true)}
+                />
+                <div className="text-center">
+                  <h3 className="font-display text-2xl uppercase tracking-wider mb-3">Rivera's Auto Detailing, LLC</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    Officially registered with the State of Maryland, Department of Assessments and Taxation.
+                    Our company is fully licensed and authorized to provide professional auto detailing services
+                    to dealerships and clients throughout Maryland.
+                  </p>
+                  <div className="w-20 h-[2px] bg-primary mx-auto" />
+                </div>
+              </div>
+            </div>
+          </AnimatedSection>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="relative py-28 md:py-36">
         <img src={ctaBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -125,6 +168,15 @@ const Index = () => {
           </GoldButton>
         </AnimatedSection>
       </section>
+
+      {/* Certificate Lightbox */}
+      {showCertificate && (
+        <GalleryLightbox
+          images={certificateImages}
+          currentIndex={0}
+          onClose={() => setShowCertificate(false)}
+        />
+      )}
     </main>
   );
 };
