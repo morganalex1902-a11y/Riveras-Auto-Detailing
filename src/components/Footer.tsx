@@ -21,7 +21,7 @@ const Footer = () => (
         <div>
           <img src={logo} alt="Rivera's Auto Detailing" className="h-16 mb-4" />
           <p className="text-muted-foreground text-sm leading-relaxed">
-            Professional auto detailing services in the DMV Area. Precision. Presentation. Showroom-Level Results.
+            Your dealership detailing solution in the DMV Area. High-volume dealer-focused detailing. Precision. Speed. Consistency.
           </p>
         </div>
 

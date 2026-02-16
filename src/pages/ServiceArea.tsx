@@ -5,7 +5,7 @@ import serviceAreaBg from "@/assets/service-area-bg.jpg";
 const serviceRegions = [
   {
     region: "DMV",
-    description: "Washington DC, Maryland & Virginia Metro Area"
+    description: "Providing dealership detailing solutions to automotive retail operations across Washington DC, Maryland & Virginia."
   }
 ];
 
@@ -17,7 +17,7 @@ const ServiceArea = () => (
       <div className="absolute inset-0 bg-background/85" />
       <div className="container relative z-10 text-center">
         <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
-          Service Areas: DMV Area
+          Dealership Detailing Across the DMV
         </h1>
         <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
       </div>
@@ -56,7 +56,7 @@ const ServiceArea = () => (
           </AnimatedSection>
 
           <div className="text-center mt-10">
-            <GoldButton to="/contact">Schedule Service in Your Area</GoldButton>
+            <GoldButton to="/contact">Partner With Us in Your Area</GoldButton>
           </div>
         </div>
       </div>

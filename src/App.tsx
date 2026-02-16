@@ -29,8 +29,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Helmet>
-            <title>Rivera's Auto Detailing | Professional Detailing in Maryland</title>
-            <meta name="description" content="Professional auto detailing services in Maryland. Dealer-focused showroom preparation, N/C & U/C delivery, tint removal, and lot wash services. Call 323-994-8612." />
+            <title>Rivera's Auto Detailing | Dealership Detailing Solution in Maryland</title>
+            <meta name="description" content="Your dealership detailing solution in Maryland. High-volume, dealer-focused detailing services including N/C & U/C delivery, showroom preparation, reconditioning, and lot maintenance. Call 323-994-8612." />
             <script type="application/ld+json">{JSON.stringify({
               "@context": "https://schema.org",
               "@type": "LocalBusiness",
