@@ -41,6 +41,20 @@ const About = () => (
       </div>
     </section>
 
+    {/* DMV Explanation */}
+    <section className="py-20 md:py-28">
+      <div className="container max-w-4xl">
+        <AnimatedSection>
+          <div className="glass-card p-8 md:p-12 text-center border border-primary/20">
+            <h2 className="font-display text-2xl uppercase tracking-wider gold-gradient-text mb-4">Serving the DMV Area</h2>
+            <p className="text-muted-foreground leading-relaxed mb-4">
+              <span className="font-semibold text-foreground">DMV</span> stands for <span className="font-semibold text-foreground">Washington DC - Maryland - Virginia</span>. For over 12 years, we've proudly served dealerships and clients throughout this entire tri-state metropolitan area with professional auto detailing services.
+            </p>
+          </div>
+        </AnimatedSection>
+      </div>
+    </section>
+
     {/* Our Mission Section */}
     <section className="py-20 md:py-28">
       <div className="container max-w-4xl">
