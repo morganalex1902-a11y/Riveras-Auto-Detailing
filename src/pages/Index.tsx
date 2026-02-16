@@ -9,12 +9,12 @@ import heroBg from "@/assets/hero-bg.jpg";
 import ctaBg from "@/assets/cta-bg.jpg";
 
 const services = [
-  { title: "N/C Delivery", desc: "Professional prep before delivery." },
-  { title: "U/C Delivery", desc: "Under-car detailing & presentation." },
-  { title: "U/C Detail", desc: "Thorough undercarriage cleaning." },
-  { title: "Tint Removal", desc: "Clean removal without damage." },
-  { title: "Showroom Preparation", desc: "High-level presentation detailing." },
-  { title: "Lot Wash", desc: "Routine dealership maintenance wash." },
+  { title: "N/C Delivery", price: "$35.00", desc: "Professional prep before delivery." },
+  { title: "U/C Delivery", price: "$25.00", desc: "Under-car detailing & presentation." },
+  { title: "U/C Detail", price: "$120.00", desc: "Thorough undercarriage cleaning." },
+  { title: "Tint Removal", price: "$75.00", desc: "Clean removal without damage." },
+  { title: "Showroom Preparation", price: "$40.00", desc: "High-level presentation detailing." },
+  { title: "Lot Wash", price: "$20.00", desc: "Routine dealership maintenance wash." },
 ];
 
 const steps = [
@@ -80,9 +80,12 @@ const Index = () => {
               <AnimatedSection key={s.title} delay={i * 0.1}>
                 <div className="glass-card p-8 group hover:border-primary/50 transition-all duration-300">
                   <div className="w-10 h-[2px] bg-primary mb-4 group-hover:w-16 transition-all duration-300" />
-                  <h3 className="font-display text-xl uppercase tracking-wider mb-2 text-foreground">
-                    {s.title}
-                  </h3>
+                  <div className="flex items-baseline gap-3 mb-2">
+                    <h3 className="font-display text-xl uppercase tracking-wider text-foreground">
+                      {s.title}
+                    </h3>
+                    <span className="text-primary font-semibold whitespace-nowrap">{s.price}</span>
+                  </div>
                   <p className="text-muted-foreground text-sm">{s.desc}</p>
                 </div>
               </AnimatedSection>
