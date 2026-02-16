@@ -5,28 +5,94 @@ import servicesBg from "@/assets/services-bg.jpg";
 
 const allServices = [
   {
-    title: "N/C Delivery",
-    desc: "Professional preparation before new car delivery. Ensuring every vehicle meets showroom standards before reaching the customer.",
+    section: "Check Mark Your Service",
+    items: [
+      {
+        title: "N/C Delivery",
+        desc: "Professional preparation before new car delivery. Ensuring every vehicle meets showroom standards before reaching the customer.",
+      },
+      {
+        title: "Clean for Showroom",
+        desc: "Complete cleaning and preparation for showroom display. Transform your inventory into pristine, customer-ready vehicles.",
+      },
+      {
+        title: "U/C Detail",
+        desc: "Thorough undercarriage cleaning and detailing. Removing road grime, salt, and debris for a pristine finish underneath.",
+      },
+      {
+        title: "U/C Delivery",
+        desc: "Under-car detailing and presentation for used car deliveries. Thorough cleaning and inspection of the undercarriage.",
+      },
+      {
+        title: "Wholesale Detail",
+        desc: "Comprehensive detailing for wholesale and fleet vehicles. Quick turnaround without compromising quality standards.",
+      },
+      {
+        title: "Service Wash In/Out",
+        desc: "Interior and exterior wash service for service vehicles. Keep customer service vehicles clean and professional.",
+      },
+      {
+        title: "Service Express Wax",
+        desc: "Quick professional wax application for vehicle maintenance. Provides lasting protection and brilliant shine.",
+      },
+      {
+        title: "Service Full Detail",
+        desc: "Complete interior and exterior detailing service. Ultimate refresh for any vehicle condition.",
+      },
+      {
+        title: "Exterior Detail Only",
+        desc: "Focused exterior detailing service. Perfect for maintaining your vehicle's showroom appearance.",
+      },
+      {
+        title: "Interior Detail Only",
+        desc: "Comprehensive interior cleaning and conditioning. Restore your cabin to like-new condition.",
+      },
+    ],
   },
   {
-    title: "U/C Delivery",
-    desc: "Under-car detailing and presentation for used car deliveries. Thorough cleaning and inspection of the undercarriage.",
-  },
-  {
-    title: "U/C Detail",
-    desc: "Thorough undercarriage cleaning and detailing. Removing road grime, salt, and debris for a pristine finish underneath.",
-  },
-  {
-    title: "Tint Removal",
-    desc: "Clean, professional tint removal without damage to glass surfaces. Precision removal techniques that protect your windows.",
-  },
-  {
-    title: "Showroom Car Preparation / Detailing",
-    desc: "High-level presentation detailing for display vehicles. Full exterior and interior refinement to make every vehicle stand out on the lot.",
-  },
-  {
-    title: "Complementary Lot Wash",
-    desc: "Routine dealership lot maintenance wash service. Keep your entire inventory looking fresh and presentable at all times.",
+    section: "Additional Services",
+    items: [
+      {
+        title: "Exterior Paint Protection",
+        desc: "Professional paint protection application. Guard against environmental damage and maintain your vehicle's finish.",
+      },
+      {
+        title: "Interior Protection",
+        desc: "Advanced interior protection treatments. Protect upholstery and surfaces from stains and wear.",
+      },
+      {
+        title: "Scratch Removal",
+        desc: "Expert scratch and swirl mark removal. Restore your vehicle's paint to pristine condition.",
+      },
+      {
+        title: "Restore Headlights",
+        desc: "Professional headlight restoration and polishing. Improve visibility and vehicle appearance.",
+      },
+      {
+        title: "Ozone Odor Removal",
+        desc: "Advanced ozone treatment for odor elimination. Permanently remove stubborn smells from any vehicle.",
+      },
+      {
+        title: "Tint Removal",
+        desc: "Clean, professional tint removal without damage to glass surfaces. Precision removal techniques that protect your windows.",
+      },
+      {
+        title: "Heavy Compound",
+        desc: "Heavy-duty paint correction and compounding. Address significant oxidation and paint defects.",
+      },
+      {
+        title: "N/C Lot Prep.",
+        desc: "Complete preparation for new car lots. Ensure every vehicle makes a stellar first impression.",
+      },
+      {
+        title: "Paint Overspray Removal",
+        desc: "Specialized overspray removal service. Restore your paint finish to factory perfection.",
+      },
+      {
+        title: "Excessive Dog Hair",
+        desc: "Specialized pet hair removal and interior sanitization. Thoroughly clean vehicles with extensive pet damage.",
+      },
+    ],
   },
 ];
 
@@ -47,22 +113,34 @@ const Services = () => (
 
     <section className="py-20 md:py-28">
       <div className="container">
-        <div className="space-y-8 max-w-4xl mx-auto">
-          {allServices.map((s, i) => (
-            <AnimatedSection key={s.title} delay={i * 0.08}>
-              <div className="glass-card p-8 md:p-10 group hover:border-primary/50 transition-all duration-300">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="w-10 h-[2px] bg-primary mb-4 group-hover:w-20 transition-all duration-300" />
-                    <h3 className="font-display text-2xl uppercase tracking-wider mb-3">{s.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{s.desc}</p>
-                  </div>
-                  <GoldButton to="/contact" className="self-start mt-2">
-                    Request Service
-                  </GoldButton>
-                </div>
+        <div className="space-y-16 max-w-4xl mx-auto">
+          {allServices.map((section, sectionIdx) => (
+            <div key={section.section}>
+              <div className="mb-12">
+                <h2 className="text-3xl md:text-4xl font-display uppercase tracking-wider gold-gradient-text mb-2">
+                  {section.section}
+                </h2>
+                <div className="w-20 h-[2px] bg-primary" />
               </div>
-            </AnimatedSection>
+              <div className="space-y-8">
+                {section.items.map((service, itemIdx) => (
+                  <AnimatedSection key={service.title} delay={(sectionIdx * 0.1) + (itemIdx * 0.05)}>
+                    <div className="glass-card p-8 md:p-10 group hover:border-primary/50 transition-all duration-300">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="w-10 h-[2px] bg-primary mb-4 group-hover:w-20 transition-all duration-300" />
+                          <h3 className="font-display text-2xl uppercase tracking-wider mb-3">{service.title}</h3>
+                          <p className="text-muted-foreground leading-relaxed">{service.desc}</p>
+                        </div>
+                        <GoldButton to="/contact" className="self-start mt-2">
+                          Request Service
+                        </GoldButton>
+                      </div>
+                    </div>
+                  </AnimatedSection>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>
