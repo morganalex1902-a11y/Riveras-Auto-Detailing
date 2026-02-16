@@ -5,10 +5,10 @@ import GoldButton from "@/components/GoldButton";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const reviews = [
-  { name: "Mike T.", text: "Rivera's team made our entire lot look brand new. Professional, fast, and consistent. Highly recommend for any dealership." },
-  { name: "Sarah L.", text: "The best detailing service in Maryland. Every vehicle comes back showroom-ready. We've been using them for months." },
-  { name: "James R.", text: "Outstanding attention to detail. They handle our new and used car prep flawlessly. True professionals." },
-  { name: "Angela M.", text: "Reliable, high-quality work every single time. Rivera's Auto Detailing is our go-to for all dealership prep services." },
+  { name: "Mike T.", text: "Rivera's team transformed our dealership detailing operation. Professional, fast, and consistent volume capability. The best vendor partner we've had." },
+  { name: "Sarah L.", text: "The most reliable dealership detailing solution in Maryland. Every vehicle comes back front-line ready. They understand dealer pace and expectations." },
+  { name: "James R.", text: "Outstanding attention to detail on every unit. They handle our new and used car prep flawlessly with structured workflow and accountability." },
+  { name: "Angela M.", text: "Rivera's Auto Detailing is our dedicated detailing vendor. Reliable turnaround, consistent staffing, and quality assurance on every single job." },
 ];
 
 const Testimonials = () => (
@@ -17,7 +17,7 @@ const Testimonials = () => (
       <img src={heroBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-background/90" />
       <div className="container relative z-10">
-        <SectionHeading title="What Our Clients Say" />
+        <SectionHeading title="What Dealerships Say" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {reviews.map((r, i) => (
             <motion.div
@@ -39,7 +39,7 @@ const Testimonials = () => (
           ))}
         </div>
         <div className="text-center mt-12">
-          <GoldButton to="/contact">Schedule Your Detail</GoldButton>
+          <GoldButton to="/contact">Partner With Us</GoldButton>
         </div>
       </div>
     </section>

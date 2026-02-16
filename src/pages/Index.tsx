@@ -1,4 +1,4 @@
-import { Phone } from "lucide-react";
+import { Phone, DollarSign, RefreshCw, Target } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState } from "react";
@@ -19,9 +19,9 @@ const services = [
 ];
 
 const steps = [
-  { num: "01", title: "Schedule Service", desc: "Contact us to book your detailing appointment." },
-  { num: "02", title: "We Detail & Prepare", desc: "Our team delivers precision detailing." },
-  { num: "03", title: "Showroom Ready", desc: "Vehicle delivered in pristine condition." },
+  { num: "01", title: "Schedule Service", desc: "Contact us to schedule your dealership detailing needs." },
+  { num: "02", title: "We Detail & Prepare", desc: "Our team delivers high-volume, dealer-grade detailing on site." },
+  { num: "03", title: "Front-Line Ready", desc: "Every vehicle returned showroom-ready and delivery-perfect." },
 ];
 
 const Index = () => {
@@ -58,11 +58,15 @@ const Index = () => {
             className="max-w-3xl"
           >
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-display uppercase tracking-wider leading-tight mb-6">
-              Professional Auto Detailing in the{" "}
-              <span className="gold-gradient-text">DMV Area</span>
+              Your{" "}
+              <span className="gold-gradient-text">Dealership Detailing</span>{" "}
+              Solution
             </h1>
+            <p className="text-xl md:text-2xl font-display uppercase tracking-wider mb-4">
+              <span className="gold-gradient-text">We Are a Solution for Dealerships</span>
+            </p>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 font-light tracking-wide">
-              Precision. Presentation. Showroom-Level Results.
+              The best prices and solutions for dealerships. Precision. Speed. Consistency.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <GoldButton href="tel:3239948612">
@@ -83,7 +87,7 @@ const Index = () => {
       {/* SERVICES PREVIEW */}
       <section className="section-darker py-20 md:py-28">
         <div className="container">
-          <SectionHeading title="Our Services" subtitle="Dealer-grade detailing services tailored for excellence." />
+          <SectionHeading title="Our Services" subtitle="High-volume dealership detailing solutions built for speed, consistency, and presentation." />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((s, i) => (
               <AnimatedSection key={s.title} delay={i * 0.1}>
@@ -109,10 +113,44 @@ const Index = () => {
         </div>
       </section>
 
-      {/* PROCESS */}
+      {/* WHY DEALERSHIPS CHOOSE US */}
       <section className="py-20 md:py-28">
         <div className="container">
-          <SectionHeading title="Built for Dealers & High-Standard Clients" />
+          <SectionHeading title="Why Dealerships Choose Us" subtitle="We bring the best prices and the best solutions directly to your lot." />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: DollarSign,
+                title: "Increase Perceived Value",
+                desc: "Professional detailing increases perceived value and helps justify pricing. Presentation sells vehicles.",
+              },
+              {
+                icon: RefreshCw,
+                title: "Volume Capability",
+                desc: "We handle fleet and high-volume operations efficiently. Scalable detailing built around your dealership's pace.",
+              },
+              {
+                icon: Target,
+                title: "Consistent Quality Standards",
+                desc: "Every vehicle delivered to showroom standards. Reliable turnaround and quality assurance on every single job.",
+              },
+            ].map((item, i) => (
+              <AnimatedSection key={item.title} delay={i * 0.15}>
+                <div className="glass-card p-8 text-center group hover:border-primary/50 transition-all duration-300">
+                  <item.icon className="w-10 h-10 text-primary mx-auto mb-4" />
+                  <h3 className="font-display text-xl uppercase tracking-wider mb-3">{item.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
+                </div>
+              </AnimatedSection>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* PROCESS */}
+      <section className="section-darker py-20 md:py-28">
+        <div className="container">
+          <SectionHeading title="How Our Dealership Detailing Works" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {steps.map((step, i) => (
               <AnimatedSection key={step.num} delay={i * 0.15}>
@@ -132,7 +170,7 @@ const Index = () => {
         <div className="container max-w-4xl">
           <SectionHeading
             title="Officially Licensed & Certified"
-            subtitle="Serving the DMV Area"
+            subtitle="Your trusted dealership detailing partner in the DMV Area"
           />
           <AnimatedSection>
             <div className="glass-card p-8 md:p-12">
@@ -147,8 +185,8 @@ const Index = () => {
                   <h3 className="font-display text-2xl uppercase tracking-wider mb-3">Rivera's Auto Detailing, LLC</h3>
                   <p className="text-muted-foreground leading-relaxed mb-4">
                     Officially registered with the State of Maryland, Department of Assessments and Taxation.
-                    Our company is fully licensed and authorized to provide professional auto detailing services
-                    to dealerships and clients throughout the DMV Area.
+                    Our company is fully licensed and authorized to provide dealership detailing solutions
+                    to automotive retail operations throughout the DMV Area.
                   </p>
                   <div className="w-20 h-[2px] bg-primary mx-auto" />
                 </div>
@@ -164,10 +202,10 @@ const Index = () => {
         <div className="absolute inset-0 bg-background/85" />
         <AnimatedSection className="container relative z-10 text-center">
           <h2 className="text-3xl md:text-5xl font-display uppercase tracking-wider mb-8">
-            Ready for <span className="gold-gradient-text">Showroom-Level</span> Results?
+            Ready for a <span className="gold-gradient-text">Dealership Detailing</span> Partner?
           </h2>
           <GoldButton to="/contact" className="animate-glow-pulse">
-            Book Service Today
+            Partner With Us Today
           </GoldButton>
         </AnimatedSection>
       </section>
