@@ -3,7 +3,24 @@ import AnimatedSection from "@/components/AnimatedSection";
 import GoldButton from "@/components/GoldButton";
 import serviceAreaBg from "@/assets/service-area-bg.jpg";
 
-const areas = ["Hyattsville, MD", "Laurel, MD", "Annapolis, MD", "Upper Marlboro, MD 20772"];
+const serviceRegions = [
+  {
+    region: "DMV",
+    description: "District, Maryland & Virginia Metro Area"
+  },
+  {
+    region: "DC",
+    description: "Washington, District of Columbia"
+  },
+  {
+    region: "Maryland",
+    cities: ["Hyattsville, MD", "Laurel, MD", "Annapolis, MD", "Upper Marlboro, MD 20772"]
+  },
+  {
+    region: "Virginia",
+    description: "Northern Virginia Service Areas"
+  }
+];
 
 const ServiceArea = () => (
   <main className="pt-20">
@@ -13,7 +30,7 @@ const ServiceArea = () => (
       <div className="absolute inset-0 bg-background/85" />
       <div className="container relative z-10 text-center">
         <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
-          Serving Maryland & Surrounding Areas
+          Service Areas: DMV, DC, Maryland & Virginia
         </h1>
         <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
       </div>
@@ -22,12 +39,26 @@ const ServiceArea = () => (
     <section className="py-20 md:py-28">
       <div className="container">
         <div className="max-w-3xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-            {areas.map((area, i) => (
-              <AnimatedSection key={area} delay={i * 0.1}>
-                <div className="glass-card p-6 flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span className="font-display uppercase tracking-wider">{area}</span>
+          <div className="space-y-8 mb-10">
+            {serviceRegions.map((item, i) => (
+              <AnimatedSection key={item.region} delay={i * 0.1}>
+                <div>
+                  <h3 className="font-display text-2xl uppercase tracking-wider gold-gradient-text mb-4">
+                    {item.region}
+                  </h3>
+                  {item.description && (
+                    <p className="text-muted-foreground mb-4">{item.description}</p>
+                  )}
+                  {item.cities && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {item.cities.map((city) => (
+                        <div key={city} className="glass-card p-4 flex items-center gap-3">
+                          <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
+                          <span className="font-display uppercase tracking-wider text-sm">{city}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </AnimatedSection>
             ))}
