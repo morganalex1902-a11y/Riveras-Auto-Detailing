@@ -9,6 +9,7 @@ const footerLinks = [
   { to: "/testimonials", label: "Testimonials" },
   { to: "/faq", label: "FAQ" },
   { to: "/service-area", label: "Service Area" },
+  { to: "/trusted", label: "Trusted" },
   { to: "/contact", label: "Contact" },
 ];
 
