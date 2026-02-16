@@ -15,7 +15,7 @@ const services = [
   { title: "U/C Detail", price: "$120.00", desc: "Thorough undercarriage cleaning." },
   { title: "Tint Removal", price: "$75.00", desc: "Clean removal without damage." },
   { title: "Showroom Preparation", price: "$40.00", desc: "High-level presentation detailing." },
-  { title: "Lot Wash", price: "$20.00", desc: "Routine dealership maintenance wash.", complementaryNote: "Complimentary with monthly contract" },
+  { title: "Lot Wash", desc: "Routine dealership maintenance wash.", complementaryNote: "Complimentary with monthly contract" },
 ];
 
 const steps = [
@@ -93,7 +93,7 @@ const Index = () => {
                     <h3 className="font-display text-xl uppercase tracking-wider text-foreground">
                       {s.title}
                     </h3>
-                    <span className="text-primary font-semibold whitespace-nowrap">{s.price}</span>
+                    {s.price && <span className="text-primary font-semibold whitespace-nowrap">{s.price}</span>}
                   </div>
                   <p className="text-muted-foreground text-sm">{s.desc}</p>
                   {s.complementaryNote && (
