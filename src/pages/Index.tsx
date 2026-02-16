@@ -112,6 +112,36 @@ const Index = () => {
         </div>
       </section>
 
+      {/* OFFICIAL STATEMENT */}
+      <section className="section-darker py-20 md:py-28">
+        <div className="container max-w-4xl">
+          <SectionHeading
+            title="Officially Licensed & Certified"
+            subtitle="Authorized to serve Maryland's leading dealerships"
+          />
+          <AnimatedSection>
+            <div className="glass-card p-8 md:p-12">
+              <div className="flex flex-col items-center">
+                <img
+                  src="https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2F01c620b487a54185b48d67db8b5326a5?format=webp&width=800&height=1200"
+                  alt="State of Maryland Articles of Organization Certificate"
+                  className="w-full max-w-md rounded-lg shadow-lg border border-primary/20 mb-8"
+                />
+                <div className="text-center">
+                  <h3 className="font-display text-2xl uppercase tracking-wider mb-3">Rivera's Auto Detailing, LLC</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    Officially registered with the State of Maryland, Department of Assessments and Taxation.
+                    Our company is fully licensed and authorized to provide professional auto detailing services
+                    to dealerships and clients throughout Maryland.
+                  </p>
+                  <div className="w-20 h-[2px] bg-primary mx-auto" />
+                </div>
+              </div>
+            </div>
+          </AnimatedSection>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="relative py-28 md:py-36">
         <img src={ctaBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
