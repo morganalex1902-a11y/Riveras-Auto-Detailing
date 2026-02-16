@@ -1,4 +1,4 @@
-import { Phone } from "lucide-react";
+import { Phone, DollarSign, RefreshCw, Target } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState } from "react";
@@ -63,7 +63,7 @@ const Index = () => {
               Solution
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 font-light tracking-wide">
-              High-Volume Dealer-Focused Detailing. Precision. Speed. Consistency.
+              The best prices and solutions for dealerships. Precision. Speed. Consistency.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <GoldButton href="tel:3239948612">
@@ -110,8 +110,42 @@ const Index = () => {
         </div>
       </section>
 
-      {/* PROCESS */}
+      {/* WHY DEALERSHIPS CHOOSE US */}
       <section className="py-20 md:py-28">
+        <div className="container">
+          <SectionHeading title="Why Dealerships Choose Us" subtitle="We bring the best prices and the best solutions directly to your lot." />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: DollarSign,
+                title: "Increase Perceived Value",
+                desc: "Professional detailing increases perceived value and helps justify pricing. Presentation sells vehicles.",
+              },
+              {
+                icon: RefreshCw,
+                title: "Volume Capability",
+                desc: "We handle fleet and high-volume operations efficiently. Scalable detailing built around your dealership's pace.",
+              },
+              {
+                icon: Target,
+                title: "Consistent Quality Standards",
+                desc: "Every vehicle delivered to showroom standards. Reliable turnaround and quality assurance on every single job.",
+              },
+            ].map((item, i) => (
+              <AnimatedSection key={item.title} delay={i * 0.15}>
+                <div className="glass-card p-8 text-center group hover:border-primary/50 transition-all duration-300">
+                  <item.icon className="w-10 h-10 text-primary mx-auto mb-4" />
+                  <h3 className="font-display text-xl uppercase tracking-wider mb-3">{item.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
+                </div>
+              </AnimatedSection>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* PROCESS */}
+      <section className="section-darker py-20 md:py-28">
         <div className="container">
           <SectionHeading title="How Our Dealership Detailing Works" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

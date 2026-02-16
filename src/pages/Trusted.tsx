@@ -1,4 +1,4 @@
-import { CheckCircle, MapPin, Phone } from "lucide-react";
+import { CheckCircle, MapPin, Phone, DollarSign, RefreshCw, Target } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import SectionHeading from "@/components/SectionHeading";
 import GoldButton from "@/components/GoldButton";
@@ -45,7 +45,7 @@ const Trusted = () => (
           Dealer-Focused Detailing Solutions
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground font-light tracking-wide mt-4">
-          Your Trusted Dealership Detailing Partner
+          The Best Prices & Solutions for Your Dealership
         </p>
         <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
       </div>
@@ -101,9 +101,41 @@ const Trusted = () => (
       </div>
     </section>
 
-    {/* Dealership Detailing Solutions */}
+    {/* Value Proposition */}
     <section className="section-darker py-20 md:py-28">
       <div className="container max-w-4xl">
+        <SectionHeading
+          title="Why We're the Right Solution"
+          subtitle="We bring the best prices and the best solutions directly to your dealership."
+        />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          {[
+            {
+              icon: DollarSign,
+              title: "Increase Perceived Value",
+              desc: "Professional detailing increases perceived value and helps justify pricing. Presentation sells vehicles.",
+            },
+            {
+              icon: RefreshCw,
+              title: "Volume Capability",
+              desc: "We handle fleet and high-volume operations efficiently. Scalable detailing built around your dealership's pace.",
+            },
+            {
+              icon: Target,
+              title: "Consistent Quality Standards",
+              desc: "Every vehicle delivered to showroom standards. Reliable turnaround and quality assurance on every single job.",
+            },
+          ].map((item, i) => (
+            <AnimatedSection key={item.title} delay={i * 0.15}>
+              <div className="glass-card p-8 text-center group hover:border-primary/50 transition-all duration-300">
+                <item.icon className="w-10 h-10 text-primary mx-auto mb-4" />
+                <h3 className="font-display text-xl uppercase tracking-wider mb-3">{item.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
+              </div>
+            </AnimatedSection>
+          ))}
+        </div>
+
         <SectionHeading
           title="Dealership Detailing Solutions"
           subtitle="We specialize in high-volume, dealership-focused auto detailing designed to:"
@@ -159,7 +191,7 @@ const Trusted = () => (
         <AnimatedSection>
           <div className="glass-card p-8 md:p-12 text-center">
             <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-              If you're looking for a professional detailing operation that understands dealership pace, expectations, and performance standards, Rivera's Auto Detailing delivers.
+              If you're looking for the best-priced, most reliable dealership detailing solution that understands dealer pace, expectations, and performance standards — Rivera's Auto Detailing delivers.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-8">
               <div className="flex items-center gap-2 text-foreground">
