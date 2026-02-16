@@ -33,6 +33,9 @@ const images = [
   { src: "https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2F25672360d7804b2989eb6a25ff59d76c?format=webp&width=800&height=1200", alt: "Premium washing service" },
   { src: "https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2Fbd4a9d5059f94b55aeecf70d8d9cd00d?format=webp&width=800&height=1200", alt: "Interior detail work" },
   { src: "https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2F65968102b2f14e4ca303c38b40168221?format=webp&width=800&height=1200", alt: "Professional hand detailing" },
+  { src: "https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2F35c9b58a4578431a8d0c9e0f65880033?format=webp&width=800&height=1200", alt: "Interior steam cleaning service" },
+  { src: "https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2F660192ee38c84f74b2855f666759b65b?format=webp&width=800&height=1200", alt: "Dashboard and interior detailing" },
+  { src: "https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2F9a3be73a490c4a4fa41d19401714b19b?format=webp&width=800&height=1200", alt: "Upholstery cleaning and sanitization" },
 ];
 
 const Gallery = () => {
