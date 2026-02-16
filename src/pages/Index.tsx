@@ -1,10 +1,11 @@
 import { Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import AnimatedSection from "@/components/AnimatedSection";
 import SectionHeading from "@/components/SectionHeading";
 import GoldButton from "@/components/GoldButton";
+import GalleryLightbox from "@/components/GalleryLightbox";
 import heroBg from "@/assets/hero-bg.jpg";
 import ctaBg from "@/assets/cta-bg.jpg";
 
@@ -24,10 +25,18 @@ const steps = [
 ];
 
 const Index = () => {
+  const [showCertificate, setShowCertificate] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
+
+  const certificateImages = [
+    {
+      src: "https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2F01c620b487a54185b48d67db8b5326a5?format=webp&width=800&height=1200",
+      alt: "State of Maryland Articles of Organization Certificate"
+    }
+  ];
 
   return (
     <main>
@@ -128,7 +137,8 @@ const Index = () => {
                 <img
                   src="https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2F01c620b487a54185b48d67db8b5326a5?format=webp&width=800&height=1200"
                   alt="State of Maryland Articles of Organization Certificate"
-                  className="w-full max-w-md rounded-lg shadow-lg border border-primary/20 mb-8"
+                  className="w-full max-w-md rounded-lg shadow-lg border border-primary/20 mb-8 cursor-pointer hover:shadow-xl hover:border-primary/50 transition-all duration-300"
+                  onClick={() => setShowCertificate(true)}
                 />
                 <div className="text-center">
                   <h3 className="font-display text-2xl uppercase tracking-wider mb-3">Rivera's Auto Detailing, LLC</h3>
@@ -158,6 +168,15 @@ const Index = () => {
           </GoldButton>
         </AnimatedSection>
       </section>
+
+      {/* Certificate Lightbox */}
+      {showCertificate && (
+        <GalleryLightbox
+          images={certificateImages}
+          currentIndex={0}
+          onClose={() => setShowCertificate(false)}
+        />
+      )}
     </main>
   );
 };
