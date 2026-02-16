@@ -21,7 +21,7 @@ const About = () => (
       <div className="container max-w-4xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           {[
-            { title: "Experience", desc: "Years of hands-on detailing experience serving top dealerships and private clients throughout the DMV, DC, Maryland, and Virginia." },
+            { title: "Experience", desc: "Years of hands-on detailing experience serving top dealerships and private clients throughout the DMV Area." },
             { title: "Attention to Detail", desc: "Every vehicle receives meticulous care — from panel gaps to wheel wells, nothing is overlooked." },
             { title: "Dealer-Focused Service", desc: "We specialize in high-volume dealership preparation, ensuring every unit is showroom ready." },
             { title: "Commitment to Presentation", desc: "Our work speaks for itself. We deliver vehicles that exceed expectations every time." },
@@ -95,7 +95,7 @@ const About = () => (
         <SectionHeading title="Why Us" subtitle="" />
         <div className="space-y-6">
           {[
-            "We are a committed Company with more than 12 years of experience serving Car Dealers throughout the DMV, DC, Maryland, and Virginia. Brands like: Mercedes Benz, Lexus, Toyota, Ford, Nissan, and more.",
+            "We are a committed Company with more than 12 years of experience serving Car Dealers throughout the DMV Area. Brands like: Mercedes Benz, Lexus, Toyota, Ford, Nissan, and more.",
             "We know what it takes to serve Brands that expect high standards and quality labor.",
             "We offer quality over quantity respecting all services.",
             "Our garages, cars and detailers are covered under our insurance policy.",

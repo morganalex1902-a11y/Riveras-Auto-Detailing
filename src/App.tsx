@@ -34,7 +34,7 @@ const App = () => (
               "@context": "https://schema.org",
               "@type": "LocalBusiness",
               "name": "Rivera's Auto Detailing",
-              "areaServed": ["Hyattsville, MD", "Laurel, MD", "Annapolis, MD", "Upper Marlboro, MD"],
+              "areaServed": ["Washington DC", "Maryland", "Virginia"],
               "telephone": "323-994-8612",
               "email": "eliasrivera1884@gmail.com",
               "serviceOffered": ["N/C Delivery", "U/C Delivery", "U/C Detail", "Tint Removal", "Showroom Car Preparation", "Complementary Lot Wash"]
