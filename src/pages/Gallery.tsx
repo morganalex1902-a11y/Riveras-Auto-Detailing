@@ -31,7 +31,7 @@ const Gallery = () => {
     <main className="pt-20">
       <section className="py-20 md:py-28">
         <div className="container">
-          <SectionHeading title="Gallery" subtitle="See the results of our precision detailing work." />
+          <SectionHeading title="Gallery" subtitle="See the results of our dealership detailing solutions in action." />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {images.map((img, i) => (
               <motion.div
