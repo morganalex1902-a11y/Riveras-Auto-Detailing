@@ -3,26 +3,12 @@ import { motion } from "framer-motion";
 import SectionHeading from "@/components/SectionHeading";
 import GalleryLightbox from "@/components/GalleryLightbox";
 
-import galleryInterior from "@/assets/gallery-interior-clean.png";
 import galleryVacuum from "@/assets/gallery-vacuum.png";
 import galleryPolish from "@/assets/gallery-polish.png";
-import galleryBeforeAfter from "@/assets/gallery-before-after.png";
-import galleryInteriorBa from "@/assets/gallery-interior-ba.png";
-import galleryDealership from "@/assets/gallery-dealership.png";
-import gallerySeatsBa from "@/assets/gallery-seats-ba.png";
-import galleryWorkFord from "@/assets/gallery-work-ford.png";
-import galleryShop from "@/assets/gallery-shop.png";
 
 const images = [
-  { src: galleryBeforeAfter, alt: "Before and after exterior detail" },
-  { src: galleryInteriorBa, alt: "Before and after interior detail" },
-  { src: gallerySeatsBa, alt: "Seat cleaning before and after" },
   { src: galleryPolish, alt: "Paint polishing" },
   { src: galleryVacuum, alt: "Interior vacuuming" },
-  { src: galleryInterior, alt: "Clean interior result" },
-  { src: galleryWorkFord, alt: "On-site dealership work" },
-  { src: galleryShop, alt: "Detailing shop" },
-  { src: galleryDealership, alt: "Dealership partner" },
   { src: "https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2Ff2573294973441698c1249e2312f2ef5?format=webp&width=800&height=1200", alt: "Professional car wash with foam" },
   { src: "https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2Ff928e68e5f314df98cfb2de44bc0cf86?format=webp&width=800&height=1200", alt: "Detailing work in progress" },
   { src: "https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2Fa8b0c7f61a1541a6a558d861eaf63039?format=webp&width=800&height=1200", alt: "Premium car detailing service" },
