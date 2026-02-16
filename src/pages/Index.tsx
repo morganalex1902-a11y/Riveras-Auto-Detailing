@@ -109,20 +109,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* DMV EXPLANATION */}
-      <section className="py-20 md:py-28">
-        <div className="container">
-          <AnimatedSection>
-            <div className="glass-card p-8 md:p-12 text-center border border-primary/20 max-w-2xl mx-auto">
-              <h2 className="font-display text-2xl uppercase tracking-wider gold-gradient-text mb-4">What is DMV?</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                <span className="font-semibold text-foreground">DMV</span> stands for <span className="font-semibold text-foreground">Washington DC - Maryland - Virginia</span>. We serve dealerships and clients throughout this entire tri-state metro area with professional auto detailing.
-              </p>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
-
       {/* PROCESS */}
       <section className="py-20 md:py-28">
         <div className="container">

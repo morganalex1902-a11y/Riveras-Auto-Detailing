@@ -6,15 +6,8 @@ import serviceAreaBg from "@/assets/service-area-bg.jpg";
 const serviceRegions = [
   {
     region: "DMV",
-    description: "Washington DC, Maryland & Virginia Metro Area"
-  },
-  {
-    region: "Maryland",
+    description: "Washington DC, Maryland & Virginia Metro Area",
     cities: ["Hyattsville, MD", "Laurel, MD", "Annapolis, MD", "Upper Marlboro, MD 20772"]
-  },
-  {
-    region: "Virginia",
-    description: "Northern Virginia Service Areas"
   }
 ];
 
@@ -35,15 +28,6 @@ const ServiceArea = () => (
     <section className="py-20 md:py-28">
       <div className="container">
         <div className="max-w-3xl mx-auto">
-          <AnimatedSection>
-            <div className="glass-card p-8 mb-12 text-center">
-              <h2 className="font-display text-2xl uppercase tracking-wider gold-gradient-text mb-4">What is DMV?</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                <span className="font-semibold text-foreground">DMV</span> stands for <span className="font-semibold text-foreground">Washington DC - Maryland - Virginia</span>. We proudly serve dealerships and clients throughout this entire tri-state metro area, offering professional auto detailing services.
-              </p>
-            </div>
-          </AnimatedSection>
-
           <div className="space-y-8 mb-10">
             {serviceRegions.map((item, i) => (
               <AnimatedSection key={item.region} delay={i * 0.1}>
