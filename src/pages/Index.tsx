@@ -58,8 +58,8 @@ const Index = () => {
             className="max-w-3xl"
           >
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-display uppercase tracking-wider leading-tight mb-6">
-              Professional Auto Detailing in{" "}
-              <span className="gold-gradient-text">Maryland</span>
+              Professional Auto Detailing in the{" "}
+              <span className="gold-gradient-text">DMV, DC, Maryland & Virginia</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 font-light tracking-wide">
               Precision. Presentation. Showroom-Level Results.
@@ -148,7 +148,7 @@ const Index = () => {
                   <p className="text-muted-foreground leading-relaxed mb-4">
                     Officially registered with the State of Maryland, Department of Assessments and Taxation.
                     Our company is fully licensed and authorized to provide professional auto detailing services
-                    to dealerships and clients throughout Maryland.
+                    to dealerships and clients throughout the DMV, DC, Maryland, and Virginia.
                   </p>
                   <div className="w-20 h-[2px] bg-primary mx-auto" />
                 </div>
