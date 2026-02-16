@@ -62,6 +62,9 @@ const Index = () => {
               <span className="gold-gradient-text">Dealership Detailing</span>{" "}
               Solution
             </h1>
+            <p className="text-xl md:text-2xl font-display uppercase tracking-wider mb-4">
+              <span className="gold-gradient-text">We Are a Solution for Dealerships</span>
+            </p>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 font-light tracking-wide">
               The best prices and solutions for dealerships. Precision. Speed. Consistency.
             </p>
