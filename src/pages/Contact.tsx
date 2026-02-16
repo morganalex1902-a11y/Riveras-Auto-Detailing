@@ -1,34 +1,38 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Phone, MapPin, Send } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import SectionHeading from "@/components/SectionHeading";
 import contactBg from "@/assets/contact-bg.jpg";
 
 const serviceTypes = [
-  "N/C Delivery",
-  "Clean for Showroom",
-  "U/C Detail",
-  "U/C Delivery",
-  "Wholesale Detail",
-  "Service Wash In/Out",
-  "Service Express Wax",
-  "Service Full Detail",
-  "Exterior Detail Only",
-  "Interior Detail Only",
+  { name: "N/C Delivery", price: 35 },
+  { name: "Clean for Showroom", price: 40 },
+  { name: "U/C Detail", price: 120 },
+  { name: "U/C Delivery", price: 25 },
+  { name: "Wholesale Detail", price: 50 },
+  { name: "Service Wash In/Out", price: 15 },
+  { name: "Service Express Wax", price: 30 },
+  { name: "Service Full Detail", price: 150 },
+  { name: "Exterior Detail Only", price: 75 },
+  { name: "Interior Detail Only", price: 75 },
 ];
 
 const additionalServices = [
-  "Exterior Paint Protection",
-  "Interior Protection",
-  "Scratch Removal",
-  "Restore Headlights",
-  "Ozone Odor Removal",
-  "Tint Removal",
-  "Heavy Compound",
-  "N/C Lot Prep",
-  "Paint Overspray Removal",
-  "Excessive Dog Hair",
+  { name: "Exterior Paint Protection", price: 50 },
+  { name: "Interior Protection", price: 50 },
+  { name: "Scratch Removal", price: 50 },
+  { name: "Restore Headlights", price: 50 },
+  { name: "Ozone Odor Removal", price: 50 },
+  { name: "Tint Removal", price: 75 },
+  { name: "Heavy Compound", price: 50 },
+  { name: "N/C Lot Prep", price: 25 },
+  { name: "Paint Overspray Removal", price: 50 },
+  { name: "Excessive Dog Hair", price: 50 },
 ];
+
+const allPrices: Record<string, number> = {};
+serviceTypes.forEach((s) => { allPrices[s.name] = s.price; });
+additionalServices.forEach((s) => { allPrices[s.name] = s.price; });
 
 const inputClass =
   "w-full bg-input border border-border/50 px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors";
@@ -54,7 +58,6 @@ const Contact = () => {
     selectedAdditional: [] as string[],
     specialInstructions: "",
     managerAuth: "",
-    total: "",
     receivedBy: "",
     completedBy: "",
   });
@@ -67,6 +70,13 @@ const Contact = () => {
         : [...prev[field], value],
     }));
   };
+
+  const calculatedTotal = useMemo(() => {
+    let sum = 0;
+    formData.selectedServices.forEach((s) => { sum += allPrices[s] || 0; });
+    formData.selectedAdditional.forEach((s) => { sum += allPrices[s] || 0; });
+    return sum;
+  }, [formData.selectedServices, formData.selectedAdditional]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,12 +100,12 @@ const Contact = () => {
       "",
       "--- Service Type ---",
       formData.selectedServices.length > 0
-        ? formData.selectedServices.join(", ")
+        ? formData.selectedServices.map((s) => `${s} ($${allPrices[s]?.toFixed(2)})`).join(", ")
         : "None selected",
       "",
       "--- Additional Services ---",
       formData.selectedAdditional.length > 0
-        ? formData.selectedAdditional.join(", ")
+        ? formData.selectedAdditional.map((s) => `${s} ($${allPrices[s]?.toFixed(2)})`).join(", ")
         : "None selected",
       "",
       "--- Special Instructions ---",
@@ -103,7 +113,7 @@ const Contact = () => {
       "",
       "--- Authorization ---",
       `Manager Authorization: ${formData.managerAuth}`,
-      `Total: $${formData.total}`,
+      `Total: $${calculatedTotal.toFixed(2)}`,
       "",
       "--- Completion Details ---",
       `Received & Inspected By (Manager): ${formData.receivedBy}`,
@@ -272,33 +282,34 @@ const Contact = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {serviceTypes.map((service) => (
                     <label
-                      key={service}
+                      key={service.name}
                       className={`flex items-center gap-3 p-3 border rounded-sm cursor-pointer transition-all duration-200 ${
-                        formData.selectedServices.includes(service)
+                        formData.selectedServices.includes(service.name)
                           ? "border-primary bg-primary/10 text-foreground"
                           : "border-border/50 hover:border-primary/50 text-muted-foreground"
                       }`}
                     >
                       <input
                         type="checkbox"
-                        checked={formData.selectedServices.includes(service)}
-                        onChange={() => toggleCheckbox("selectedServices", service)}
+                        checked={formData.selectedServices.includes(service.name)}
+                        onChange={() => toggleCheckbox("selectedServices", service.name)}
                         className="sr-only"
                       />
                       <div
                         className={`w-5 h-5 border-2 rounded-sm flex items-center justify-center flex-shrink-0 transition-colors ${
-                          formData.selectedServices.includes(service)
+                          formData.selectedServices.includes(service.name)
                             ? "border-primary bg-primary"
                             : "border-border"
                         }`}
                       >
-                        {formData.selectedServices.includes(service) && (
+                        {formData.selectedServices.includes(service.name) && (
                           <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
                         )}
                       </div>
-                      <span className="text-sm">{service}</span>
+                      <span className="text-sm flex-1">{service.name}</span>
+                      <span className="text-primary text-sm font-semibold">${service.price.toFixed(2)}</span>
                     </label>
                   ))}
                 </div>
@@ -312,33 +323,34 @@ const Contact = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {additionalServices.map((service) => (
                     <label
-                      key={service}
+                      key={service.name}
                       className={`flex items-center gap-3 p-3 border rounded-sm cursor-pointer transition-all duration-200 ${
-                        formData.selectedAdditional.includes(service)
+                        formData.selectedAdditional.includes(service.name)
                           ? "border-primary bg-primary/10 text-foreground"
                           : "border-border/50 hover:border-primary/50 text-muted-foreground"
                       }`}
                     >
                       <input
                         type="checkbox"
-                        checked={formData.selectedAdditional.includes(service)}
-                        onChange={() => toggleCheckbox("selectedAdditional", service)}
+                        checked={formData.selectedAdditional.includes(service.name)}
+                        onChange={() => toggleCheckbox("selectedAdditional", service.name)}
                         className="sr-only"
                       />
                       <div
                         className={`w-5 h-5 border-2 rounded-sm flex items-center justify-center flex-shrink-0 transition-colors ${
-                          formData.selectedAdditional.includes(service)
+                          formData.selectedAdditional.includes(service.name)
                             ? "border-primary bg-primary"
                             : "border-border"
                         }`}
                       >
-                        {formData.selectedAdditional.includes(service) && (
+                        {formData.selectedAdditional.includes(service.name) && (
                           <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                           </svg>
                         )}
                       </div>
-                      <span className="text-sm">{service}</span>
+                      <span className="text-sm flex-1">{service.name}</span>
+                      <span className="text-primary text-sm font-semibold">${service.price.toFixed(2)}</span>
                     </label>
                   ))}
                 </div>
@@ -383,15 +395,17 @@ const Contact = () => {
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-semibold">$</span>
                       <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={formData.total}
-                        onChange={(e) => setFormData({ ...formData, total: e.target.value })}
-                        className={`${inputClass} pl-8`}
-                        placeholder="0.00"
+                        type="text"
+                        readOnly
+                        value={calculatedTotal.toFixed(2)}
+                        className={`${inputClass} pl-8 font-semibold text-primary cursor-default`}
                       />
                     </div>
+                    {(formData.selectedServices.length > 0 || formData.selectedAdditional.length > 0) && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {formData.selectedServices.length + formData.selectedAdditional.length} service(s) selected
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
