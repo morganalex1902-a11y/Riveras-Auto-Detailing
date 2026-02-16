@@ -58,11 +58,12 @@ const Index = () => {
             className="max-w-3xl"
           >
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-display uppercase tracking-wider leading-tight mb-6">
-              Professional Auto Detailing in the{" "}
-              <span className="gold-gradient-text">DMV Area</span>
+              Your{" "}
+              <span className="gold-gradient-text">Dealership Detailing</span>{" "}
+              Solution
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 font-light tracking-wide">
-              Precision. Presentation. Showroom-Level Results.
+              High-Volume Dealer-Focused Detailing. Precision. Speed. Consistency.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <GoldButton href="tel:3239948612">
