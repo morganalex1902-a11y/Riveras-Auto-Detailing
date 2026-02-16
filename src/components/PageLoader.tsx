@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import logo from "@/assets/logo.png";
+const logo = "https://cdn.builder.io/api/v1/image/assets%2F0f00b454c21444a59a62cb373d89a358%2F7322560b6f384e6b960289838005c4ee?format=webp&width=800&height=1200";
 
 const PageLoader = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
