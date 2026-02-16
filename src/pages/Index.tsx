@@ -15,7 +15,7 @@ const services = [
   { title: "U/C Detail", price: "$120.00", desc: "Thorough undercarriage cleaning." },
   { title: "Tint Removal", price: "$75.00", desc: "Clean removal without damage." },
   { title: "Showroom Preparation", price: "$40.00", desc: "High-level presentation detailing." },
-  { title: "Lot Wash", price: "$20.00", desc: "Routine dealership maintenance wash." },
+  { title: "Lot Wash", price: "$20.00", desc: "Routine dealership maintenance wash.", complementaryNote: "Complimentary with monthly contract" },
 ];
 
 const steps = [
@@ -96,6 +96,9 @@ const Index = () => {
                     <span className="text-primary font-semibold whitespace-nowrap">{s.price}</span>
                   </div>
                   <p className="text-muted-foreground text-sm">{s.desc}</p>
+                  {s.complementaryNote && (
+                    <p className="text-primary text-xs font-medium mt-3 italic">{s.complementaryNote}</p>
+                  )}
                 </div>
               </AnimatedSection>
             ))}
