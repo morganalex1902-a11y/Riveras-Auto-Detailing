@@ -15,7 +15,7 @@ const Testimonials = () => (
   <main className="pt-20">
     <section className="relative py-20 md:py-28">
       <img src={heroBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-background/90" />
+      <div className="absolute inset-0 bg-background/70" />
       <div className="container relative z-10">
         <SectionHeading title="What Dealerships Say" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
