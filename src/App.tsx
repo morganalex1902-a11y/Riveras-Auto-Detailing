@@ -28,16 +28,93 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Helmet>
-            <title>Rivera's Auto Detailing | Dealership Detailing Solution in Maryland</title>
-            <meta name="description" content="Your dealership detailing solution in Maryland. High-volume, dealer-focused detailing services including N/C & U/C delivery, showroom preparation, reconditioning, and lot maintenance. Call 323-994-8612." />
+            <title>Rivera's Auto Detailing | Dealership Detailing & Vehicle Reconditioning | Maryland</title>
+            <meta name="description" content="Premium dealership auto detailing in Maryland. Professional N/C & U/C delivery, showroom preparation, vehicle reconditioning & lot wash. Licensed & certified. Serving DMV area." />
+            <meta name="keywords" content="dealership detailing, auto detailing Maryland, vehicle reconditioning, showroom preparation, N/C delivery, U/C delivery, lot wash, DMV auto services" />
+            <meta name="robots" content="index, follow" />
+            <link rel="canonical" href="https://riverasautodetailing.com/" />
+
+            {/* Local Business Schema */}
             <script type="application/ld+json">{JSON.stringify({
               "@context": "https://schema.org",
               "@type": "LocalBusiness",
-              "name": "Rivera's Auto Detailing",
-              "areaServed": ["Washington DC", "Maryland", "Virginia"],
+              "@id": "https://riverasautodetailing.com",
+              "name": "Rivera's Auto Detailing, LLC",
+              "image": "https://cdn.builder.io/api/v1/image/assets%2F0f00b454c21444a59a62cb373d89a358%2F7322560b6f384e6b960289838005c4ee?format=webp",
+              "description": "Professional dealership auto detailing and vehicle reconditioning services in Maryland",
+              "address": {
+                "@type": "PostalAddress",
+                "addressRegion": "MD",
+                "addressCountry": "US"
+              },
+              "areaServed": [
+                {
+                  "@type": "City",
+                  "name": "Washington",
+                  "state": "DC"
+                },
+                {
+                  "@type": "State",
+                  "name": "Maryland"
+                },
+                {
+                  "@type": "State",
+                  "name": "Virginia"
+                }
+              ],
               "telephone": "323-994-8612",
               "email": "eliasrivera1884@gmail.com",
-              "serviceOffered": ["N/C Delivery", "U/C Delivery", "U/C Detail", "Tint Removal", "Showroom Car Preparation", "Complementary Lot Wash"]
+              "priceRange": "$$",
+              "service": [
+                {
+                  "@type": "Service",
+                  "name": "N/C Delivery",
+                  "description": "Professional vehicle preparation before delivery"
+                },
+                {
+                  "@type": "Service",
+                  "name": "U/C Delivery",
+                  "description": "Under-car detailing and presentation"
+                },
+                {
+                  "@type": "Service",
+                  "name": "U/C Detail",
+                  "description": "Thorough undercarriage cleaning"
+                },
+                {
+                  "@type": "Service",
+                  "name": "Showroom Preparation",
+                  "description": "High-level presentation detailing for showroom"
+                },
+                {
+                  "@type": "Service",
+                  "name": "Tint Removal",
+                  "description": "Professional window tint removal"
+                },
+                {
+                  "@type": "Service",
+                  "name": "Lot Wash",
+                  "description": "Routine dealership maintenance wash"
+                }
+              ],
+              "url": "https://riverasautodetailing.com"
+            })}</script>
+
+            {/* Organization Schema */}
+            <script type="application/ld+json">{JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "Rivera's Auto Detailing",
+              "url": "https://riverasautodetailing.com",
+              "logo": "https://cdn.builder.io/api/v1/image/assets%2F0f00b454c21444a59a62cb373d89a358%2F7322560b6f384e6b960289838005c4ee?format=webp",
+              "description": "Licensed and certified dealership auto detailing services",
+              "sameAs": [],
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "contactType": "Business Support",
+                "telephone": "323-994-8612",
+                "email": "eliasrivera1884@gmail.com"
+              }
             })}</script>
           </Helmet>
           <ScrollToTop />
