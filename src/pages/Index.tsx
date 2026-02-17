@@ -188,7 +188,7 @@ const Index = () => {
       {/* CTA */}
       <section className="relative py-28 md:py-36">
         <img src={ctaBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/95" />
+        <div className="absolute inset-0 bg-background/70" />
         <AnimatedSection className="container relative z-10 text-center">
           <h2 className="text-3xl md:text-5xl font-display uppercase tracking-wider mb-8">
             Ready for a <span className="gold-gradient-text">Dealership Detailing</span> Partner?

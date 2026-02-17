@@ -20,7 +20,7 @@ const FAQ = () => {
     <main className="pt-20">
       <section className="relative py-20 md:py-28">
         <img src={galleryPolish} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/95" />
+        <div className="absolute inset-0 bg-background/70" />
         <div className="container relative z-10 max-w-3xl">
           <SectionHeading title="Frequently Asked Questions" />
           <div className="space-y-4">
