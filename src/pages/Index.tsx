@@ -1,12 +1,12 @@
 import { Phone, DollarSign, RefreshCw, Target } from "lucide-react";
 import { Link } from "react-router-dom";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { useState } from "react";
 import AnimatedSection from "@/components/AnimatedSection";
 import SectionHeading from "@/components/SectionHeading";
 import GoldButton from "@/components/GoldButton";
 import GalleryLightbox from "@/components/GalleryLightbox";
-import heroBg from "@/assets/hero-bg.jpg";
+import contactBg from "@/assets/contact-bg.jpg";
 import ctaBg from "@/assets/cta-bg.jpg";
 
 const services = [
@@ -26,10 +26,6 @@ const steps = [
 
 const Index = () => {
   const [showCertificate, setShowCertificate] = useState(false);
-  const heroRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
 
   const certificateImages = [
     {
@@ -41,15 +37,9 @@ const Index = () => {
   return (
     <main>
       {/* HERO */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden">
-        <motion.img
-          src={heroBg}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ y: heroY, scale: heroScale }}
-        />
-        <div className="image-overlay" />
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
+      <section className="relative min-h-screen flex items-center overflow-hidden">
+        <img src={contactBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-background/88" />
         <div className="container relative z-10 pt-20">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
