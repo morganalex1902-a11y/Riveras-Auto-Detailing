@@ -14,7 +14,6 @@ import Gallery from "./pages/Gallery";
 import Testimonials from "./pages/Testimonials";
 import FAQ from "./pages/FAQ";
 import ServiceArea from "./pages/ServiceArea";
-import Contact from "./pages/Contact";
 import Trusted from "./pages/Trusted";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -52,7 +51,6 @@ const App = () => (
               <Route path="/testimonials" element={<Testimonials />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/service-area" element={<ServiceArea />} />
-              <Route path="/contact" element={<Contact />} />
               <Route path="/trusted" element={<Trusted />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

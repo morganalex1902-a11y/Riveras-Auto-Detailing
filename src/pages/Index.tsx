@@ -53,22 +53,16 @@ const Index = () => {
               Solution
             </h1>
             <p className="text-xl md:text-2xl font-display uppercase tracking-wider mb-4">
-              <span className="gold-gradient-text">Driving Success for Every Dealership.</span>
+              <span className="gold-gradient-text">supporting  dealership operations with structured vehicle reconditioning solutions</span>
             </p>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 font-light tracking-wide">
-              The best prices and solutions for dealerships. Precision. Speed. Consistency.
+              The best prices and solutions for dealerships. Quality. Speed. Consistency.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <GoldButton href="tel:3239948612">
                 <Phone className="w-4 h-4" />
                 Call Now – 323-994-8612
               </GoldButton>
-              <Link
-                to="/contact"
-                className="inline-flex items-center justify-center px-8 py-3.5 border border-primary text-primary font-display uppercase text-sm tracking-widest hover:bg-primary hover:text-primary-foreground transition-all duration-300"
-              >
-                Request Service
-              </Link>
             </div>
           </motion.div>
         </div>
@@ -90,7 +84,7 @@ const Index = () => {
                     <p className="text-muted-foreground text-sm">{s.desc}</p>
                   </div>
                   <div className="mt-6">
-                    <GoldButton to="/contact">Get Quote</GoldButton>
+                    <GoldButton href="tel:3239948612">Get Quote</GoldButton>
                   </div>
                 </div>
               </AnimatedSection>
