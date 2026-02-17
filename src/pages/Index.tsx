@@ -10,12 +10,12 @@ import heroBg from "@/assets/hero-bg.jpg";
 import ctaBg from "@/assets/cta-bg.jpg";
 
 const services = [
-  { title: "N/C Delivery", price: "$35.00", desc: "Professional prep before delivery." },
-  { title: "U/C Delivery", price: "$25.00", desc: "Under-car detailing & presentation." },
-  { title: "U/C Detail", price: "$120.00", desc: "Thorough undercarriage cleaning." },
-  { title: "Tint Removal", price: "$75.00", desc: "Clean removal without damage." },
-  { title: "Showroom Preparation", price: "$40.00", desc: "High-level presentation detailing." },
-  { title: "Lot Wash", desc: "Routine dealership maintenance wash.", complementaryNote: "Complimentary with monthly contract" },
+  { title: "N/C Delivery", desc: "Professional prep before delivery." },
+  { title: "U/C Delivery", desc: "Under-car detailing & presentation." },
+  { title: "U/C Detail", desc: "Thorough undercarriage cleaning." },
+  { title: "Tint Removal", desc: "Clean removal without damage." },
+  { title: "Showroom Preparation", desc: "High-level presentation detailing." },
+  { title: "Lot Wash", desc: "Routine dealership maintenance wash." },
 ];
 
 const steps = [
@@ -63,7 +63,7 @@ const Index = () => {
               Solution
             </h1>
             <p className="text-xl md:text-2xl font-display uppercase tracking-wider mb-4">
-              <span className="gold-gradient-text">We Are a Solution for Dealerships</span>
+              <span className="gold-gradient-text">Driving Success for Every Dealership.</span>
             </p>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 font-light tracking-wide">
               The best prices and solutions for dealerships. Precision. Speed. Consistency.
@@ -91,18 +91,17 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((s, i) => (
               <AnimatedSection key={s.title} delay={i * 0.1}>
-                <div className="glass-card p-8 group hover:border-primary/50 transition-all duration-300">
-                  <div className="w-10 h-[2px] bg-primary mb-4 group-hover:w-16 transition-all duration-300" />
-                  <div className="flex items-baseline gap-3 mb-2">
-                    <h3 className="font-display text-xl uppercase tracking-wider text-foreground">
+                <div className="glass-card p-8 group hover:border-primary/50 transition-all duration-300 flex flex-col justify-between h-full">
+                  <div>
+                    <div className="w-10 h-[2px] bg-primary mb-4 group-hover:w-16 transition-all duration-300" />
+                    <h3 className="font-display text-xl uppercase tracking-wider text-foreground mb-3">
                       {s.title}
                     </h3>
-                    {s.price && <span className="text-primary font-semibold whitespace-nowrap">{s.price}</span>}
+                    <p className="text-muted-foreground text-sm">{s.desc}</p>
                   </div>
-                  <p className="text-muted-foreground text-sm">{s.desc}</p>
-                  {s.complementaryNote && (
-                    <p className="text-primary text-xs font-medium mt-3 italic">{s.complementaryNote}</p>
-                  )}
+                  <div className="mt-6">
+                    <GoldButton to="/contact">Get Quote</GoldButton>
+                  </div>
                 </div>
               </AnimatedSection>
             ))}
@@ -116,7 +115,7 @@ const Index = () => {
       {/* WHY DEALERSHIPS CHOOSE US */}
       <section className="py-20 md:py-28">
         <div className="container">
-          <SectionHeading title="Why Dealerships Choose Us" subtitle="We bring the best prices and the best solutions directly to your lot." />
+          <SectionHeading title="Why Dealerships Choose Us" subtitle="We deliver the most competitive pricing and tailored solutions directly to your dealership." />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
@@ -204,8 +203,8 @@ const Index = () => {
           <h2 className="text-3xl md:text-5xl font-display uppercase tracking-wider mb-8">
             Ready for a <span className="gold-gradient-text">Dealership Detailing</span> Partner?
           </h2>
-          <GoldButton to="/contact" className="animate-glow-pulse">
-            Partner With Us Today
+          <GoldButton href="tel:3239948612">
+            Call Now – (323) 994-8612
           </GoldButton>
         </AnimatedSection>
       </section>
