@@ -38,7 +38,7 @@ const Index = () => {
     <main>
       {/* HERO */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
-        <img src={contactBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src="https://cdn.builder.io/api/v1/image/assets%2F00cdbed89d7445f5b4360faac26e9e3f%2Fa1d3862cf4944b6a91614f980ce16f53?format=webp&width=800&height=1200" alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-background/95" />
         <div className="container relative z-10 pt-20">
           <motion.div
