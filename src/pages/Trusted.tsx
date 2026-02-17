@@ -39,7 +39,7 @@ const Trusted = () => (
     {/* Hero */}
     <section className="relative py-20 md:py-28">
       <img src={galleryWork} alt="" className="absolute inset-0 w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-background/90" />
+      <div className="absolute inset-0 bg-background/70" />
       <div className="container relative z-10 text-center">
         <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
           Dealer-Focused Detailing Solutions
