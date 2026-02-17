@@ -13,7 +13,6 @@ const links = [
   { to: "/faq", label: "FAQ" },
   { to: "/service-area", label: "Service Area" },
   { to: "/trusted", label: "Trusted" },
-  { to: "/contact", label: "Contact" },
 ];
 
 const Navbar = () => {
