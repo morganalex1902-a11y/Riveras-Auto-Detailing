@@ -44,7 +44,7 @@ const Contact = () => {
       {/* Hero banner */}
       <section className="relative py-20 md:py-28">
         <img src={contactBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/88" />
+        <div className="absolute inset-0 bg-background/95" />
         <div className="container relative z-10 text-center">
           <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
             Contact Us

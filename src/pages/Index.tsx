@@ -39,7 +39,7 @@ const Index = () => {
       {/* HERO */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
         <img src={contactBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/88" />
+        <div className="absolute inset-0 bg-background/95" />
         <div className="container relative z-10 pt-20">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
@@ -188,7 +188,7 @@ const Index = () => {
       {/* CTA */}
       <section className="relative py-28 md:py-36">
         <img src={ctaBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/85" />
+        <div className="absolute inset-0 bg-background/95" />
         <AnimatedSection className="container relative z-10 text-center">
           <h2 className="text-3xl md:text-5xl font-display uppercase tracking-wider mb-8">
             Ready for a <span className="gold-gradient-text">Dealership Detailing</span> Partner?
