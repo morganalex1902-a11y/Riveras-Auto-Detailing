@@ -48,19 +48,16 @@ const MobileDetailingSection = () => {
 
           {/* Additional CTA with glass card styling */}
           <AnimatedSection delay={0.2} className="mt-6">
-            <div className="glass-card p-4 md:p-6 text-center">
+            <div className="glass-card p-4 md:p-6">
               <h3 className="font-display text-xl uppercase tracking-wider mb-3">
                 Ready to Transform Your Vehicle?
               </h3>
-              <p className="text-muted-foreground mb-4 text-sm leading-relaxed flex flex-col">
-                📅 Book your appointment today.
-
-                📍 We come to your home or workplace.
-
-                📞 Call or text now for a fast quote.
-
-                Your car will thank you.
-              </p>
+              <div className="flex flex-col gap-2 text-muted-foreground mb-4 text-sm leading-relaxed">
+                <p>📅 Book your appointment today.</p>
+                <p>📍 We come to your home or workplace.</p>
+                <p>📞 Call or text now for a fast quote.</p>
+                <p>Your car will thank you.</p>
+              </div>
               <p className="text-primary font-display uppercase text-sm tracking-widest">
                 Available in the DMV Area
               </p>
