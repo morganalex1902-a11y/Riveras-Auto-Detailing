@@ -97,9 +97,9 @@ const allServices = [
 ];
 
 const Services = () => (
-  <main className="pt-20">
+  <main className="pt-16">
     {/* Hero banner */}
-    <section className="relative py-20 md:py-28">
+    <section className="relative py-16 md:py-20">
       <img src={servicesBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-background/70" />
       <div className="container relative z-10 text-center">
@@ -107,29 +107,29 @@ const Services = () => (
           Dealership Detailing Services
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">High-volume dealership detailing solutions designed for automotive retail operations.</p>
-        <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
+        <div className="gold-border-line max-w-[120px] mx-auto mt-4" />
       </div>
     </section>
 
-    <section className="py-20 md:py-28">
+    <section className="py-16 md:py-20">
       <div className="container">
-        <div className="space-y-16 max-w-4xl mx-auto">
+        <div className="space-y-12 max-w-4xl mx-auto">
           {allServices.map((section, sectionIdx) => (
             <div key={section.section}>
-              <div className="mb-12">
+              <div className="mb-8">
                 <h2 className="text-3xl md:text-4xl font-display uppercase tracking-wider gold-gradient-text mb-2">
                   {section.section}
                 </h2>
                 <div className="w-20 h-[2px] bg-primary" />
               </div>
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {section.items.map((service, itemIdx) => (
                   <AnimatedSection key={service.title} delay={(sectionIdx * 0.1) + (itemIdx * 0.05)}>
-                    <div className="glass-card p-8 md:p-10 group hover:border-primary/50 transition-all duration-300">
+                    <div className="glass-card p-6 md:p-8 group hover:border-primary/50 transition-all duration-300">
                       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                         <div className="flex-1">
-                          <div className="w-10 h-[2px] bg-primary mb-4 group-hover:w-20 transition-all duration-300" />
-                          <h3 className="font-display text-2xl uppercase tracking-wider mb-3">{service.title}</h3>
+                          <div className="w-10 h-[2px] bg-primary mb-3 group-hover:w-20 transition-all duration-300" />
+                          <h3 className="font-display text-2xl uppercase tracking-wider mb-2">{service.title}</h3>
                           <p className="text-muted-foreground leading-relaxed">{service.desc}</p>
                         </div>
                         <GoldButton to="/contact" className="self-start mt-2">

@@ -4,9 +4,9 @@ import GoldButton from "@/components/GoldButton";
 import galleryWork from "@/assets/gallery-work-ford.png";
 
 const About = () => (
-  <main className="pt-20">
+  <main className="pt-16">
     {/* Hero */}
-    <section className="relative py-20 md:py-28">
+    <section className="relative py-16 md:py-20">
       <img src={galleryWork} alt="" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-background/70" />
       <div className="container relative z-10 text-center">
@@ -17,9 +17,9 @@ const About = () => (
       </div>
     </section>
 
-    <section className="section-darker py-20 md:py-28">
+    <section className="section-darker py-16 md:py-20">
       <div className="container max-w-4xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
             { title: "9 Years of Dealer Experience", desc: "Nearly a decade of dedicated dealership detailing experience serving automotive retail operations throughout the DMV Area." },
             { title: "Attention to Detail", desc: "Every vehicle receives meticulous care — from panel gaps to wheel wells, nothing is overlooked. Presentation sells vehicles." },
@@ -27,22 +27,22 @@ const About = () => (
             { title: "Consistent Quality Control", desc: "Structured workflow, reliable turnaround times, and accountability on every single job — that's our standard." },
           ].map((item, i) => (
             <AnimatedSection key={item.title} delay={i * 0.1}>
-              <div className="glass-card p-8">
-                <div className="w-10 h-[2px] bg-primary mb-4" />
-                <h3 className="font-display text-xl uppercase tracking-wider mb-3">{item.title}</h3>
+              <div className="glass-card p-6">
+                <div className="w-10 h-[2px] bg-primary mb-3" />
+                <h3 className="font-display text-xl uppercase tracking-wider mb-2">{item.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
               </div>
             </AnimatedSection>
           ))}
         </div>
-        <div className="text-center mt-12">
+        <div className="text-center mt-8">
           <GoldButton to="/contact">Get in Touch</GoldButton>
         </div>
       </div>
     </section>
 
     {/* Our Mission Section */}
-    <section className="py-20 md:py-28">
+    <section className="py-16 md:py-20">
       <div className="container max-w-4xl">
         <SectionHeading title="Our Mission" subtitle="" />
         <div className="space-y-6">
@@ -67,7 +67,7 @@ const About = () => (
     </section>
 
     {/* Why Outsourcing Section */}
-    <section className="section-darker py-20 md:py-28">
+    <section className="section-darker py-16 md:py-20">
       <div className="container max-w-4xl">
         <SectionHeading title="Why Outsource Your Detailing" subtitle="Dealerships save on:" />
         <div className="space-y-6">
@@ -79,8 +79,8 @@ const About = () => (
           ].map((item, i) => (
             <AnimatedSection key={item.title} delay={i * 0.08}>
               <div className="glass-card p-6 md:p-8">
-                <div className="w-10 h-[2px] bg-primary mb-4" />
-                <h3 className="font-display text-lg uppercase tracking-wider mb-3">{item.title}</h3>
+                <div className="w-10 h-[2px] bg-primary mb-3" />
+                <h3 className="font-display text-lg uppercase tracking-wider mb-2">{item.title}</h3>
                 <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
               </div>
             </AnimatedSection>
@@ -90,7 +90,7 @@ const About = () => (
     </section>
 
     {/* Why Us Section */}
-    <section className="py-20 md:py-28">
+    <section className="py-16 md:py-20">
       <div className="container max-w-4xl">
         <SectionHeading title="Why Choose Rivera's" subtitle="Your dedicated dealership detailing solution" />
         <div className="space-y-6">

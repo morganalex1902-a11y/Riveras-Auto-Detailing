@@ -16,17 +16,17 @@ const footerLinks = [
 const Footer = () => (
   <footer className="section-darker border-t border-border/30">
     <div className="gold-border-line" />
-    <div className="container py-12 md:py-16">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+    <div className="container py-8 md:py-12">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div>
-          <img src={logo} alt="Rivera's Auto Detailing" className="h-16 mb-4" />
+          <img src={logo} alt="Rivera's Auto Detailing" className="h-16 mb-3" />
           <p className="text-muted-foreground text-sm leading-relaxed">
             Your dealership detailing solution in the DMV Area. High-volume dealer-focused detailing. Precision. Speed. Consistency.
           </p>
         </div>
 
         <div>
-          <h4 className="font-display uppercase tracking-widest text-primary mb-4">Quick Links</h4>
+          <h4 className="font-display uppercase tracking-widest text-primary mb-3">Quick Links</h4>
           <ul className="space-y-2">
             {footerLinks.map((link) => (
               <li key={link.to}>
@@ -42,7 +42,7 @@ const Footer = () => (
         </div>
 
         <div>
-          <h4 className="font-display uppercase tracking-widest text-primary mb-4">Contact</h4>
+          <h4 className="font-display uppercase tracking-widest text-primary mb-3">Contact</h4>
           <div className="space-y-3">
             <a href="tel:3239948612" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
               <Phone className="w-4 h-4 text-primary" />
@@ -56,8 +56,8 @@ const Footer = () => (
         </div>
       </div>
 
-      <div className="gold-border-line mt-10" />
-      <p className="text-center text-muted-foreground text-xs mt-6">
+      <div className="gold-border-line mt-8" />
+      <p className="text-center text-muted-foreground text-xs mt-4">
         © {new Date().getFullYear()} Rivera's Auto Detailing. All rights reserved.
       </p>
     </div>

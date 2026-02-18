@@ -12,8 +12,8 @@ const reviews = [
 ];
 
 const Testimonials = () => (
-  <main className="pt-20">
-    <section className="relative py-20 md:py-28">
+  <main className="pt-16">
+    <section className="relative py-16 md:py-20">
       <img src={heroBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-background/70" />
       <div className="container relative z-10">
@@ -22,23 +22,23 @@ const Testimonials = () => (
           {reviews.map((r, i) => (
             <motion.div
               key={i}
-              className="glass-card p-8"
+              className="glass-card p-6"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.1 }}
             >
-              <div className="flex gap-1 mb-4">
+              <div className="flex gap-1 mb-3">
                 {[...Array(5)].map((_, j) => (
                   <Star key={j} className="w-4 h-4 fill-primary text-primary" />
                 ))}
               </div>
-              <p className="text-foreground/90 italic mb-4 leading-relaxed">"{r.text}"</p>
+              <p className="text-foreground/90 italic mb-3 leading-relaxed">"{r.text}"</p>
               <p className="text-primary font-display uppercase tracking-wider text-sm">— {r.name}</p>
             </motion.div>
           ))}
         </div>
-        <div className="text-center mt-12">
+        <div className="text-center mt-8">
           <GoldButton to="/contact">Partner With Us</GoldButton>
         </div>
       </div>

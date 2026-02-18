@@ -8,7 +8,7 @@ const MobileDetailingSection = () => {
   return (
     <>
       {/* Optional divider text */}
-      <div className="relative py-8">
+      <div className="relative py-4">
         <div className="container text-center">
           <AnimatedSection>
             <p className="text-sm md:text-base text-muted-foreground font-light tracking-wide">
@@ -19,9 +19,9 @@ const MobileDetailingSection = () => {
       </div>
 
       {/* Mobile Detailing Section */}
-      <section className="py-20 md:py-28 bg-gradient-to-b from-background via-background to-secondary/20">
+      <section className="py-16 md:py-20 bg-gradient-to-b from-background via-background to-secondary/20">
         <div className="container max-w-3xl">
-          <AnimatedSection className="text-center mb-12">
+          <AnimatedSection className="text-center mb-8">
             <p className="text-sm uppercase tracking-widest text-primary font-display mb-2">
               Bringing Detailing to You
             </p>
@@ -46,8 +46,8 @@ const MobileDetailingSection = () => {
           </AnimatedSection>
 
           {/* Additional CTA with glass card styling */}
-          <AnimatedSection delay={0.2} className="mt-12">
-            <div className="glass-card p-8 md:p-10 text-center">
+          <AnimatedSection delay={0.2} className="mt-8">
+            <div className="glass-card p-6 md:p-8 text-center">
               <h3 className="font-display text-xl uppercase tracking-wider mb-3">
                 Professional Mobile Detailing
               </h3>

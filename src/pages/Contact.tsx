@@ -40,9 +40,9 @@ const Contact = () => {
   };
 
   return (
-    <main className="pt-20">
+    <main className="pt-16">
       {/* Hero banner */}
-      <section className="relative py-20 md:py-28">
+      <section className="relative py-16 md:py-20">
         <img src={contactBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-background/70" />
         <div className="container relative z-10 text-center">
@@ -52,17 +52,17 @@ const Contact = () => {
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Get in touch with Rivera's Auto Detailing for your dealership detailing needs.
           </p>
-          <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
+          <div className="gold-border-line max-w-[120px] mx-auto mt-4" />
         </div>
       </section>
 
       {/* Form */}
-      <section className="py-20 md:py-28">
+      <section className="py-16 md:py-20">
         <div className="container max-w-2xl">
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <AnimatedSection>
-              <div className="glass-card p-8 md:p-10">
-                <div className="space-y-6">
+              <div className="glass-card p-6 md:p-8">
+                <div className="space-y-4">
                   {/* Name */}
                   <div>
                     <label className={labelClass}>Name</label>
@@ -133,10 +133,10 @@ const Contact = () => {
 
             {/* Submit & Contact Info */}
             <AnimatedSection delay={0.1}>
-              <div className="glass-card p-8 md:p-10">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+              <div className="glass-card p-6 md:p-8">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                   <div>
-                    <h3 className="font-display text-lg uppercase tracking-wider text-foreground mb-3">
+                    <h3 className="font-display text-lg uppercase tracking-wider text-foreground mb-2">
                       Rivera's Auto Detailing
                     </h3>
                     <div className="space-y-2 text-muted-foreground text-sm">
