@@ -52,7 +52,7 @@ const MobileDetailingSection = () => {
               <h3 className="font-display text-xl uppercase tracking-wider mb-3">
                 Ready to Transform Your Vehicle?
               </h3>
-              <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
+              <p className="text-muted-foreground mb-4 text-sm leading-relaxed felx justify-contant">
                 📅 Book your appointment today.
 
                 📍 We come to your home or workplace.
