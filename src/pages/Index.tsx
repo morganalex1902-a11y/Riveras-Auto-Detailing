@@ -1,4 +1,4 @@
-import { Phone, DollarSign, RefreshCw, Target } from "lucide-react";
+import { Phone, DollarSign, RefreshCw, Target, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -64,6 +64,13 @@ const Index = () => {
                 <Phone className="w-4 h-4" />
                 Call Now – 323-994-8612
               </GoldButton>
+              <a
+                href="https://wa.me/13239948612"
+                className="inline-flex items-center justify-center gap-2 bg-green-600 text-white px-8 py-3.5 font-display uppercase text-sm tracking-widest hover:bg-green-700 transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]"
+              >
+                <MessageCircle className="w-4 h-4" />
+                WhatsApp
+              </a>
             </div>
           </motion.div>
         </div>
@@ -75,7 +82,7 @@ const Index = () => {
       {/* SERVICES PREVIEW */}
       <section className="section-darker py-12 md:py-16">
         <div className="container">
-          <SectionHeading title="Our Services" subtitle="High-volume dealership detailing solutions built for speed, consistency, and presentation." />
+          <SectionHeading title="Dealer Services" subtitle="High-volume dealership detailing solutions built for speed, consistency, and presentation." />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {services.map((s, i) => (
               <AnimatedSection key={s.title} delay={i * 0.1}>
@@ -191,9 +198,18 @@ const Index = () => {
           <h2 className="text-3xl md:text-5xl font-display uppercase tracking-wider mb-4">
             Ready for a <span className="gold-gradient-text">Dealership Detailing</span> Partner?
           </h2>
-          <GoldButton href="tel:3239948612">
-            Call Now – (323) 994-8612
-          </GoldButton>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <GoldButton href="tel:3239948612">
+              Call Now – (323) 994-8612
+            </GoldButton>
+            <a
+              href="https://wa.me/13239948612"
+              className="inline-flex items-center justify-center gap-2 bg-green-600 text-white px-8 py-3.5 font-display uppercase text-sm tracking-widest hover:bg-green-700 transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]"
+            >
+              <MessageCircle className="w-4 h-4" />
+              WhatsApp
+            </a>
+          </div>
         </AnimatedSection>
       </section>
 

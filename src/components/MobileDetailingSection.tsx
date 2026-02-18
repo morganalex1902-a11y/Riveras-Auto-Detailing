@@ -23,13 +23,14 @@ const MobileDetailingSection = () => {
         <div className="container max-w-3xl">
           <AnimatedSection className="text-center mb-6">
             <p className="text-sm uppercase tracking-widest text-primary font-display mb-2">
-              Bringing Detailing to You
+              Premium Mobile Auto Detailing We Come to You
             </p>
             <h2 className="text-3xl md:text-5xl font-display uppercase tracking-wider mb-4">
               Need Mobile Detailing?
             </h2>
             <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed mb-6">
-              We come to you for professional interior and exterior detailing. Fast, reliable, and fully mobile.
+              WYour car deserves more than a quick wash. We deliver professional, high-quality detailing right at your home or office — saving you time while restoring that showroom shine.
+              No waiting rooms. No lines. Just convenience and exceptional results.
             </p>
             <div className="w-16 h-[2px] bg-primary mx-auto" />
           </AnimatedSection>
@@ -49,10 +50,16 @@ const MobileDetailingSection = () => {
           <AnimatedSection delay={0.2} className="mt-6">
             <div className="glass-card p-4 md:p-6 text-center">
               <h3 className="font-display text-xl uppercase tracking-wider mb-3">
-                Professional Mobile Detailing
+                Ready to Transform Your Vehicle?
               </h3>
-              <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
-                From fleet vehicles to personal cars, our mobile detailing service brings showroom-quality results directly to your location.
+              <p className="text-muted-foreground mb-4 text-sm leading-relaxed flex flex-col">
+                📅 Book your appointment today.
+
+                📍 We come to your home or workplace.
+
+                📞 Call or text now for a fast quote.
+
+                Your car will thank you.
               </p>
               <p className="text-primary font-display uppercase text-sm tracking-widest">
                 Available in the DMV Area
