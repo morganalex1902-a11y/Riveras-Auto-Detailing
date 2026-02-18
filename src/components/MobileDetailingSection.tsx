@@ -48,7 +48,7 @@ const MobileDetailingSection = () => {
 
           {/* Additional CTA with glass card styling */}
           <AnimatedSection delay={0.2} className="mt-6">
-            <div className="glass-card p-4 md:p-6">
+            <div className="glass-card p-4 md:p-6 text-center">
               <h3 className="font-display text-xl uppercase tracking-wider mb-3">
                 Ready to Transform Your Vehicle?
               </h3>
