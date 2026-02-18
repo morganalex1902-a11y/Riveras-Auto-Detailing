@@ -35,27 +35,27 @@ const differentiators = [
 ];
 
 const Trusted = () => (
-  <main className="pt-16">
+  <main className="pt-12">
     {/* Hero */}
-    <section className="relative py-16 md:py-20">
+    <section className="relative py-12 md:py-16">
       <img src={galleryWork} alt="" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-background/70" />
       <div className="container relative z-10 text-center">
-        <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
+        <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-2">
           Dealer-Focused Detailing Solutions
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground font-light tracking-wide mt-4">
           The Best Prices & Solutions for Your Dealership
         </p>
-        <div className="gold-border-line max-w-[120px] mx-auto mt-4" />
+        <div className="gold-border-line max-w-[120px] mx-auto mt-3" />
       </div>
     </section>
 
     {/* Intro */}
-    <section className="section-darker py-16 md:py-20">
+    <section className="section-darker py-12 md:py-16">
       <div className="container max-w-4xl">
         <AnimatedSection>
-          <div className="glass-card p-6 md:p-10">
+          <div className="glass-card p-4 md:p-8">
             <div className="space-y-6 text-center">
               <p className="text-muted-foreground text-lg leading-relaxed">
                 Rivera's Auto Detailing is a professional, dealership-focused detailing partner — not just a car cleaner.
@@ -73,7 +73,7 @@ const Trusted = () => (
     </section>
 
     {/* Proven Performance & Experience */}
-    <section className="py-16 md:py-20">
+    <section className="py-12 md:py-16">
       <div className="container max-w-4xl">
         <SectionHeading
           title="Proven Performance & Experience"
@@ -102,13 +102,13 @@ const Trusted = () => (
     </section>
 
     {/* Value Proposition */}
-    <section className="section-darker py-16 md:py-20">
+    <section className="section-darker py-12 md:py-16">
       <div className="container max-w-4xl">
         <SectionHeading
           title="Why We're the Right Solution"
           subtitle="We bring the best prices and the best solutions directly to your dealership."
         />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {[
             {
               icon: DollarSign,
@@ -127,9 +127,9 @@ const Trusted = () => (
             },
           ].map((item, i) => (
             <AnimatedSection key={item.title} delay={i * 0.15}>
-              <div className="glass-card p-6 text-center group hover:border-primary/50 transition-all duration-300">
-                <item.icon className="w-10 h-10 text-primary mx-auto mb-3" />
-                <h3 className="font-display text-xl uppercase tracking-wider mb-2">{item.title}</h3>
+              <div className="glass-card p-4 text-center group hover:border-primary/50 transition-all duration-300">
+                <item.icon className="w-10 h-10 text-primary mx-auto mb-2" />
+                <h3 className="font-display text-xl uppercase tracking-wider mb-1">{item.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
               </div>
             </AnimatedSection>
@@ -161,7 +161,7 @@ const Trusted = () => (
     </section>
 
     {/* What Sets Us Apart */}
-    <section className="py-16 md:py-20">
+    <section className="py-12 md:py-16">
       <div className="container max-w-4xl">
         <SectionHeading title="What Sets Us Apart" />
         <div className="space-y-6">
@@ -185,15 +185,15 @@ const Trusted = () => (
     </section>
 
     {/* Partner CTA */}
-    <section className="section-darker py-16 md:py-20">
+    <section className="section-darker py-12 md:py-16">
       <div className="container max-w-4xl">
         <SectionHeading title="Partner With a Reliable Detailing Vendor" />
         <AnimatedSection>
-          <div className="glass-card p-6 md:p-10 text-center">
-            <p className="text-muted-foreground text-lg leading-relaxed mb-6">
+          <div className="glass-card p-4 md:p-8 text-center">
+            <p className="text-muted-foreground text-lg leading-relaxed mb-4">
               If you're looking for the best-priced, most reliable dealership detailing solution that understands dealer pace, expectations, and performance standards — Rivera's Auto Detailing delivers.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
               <div className="flex items-center gap-2 text-foreground">
                 <MapPin className="w-5 h-5 text-primary" />
                 <span>6828 Barton Rd, Hyattsville, MD 20784</span>

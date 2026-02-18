@@ -12,8 +12,8 @@ const reviews = [
 ];
 
 const Testimonials = () => (
-  <main className="pt-16">
-    <section className="relative py-16 md:py-20">
+  <main className="pt-12">
+    <section className="relative py-12 md:py-16">
       <img src={heroBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-background/70" />
       <div className="container relative z-10">
@@ -22,7 +22,7 @@ const Testimonials = () => (
           {reviews.map((r, i) => (
             <motion.div
               key={i}
-              className="glass-card p-6"
+              className="glass-card p-4"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}

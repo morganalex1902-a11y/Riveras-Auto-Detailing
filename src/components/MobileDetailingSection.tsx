@@ -8,7 +8,7 @@ const MobileDetailingSection = () => {
   return (
     <>
       {/* Optional divider text */}
-      <div className="relative py-4">
+      <div className="relative py-2">
         <div className="container text-center">
           <AnimatedSection>
             <p className="text-sm md:text-base text-muted-foreground font-light tracking-wide">
@@ -19,16 +19,16 @@ const MobileDetailingSection = () => {
       </div>
 
       {/* Mobile Detailing Section */}
-      <section className="py-16 md:py-20 bg-gradient-to-b from-background via-background to-secondary/20">
+      <section className="py-12 md:py-16 bg-gradient-to-b from-background via-background to-secondary/20">
         <div className="container max-w-3xl">
-          <AnimatedSection className="text-center mb-8">
+          <AnimatedSection className="text-center mb-6">
             <p className="text-sm uppercase tracking-widest text-primary font-display mb-2">
               Bringing Detailing to You
             </p>
-            <h2 className="text-3xl md:text-5xl font-display uppercase tracking-wider mb-6">
+            <h2 className="text-3xl md:text-5xl font-display uppercase tracking-wider mb-4">
               Need Mobile Detailing?
             </h2>
-            <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed mb-8">
+            <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed mb-6">
               We come to you for professional interior and exterior detailing. Fast, reliable, and fully mobile.
             </p>
             <div className="w-16 h-[2px] bg-primary mx-auto" />
@@ -46,8 +46,8 @@ const MobileDetailingSection = () => {
           </AnimatedSection>
 
           {/* Additional CTA with glass card styling */}
-          <AnimatedSection delay={0.2} className="mt-8">
-            <div className="glass-card p-6 md:p-8 text-center">
+          <AnimatedSection delay={0.2} className="mt-6">
+            <div className="glass-card p-4 md:p-6 text-center">
               <h3 className="font-display text-xl uppercase tracking-wider mb-3">
                 Professional Mobile Detailing
               </h3>
