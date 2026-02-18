@@ -64,15 +64,6 @@ const Index = () => {
                 <Phone className="w-4 h-4" />
                 Call Now – 323-994-8612
               </GoldButton>
-              <a
-                href="https://api.whatsapp.com/send?phone=13239948612"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 bg-green-600 text-white px-8 py-3.5 font-display uppercase text-sm tracking-widest hover:bg-green-700 transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]"
-              >
-                <MessageCircle className="w-4 h-4" />
-                Schedule or Text Directly to WhatsApp
-              </a>
             </div>
           </motion.div>
         </div>
