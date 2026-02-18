@@ -10,31 +10,31 @@ const serviceRegions = [
 ];
 
 const ServiceArea = () => (
-  <main className="pt-20">
+  <main className="pt-12">
     {/* Hero banner */}
-    <section className="relative py-20 md:py-28">
+    <section className="relative py-12 md:py-16">
       <img src={serviceAreaBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
       <div className="absolute inset-0 bg-background/70" />
       <div className="container relative z-10 text-center">
-        <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
+        <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-2">
           Dealership Detailing Across the DMV
         </h1>
-        <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
+        <div className="gold-border-line max-w-[120px] mx-auto mt-3" />
       </div>
     </section>
 
-    <section className="py-20 md:py-28">
+    <section className="py-12 md:py-16">
       <div className="container">
         <div className="max-w-3xl mx-auto">
-          <div className="space-y-8 mb-10">
+          <div className="space-y-4 mb-6">
             {serviceRegions.map((item, i) => (
               <AnimatedSection key={item.region} delay={i * 0.1}>
                 <div>
-                  <h3 className="font-display text-2xl uppercase tracking-wider gold-gradient-text mb-4">
+                  <h3 className="font-display text-2xl uppercase tracking-wider gold-gradient-text mb-2">
                     {item.region}
                   </h3>
                   {item.description && (
-                    <p className="text-muted-foreground mb-4">{item.description}</p>
+                    <p className="text-muted-foreground mb-2">{item.description}</p>
                   )}
                 </div>
               </AnimatedSection>
@@ -55,7 +55,7 @@ const ServiceArea = () => (
             </div>
           </AnimatedSection>
 
-          <div className="text-center mt-10">
+          <div className="text-center mt-6">
             <GoldButton to="/contact">Partner With Us in Your Area</GoldButton>
           </div>
         </div>

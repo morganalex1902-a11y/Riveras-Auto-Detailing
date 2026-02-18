@@ -28,8 +28,8 @@ const Gallery = () => {
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
 
   return (
-    <main className="pt-20">
-      <section className="py-20 md:py-28">
+    <main className="pt-12">
+      <section className="py-12 md:py-16">
         <div className="container">
           <SectionHeading title="Gallery" subtitle="See the results of our dealership detailing solutions in action." />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

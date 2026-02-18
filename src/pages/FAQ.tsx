@@ -17,8 +17,8 @@ const FAQ = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <main className="pt-20">
-      <section className="relative py-20 md:py-28">
+    <main className="pt-12">
+      <section className="relative py-12 md:py-16">
         <img src={galleryPolish} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-background/70" />
         <div className="container relative z-10 max-w-3xl">
