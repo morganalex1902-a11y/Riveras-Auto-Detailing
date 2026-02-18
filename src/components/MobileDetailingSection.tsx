@@ -23,13 +23,13 @@ const MobileDetailingSection = () => {
         <div className="container max-w-3xl">
           <AnimatedSection className="text-center mb-6">
             <p className="text-sm uppercase tracking-widest text-primary font-display mb-2">
-              Premium Mobile Auto Detailing We Come to You
+              Premium Mobile Auto Detailing, We Come to You
             </p>
             <h2 className="text-3xl md:text-5xl font-display uppercase tracking-wider mb-4">
               Need Mobile Detailing?
             </h2>
             <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed mb-6">
-              WYour car deserves more than a quick wash. We deliver professional, high-quality detailing right at your home or office — saving you time while restoring that showroom shine.
+              Your car deserves more than a quick wash. We deliver professional, high-quality detailing right at your home or office — saving you time while restoring that showroom shine.
               No waiting rooms. No lines. Just convenience and exceptional results.
             </p>
             <div className="w-16 h-[2px] bg-primary mx-auto" />
