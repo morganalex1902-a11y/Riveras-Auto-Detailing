@@ -40,29 +40,29 @@ const Contact = () => {
   };
 
   return (
-    <main className="pt-20">
+    <main className="pt-12">
       {/* Hero banner */}
-      <section className="relative py-20 md:py-28">
+      <section className="relative py-12 md:py-16">
         <img src={contactBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-background/70" />
         <div className="container relative z-10 text-center">
-          <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
+          <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-2">
             Contact Us
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Get in touch with Rivera's Auto Detailing for your dealership detailing needs.
           </p>
-          <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
+          <div className="gold-border-line max-w-[120px] mx-auto mt-3" />
         </div>
       </section>
 
       {/* Form */}
-      <section className="py-20 md:py-28">
+      <section className="py-12 md:py-16">
         <div className="container max-w-2xl">
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <AnimatedSection>
-              <div className="glass-card p-8 md:p-10">
-                <div className="space-y-6">
+              <div className="glass-card p-4 md:p-6">
+                <div className="space-y-3">
                   {/* Name */}
                   <div>
                     <label className={labelClass}>Name</label>
@@ -133,10 +133,10 @@ const Contact = () => {
 
             {/* Submit & Contact Info */}
             <AnimatedSection delay={0.1}>
-              <div className="glass-card p-8 md:p-10">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+              <div className="glass-card p-4 md:p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
-                    <h3 className="font-display text-lg uppercase tracking-wider text-foreground mb-3">
+                    <h3 className="font-display text-lg uppercase tracking-wider text-foreground mb-1">
                       Rivera's Auto Detailing
                     </h3>
                     <div className="space-y-2 text-muted-foreground text-sm">
