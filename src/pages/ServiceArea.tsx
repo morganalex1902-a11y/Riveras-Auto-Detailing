@@ -62,7 +62,7 @@ const ServiceArea = () => (
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 font-display uppercase text-sm tracking-widest hover:bg-gold-light transition-all duration-300 hover:shadow-[0_0_30px_hsl(43_72%_50%/0.3)]"
             >
-              Schedule or Text to WhatsApp
+              Schedule or Text Directly to WhatsApp
             </a>
           </div>
         </div>

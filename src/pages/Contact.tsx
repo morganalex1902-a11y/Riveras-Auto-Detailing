@@ -162,11 +162,13 @@ const Contact = () => {
                       Send Message
                     </button>
                     <a
-                      href="https://wa.me/13239948612"
+                      href="https://api.whatsapp.com/send?phone=13239948612"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2 bg-green-600 text-white px-8 py-4 font-display uppercase text-sm tracking-widest hover:bg-green-700 transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]"
                     >
                       <MessageCircle className="w-4 h-4" />
-                      WhatsApp
+                      Schedule or Text Directly to WhatsApp
                     </a>
                   </div>
                 </div>
