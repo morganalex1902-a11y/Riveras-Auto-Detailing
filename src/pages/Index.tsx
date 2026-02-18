@@ -69,6 +69,9 @@ const Index = () => {
         </div>
       </section>
 
+      {/* MOBILE DETAILING */}
+      <MobileDetailingSection />
+
       {/* SERVICES PREVIEW */}
       <section className="section-darker py-20 md:py-28">
         <div className="container">
@@ -148,9 +151,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-
-      {/* MOBILE DETAILING */}
-      <MobileDetailingSection />
 
       {/* OFFICIAL STATEMENT */}
       <section className="section-darker py-20 md:py-28">
