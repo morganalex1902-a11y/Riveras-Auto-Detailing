@@ -56,7 +56,7 @@ const ServiceArea = () => (
           </AnimatedSection>
 
           <div className="text-center mt-6">
-            <GoldButton to="/contact">Partner With Us in Your Area</GoldButton>
+            <GoldButton to="/contact">schedule or text directly to WhatsApp</GoldButton>
           </div>
         </div>
       </div>
