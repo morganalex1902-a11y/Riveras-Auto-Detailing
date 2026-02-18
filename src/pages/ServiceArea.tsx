@@ -55,8 +55,9 @@ const ServiceArea = () => (
             </div>
           </AnimatedSection>
 
-          <div className="text-center mt-6">
-            <GoldButton to="/contact">schedule or text directly to WhatsApp</GoldButton>
+          <div className="text-center mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+            <GoldButton href="https://wa.me/13239948612">Schedule or Text to WhatsApp</GoldButton>
+            <GoldButton to="/contact">Contact Us</GoldButton>
           </div>
         </div>
       </div>
