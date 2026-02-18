@@ -35,10 +35,7 @@ const MobileDetailingSection = () => {
           </AnimatedSection>
 
           {/* Buttons Grid */}
-          <AnimatedSection delay={0.1} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <GoldButton to="/contact">
-              Schedule Now
-            </GoldButton>
+          <AnimatedSection delay={0.1} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <GoldButton href="tel:3239948612">
               <Phone className="w-4 h-4" />
               Call for Detailing
