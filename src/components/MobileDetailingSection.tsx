@@ -50,10 +50,16 @@ const MobileDetailingSection = () => {
           <AnimatedSection delay={0.2} className="mt-6">
             <div className="glass-card p-4 md:p-6 text-center">
               <h3 className="font-display text-xl uppercase tracking-wider mb-3">
-                Professional Mobile Detailing
+                Ready to Transform Your Vehicle?
               </h3>
               <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
-                From fleet vehicles to personal cars, our mobile detailing service brings showroom-quality results directly to your location.
+                📅 Book your appointment today.
+
+                📍 We come to your home or workplace.
+
+                📞 Call or text now for a fast quote.
+
+                Your car will thank you.
               </p>
               <p className="text-primary font-display uppercase text-sm tracking-widest">
                 Available in the DMV Area
