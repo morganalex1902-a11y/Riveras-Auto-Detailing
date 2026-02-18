@@ -75,7 +75,7 @@ const Index = () => {
       {/* SERVICES PREVIEW */}
       <section className="section-darker py-12 md:py-16">
         <div className="container">
-          <SectionHeading title="Our Services" subtitle="High-volume dealership detailing solutions built for speed, consistency, and presentation." />
+          <SectionHeading title="Dealer Services" subtitle="High-volume dealership detailing solutions built for speed, consistency, and presentation." />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {services.map((s, i) => (
               <AnimatedSection key={s.title} delay={i * 0.1}>
