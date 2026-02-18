@@ -6,6 +6,7 @@ import AnimatedSection from "@/components/AnimatedSection";
 import SectionHeading from "@/components/SectionHeading";
 import GoldButton from "@/components/GoldButton";
 import GalleryLightbox from "@/components/GalleryLightbox";
+import MobileDetailingSection from "@/components/MobileDetailingSection";
 import contactBg from "@/assets/contact-bg.jpg";
 import ctaBg from "@/assets/cta-bg.jpg";
 
@@ -147,6 +148,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* MOBILE DETAILING */}
+      <MobileDetailingSection />
 
       {/* OFFICIAL STATEMENT */}
       <section className="section-darker py-20 md:py-28">
