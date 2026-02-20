@@ -9,15 +9,15 @@ const allServices = [
     items: [
       {
         title: "U/C Detail",
-        desc: "Thorough undercarriage cleaning and detailing. Removing road grime, salt, and debris for a pristine finish underneath.",
+        desc: "Reconditioning pre-owned vehicles to their best possible condition. Improving appearance, value, and buyer appeal.",
       },
       {
         title: "N/C Delivery",
-        desc: "Professional preparation before new car delivery. Ensuring every vehicle meets showroom standards before reaching the customer.",
+        desc: "Professional prep before delivery. Full interior and exterior presentation to dealership-ready standards.",
       },
       {
         title: "U/C Delivery",
-        desc: "Under-car detailing and presentation for used car deliveries. Thorough cleaning and inspection of the undercarriage.",
+        desc: "Professional prep before delivery. Full interior and exterior presentation to dealership-ready standards.",
       },
       {
         title: "Showroom Car",
