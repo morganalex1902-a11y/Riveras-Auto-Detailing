@@ -1,33 +1,41 @@
-import { MapPin } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import GoldButton from "@/components/GoldButton";
 import serviceAreaBg from "@/assets/service-area-bg.jpg";
 
-const areas = ["Hyattsville, MD", "Laurel, MD", "Annapolis, MD", "Upper Marlboro, MD 20772"];
+const serviceRegions = [
+  {
+    region: "DMV",
+    description: "Providing dealership detailing solutions to automotive retail operations across Washington DC, Maryland & Virginia."
+  }
+];
 
 const ServiceArea = () => (
-  <main className="pt-20">
+  <main className="pt-12">
     {/* Hero banner */}
-    <section className="relative py-20 md:py-28">
+    <section className="relative py-12 md:py-16">
       <img src={serviceAreaBg} alt="" className="absolute inset-0 w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-background/85" />
+      <div className="absolute inset-0 bg-background/70" />
       <div className="container relative z-10 text-center">
-        <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-4">
-          Serving Maryland & Surrounding Areas
+        <h1 className="text-4xl md:text-6xl font-display uppercase tracking-wider gold-gradient-text mb-2">
+          Dealership Detailing Across the DMV
         </h1>
-        <div className="gold-border-line max-w-[120px] mx-auto mt-6" />
+        <div className="gold-border-line max-w-[120px] mx-auto mt-3" />
       </div>
     </section>
 
-    <section className="py-20 md:py-28">
+    <section className="py-12 md:py-16">
       <div className="container">
         <div className="max-w-3xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-            {areas.map((area, i) => (
-              <AnimatedSection key={area} delay={i * 0.1}>
-                <div className="glass-card p-6 flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
-                  <span className="font-display uppercase tracking-wider">{area}</span>
+          <div className="space-y-4 mb-6">
+            {serviceRegions.map((item, i) => (
+              <AnimatedSection key={item.region} delay={i * 0.1}>
+                <div>
+                  <h3 className="font-display text-2xl uppercase tracking-wider gold-gradient-text mb-2">
+                    {item.region}
+                  </h3>
+                  {item.description && (
+                    <p className="text-muted-foreground mb-2">{item.description}</p>
+                  )}
                 </div>
               </AnimatedSection>
             ))}
@@ -47,8 +55,15 @@ const ServiceArea = () => (
             </div>
           </AnimatedSection>
 
-          <div className="text-center mt-10">
-            <GoldButton to="/contact">Schedule Service in Your Area</GoldButton>
+          <div className="text-center mt-6">
+            <a
+              href="https://api.whatsapp.com/send?phone=13239948612"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 font-display uppercase text-sm tracking-widest hover:bg-gold-light transition-all duration-300 hover:shadow-[0_0_30px_hsl(43_72%_50%/0.3)]"
+            >
+              Schedule or Text Directly to WhatsApp
+            </a>
           </div>
         </div>
       </div>

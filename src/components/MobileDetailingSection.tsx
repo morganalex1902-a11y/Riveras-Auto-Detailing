@@ -1,0 +1,78 @@
+import { Phone, MessageCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import AnimatedSection from "@/components/AnimatedSection";
+import SectionHeading from "@/components/SectionHeading";
+import GoldButton from "@/components/GoldButton";
+
+const MobileDetailingSection = () => {
+  return (
+    <>
+      {/* Optional divider text */}
+      <div className="relative py-2">
+        <div className="container text-center">
+          <AnimatedSection>
+            <p className="text-sm md:text-base text-muted-foreground font-light tracking-wide">
+              Also offering professional Mobile Auto Detailing
+            </p>
+          </AnimatedSection>
+        </div>
+      </div>
+
+      {/* Mobile Detailing Section */}
+      <section className="py-12 md:py-16 bg-gradient-to-b from-background via-background to-secondary/20">
+        <div className="container max-w-3xl">
+          <AnimatedSection className="text-center mb-6">
+            <p className="text-sm uppercase tracking-widest text-primary font-display mb-2">
+              Premium Mobile Auto Detailing, We Come to You
+            </p>
+            <h2 className="text-3xl md:text-5xl font-display uppercase tracking-wider mb-4">
+              Need Mobile Detailing?
+            </h2>
+            <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed mb-6">
+              Your car deserves more than a quick wash. We deliver professional, high-quality detailing right at your home or office — saving you time while restoring that showroom shine.
+              No waiting rooms. No lines. Just convenience and exceptional results.
+            </p>
+            <div className="w-16 h-[2px] bg-primary mx-auto" />
+          </AnimatedSection>
+
+          {/* Buttons Grid */}
+          <AnimatedSection delay={0.1} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <GoldButton href="tel:3239948612">
+              <Phone className="w-4 h-4" />
+              Call for Detailing
+            </GoldButton>
+            <a
+              href="https://api.whatsapp.com/send?phone=13239948612"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-green-600 text-white px-8 py-3.5 font-display uppercase text-sm tracking-widest hover:bg-green-700 transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Schedule or Text Directly to WhatsApp
+            </a>
+          </AnimatedSection>
+
+          {/* Additional CTA with glass card styling */}
+          <AnimatedSection delay={0.2} className="mt-6">
+            <div className="glass-card p-4 md:p-6 text-center">
+              <h3 className="font-display text-xl uppercase tracking-wider mb-3">
+                Ready to Transform Your Vehicle?
+              </h3>
+              <div className="flex flex-col gap-2 text-muted-foreground mb-4 text-sm leading-relaxed">
+                <p>📅 Book your appointment today.</p>
+                <p>📍 We come to your home or workplace.</p>
+                <p>📞 Call or text now for a fast quote.</p>
+                <p>Your car will thank you.</p>
+              </div>
+              <p className="text-primary font-display uppercase text-sm tracking-widest">
+                Available in the DMV Area
+              </p>
+            </div>
+          </AnimatedSection>
+        </div>
+      </section>
+    </>
+  );
+};
+
+export default MobileDetailingSection;

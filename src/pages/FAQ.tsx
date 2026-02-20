@@ -5,20 +5,22 @@ import SectionHeading from "@/components/SectionHeading";
 import galleryPolish from "@/assets/gallery-polish.png";
 
 const faqs = [
-  { q: "Do you provide dealership services?", a: "Yes, we specialize in dealership preparation and lot services." },
-  { q: "What is included in Showroom Preparation?", a: "Full detailing, presentation polish, interior refinement, and final inspection." },
-  { q: "How long does detailing take?", a: "Depends on vehicle condition and service type. We'll provide an estimate after assessment." },
-  { q: "Do you offer recurring lot wash services?", a: "Yes, complementary lot wash services are available on a recurring basis." },
+  { q: "What kind of dealerships do you work with?", a: "We partner with franchise and independent dealerships across the DMV Area, including Toyota, Ford, Honda, Mazda, Dodge, Lincoln, Hyundai, and Nissan operations." },
+  { q: "How does your dealership detailing solution work?", a: "We operate as a dedicated third-party detailing vendor on your lot. Our team handles high-volume prep, delivery details, reconditioning, and lot maintenance with structured workflow and quality control." },
+  { q: "What is your turnaround time?", a: "Full detailing is completed within 24 hours and delivery turnaround is 30 minutes or less. We understand that speed moves inventory." },
+  { q: "Do you provide your own insurance and staffing?", a: "Yes. We carry our own comprehensive insurance covering all services, detailers, and vehicles. We handle all staffing, training, and management — no payroll or overtime costs for your dealership." },
+  { q: "Can you scale for high-volume needs?", a: "Absolutely. Our systems are built around dealership workflow and operational efficiency. We offer scalable volume capability with consistent staffing and reliable turnaround." },
+  { q: "Do you offer recurring lot wash services?", a: "Yes, complimentary lot wash services are included with monthly dealership contracts to keep your inventory presentation-ready at all times." },
 ];
 
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <main className="pt-20">
-      <section className="relative py-20 md:py-28">
+    <main className="pt-12">
+      <section className="relative py-12 md:py-16">
         <img src={galleryPolish} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/92" />
+        <div className="absolute inset-0 bg-background/70" />
         <div className="container relative z-10 max-w-3xl">
           <SectionHeading title="Frequently Asked Questions" />
           <div className="space-y-4">
