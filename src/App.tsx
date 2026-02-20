@@ -69,17 +69,17 @@ const App = () => (
                 {
                   "@type": "Service",
                   "name": "N/C Delivery",
-                  "description": "Professional vehicle preparation before delivery"
+                  "description": "Professional prep before delivery. Full interior and exterior presentation to dealership-ready standards."
                 },
                 {
                   "@type": "Service",
                   "name": "U/C Delivery",
-                  "description": "Under-car detailing and presentation"
+                  "description": "Professional prep before delivery. Full interior and exterior presentation to dealership-ready standards."
                 },
                 {
                   "@type": "Service",
                   "name": "U/C Detail",
-                  "description": "Thorough undercarriage cleaning"
+                  "description": "Reconditioning pre-owned vehicles to their best possible condition. Improving appearance, value, and buyer appeal."
                 },
                 {
                   "@type": "Service",

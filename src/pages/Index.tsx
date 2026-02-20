@@ -11,9 +11,9 @@ import contactBg from "@/assets/contact-bg.jpg";
 import ctaBg from "@/assets/cta-bg.jpg";
 
 const services = [
-  { title: "N/C Delivery", desc: "Professional prep before delivery." },
-  { title: "U/C Delivery", desc: "Under-car detailing & presentation." },
-  { title: "U/C Detail", desc: "Thorough undercarriage cleaning." },
+  { title: "N/C Delivery", desc: "Professional prep before delivery. Full interior and exterior presentation to dealership-ready standards." },
+  { title: "U/C Delivery", desc: "Professional prep before delivery. Full interior and exterior presentation to dealership-ready standards." },
+  { title: "U/C Detail", desc: "Reconditioning pre-owned vehicles to their best possible condition. Improving appearance, value, and buyer appeal." },
   { title: "Tint Removal", desc: "Clean removal without damage." },
   { title: "Showroom Preparation", desc: "High-level presentation detailing." },
   { title: "Lot Wash", desc: "Routine dealership maintenance wash." },
