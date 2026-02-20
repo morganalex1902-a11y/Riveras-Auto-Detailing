@@ -103,7 +103,7 @@ const Index = () => {
       {/* WHY DEALERSHIPS CHOOSE US */}
       <section className="py-12 md:py-16">
         <div className="container">
-          <SectionHeading title="Why Dealerships Choose Us" subtitle="We deliver the most competitive pricing and tailored solutions directly to your dealership." />
+          <SectionHeading title="Why Dealerships Choose Us" subtitle="We deliver the most competitive pricing and tailored solutions." />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               {
