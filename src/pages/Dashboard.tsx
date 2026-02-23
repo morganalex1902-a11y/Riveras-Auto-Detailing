@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useForm } from "react-hook-form";
 import { useAuth, ServiceRequest } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -18,8 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle } from "lucide-react";
-import { motion } from "framer-motion";
+import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -28,15 +30,53 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+
+interface RequestFormData {
+  serviceType: string;
+  vin: string;
+  year: number;
+  make: string;
+  model: string;
+  dueDateTime: string;
+  notes: string;
+}
+
+const SERVICE_TYPES = [
+  "N/C Delivery",
+  "U/C Delivery",
+  "U/C Detail",
+  "Tint Removal",
+  "Ozone Odor Removal",
+  "Scratch Removal",
+  "Headlight Restoration",
+  "Custom Service (Other)",
+];
 
 const STATUSES = ["Pending", "In Progress", "Completed"];
 
 export default function Dashboard() {
-  const { requests, updateRequestStatus, updateRequestPrice, user } = useAuth();
+  const { register, handleSubmit, setValue, watch, reset } = useForm<RequestFormData>({
+    defaultValues: {
+      serviceType: "N/C Delivery",
+      vin: "",
+      year: new Date().getFullYear(),
+      make: "",
+      model: "",
+      dueDateTime: "",
+      notes: "",
+    },
+  });
+
+  const { requests, updateRequestStatus, updateRequestPrice, user, addRequest } = useAuth();
+  const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState("All");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingPrice, setEditingPrice] = useState<number>(0);
   const [editingStatus, setEditingStatus] = useState<string>("");
+  const [showForm, setShowForm] = useState(false);
+  const [submittingForm, setSubmittingForm] = useState(false);
+  const serviceType = watch("serviceType");
 
   // Filter requests
   const filteredRequests = useMemo(() => {
@@ -104,6 +144,34 @@ export default function Dashboard() {
     a.click();
   };
 
+  const onFormSubmit = async (data: RequestFormData) => {
+    setSubmittingForm(true);
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    addRequest({
+      requestedBy: user?.email || "unknown@dealership.com",
+      service: data.serviceType,
+      vin: data.vin,
+      year: data.year,
+      make: data.make,
+      model: data.model,
+      due: data.dueDateTime,
+      notes: data.notes,
+      status: "Pending",
+      price: 0,
+    });
+
+    setSubmittingForm(false);
+    reset();
+    setShowForm(false);
+
+    toast({
+      title: "Request Submitted",
+      description: "Your service request has been successfully created.",
+    });
+  };
+
   return (
     <main className="min-h-screen pt-20 pb-12">
       <div className="container">
@@ -114,15 +182,172 @@ export default function Dashboard() {
           transition={{ duration: 0.6 }}
           className="mb-12"
         >
-          <div className="w-12 h-[2px] bg-primary mb-6" />
-          <h1 className="text-5xl md:text-6xl font-display uppercase tracking-wider mb-2">
-            Dashboard
-          </h1>
-          <p className="text-muted-foreground uppercase tracking-widest text-sm">
-            Service Requests Management
-          </p>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex-1">
+              <div className="w-12 h-[2px] bg-primary mb-6" />
+              <h1 className="text-5xl md:text-6xl font-display uppercase tracking-wider mb-2">
+                Dashboard
+              </h1>
+              <p className="text-muted-foreground uppercase tracking-widest text-sm">
+                Service Requests Management
+              </p>
+            </div>
+            <Button
+              onClick={() => setShowForm(!showForm)}
+              className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs h-auto py-2 px-4"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {showForm ? "Close" : "New Request"}
+            </Button>
+          </div>
           <div className="w-12 h-[2px] bg-primary mt-6" />
         </motion.div>
+
+        {/* New Request Form */}
+        <AnimatePresence>
+          {showForm && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.4 }}
+              className="mb-12 overflow-hidden"
+            >
+              <div className="glass-card p-8 md:p-10">
+                <h3 className="font-display text-2xl uppercase tracking-wider mb-8">
+                  Create <span className="text-primary">New Request</span>
+                </h3>
+
+                <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
+                  {/* Service Type */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                        Service Type <span className="text-destructive">*</span>
+                      </label>
+                      <Select defaultValue={serviceType} onValueChange={(value) => setValue("serviceType", value)}>
+                        <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
+                          <SelectValue placeholder="Select a service" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border/30">
+                          {SERVICE_TYPES.map((service) => (
+                            <SelectItem key={service} value={service}>
+                              {service}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="vin" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                        Stock / VIN # <span className="text-destructive">*</span>
+                      </label>
+                      <Input
+                        id="vin"
+                        placeholder="Enter Stock or VIN number"
+                        {...register("vin", { required: true })}
+                        className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Vehicle Info */}
+                  <div className="border-t border-border/20 pt-6">
+                    <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                      Vehicle Information
+                    </h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label htmlFor="year" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                          Year <span className="text-destructive">*</span>
+                        </label>
+                        <Input
+                          id="year"
+                          type="number"
+                          placeholder="2023"
+                          {...register("year", { required: true, valueAsNumber: true })}
+                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="make" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                          Make <span className="text-destructive">*</span>
+                        </label>
+                        <Input
+                          id="make"
+                          placeholder="Honda"
+                          {...register("make", { required: true })}
+                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="model" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                          Model <span className="text-destructive">*</span>
+                        </label>
+                        <Input
+                          id="model"
+                          placeholder="Accord"
+                          {...register("model", { required: true })}
+                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Due Date/Time & Notes */}
+                  <div className="border-t border-border/20 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="dueDateTime" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                        Due Date & Time <span className="text-destructive">*</span>
+                      </label>
+                      <Input
+                        id="dueDateTime"
+                        type="datetime-local"
+                        {...register("dueDateTime", { required: true })}
+                        className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  <div className="border-t border-border/20 pt-6">
+                    <label htmlFor="notes" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                      Special Instructions / Notes
+                    </label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Any additional details or special instructions for this request..."
+                      rows={3}
+                      {...register("notes")}
+                      className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+
+                  {/* Form Actions */}
+                  <div className="border-t border-border/20 pt-6 flex gap-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowForm(false)}
+                      disabled={submittingForm}
+                      className="flex-1 border-border/30 hover:bg-card text-foreground font-display uppercase tracking-widest text-xs"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={submittingForm}
+                      className="flex-1 bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+                    >
+                      {submittingForm ? "Submitting..." : "Submit Request"}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Stats Cards */}
         <motion.div
