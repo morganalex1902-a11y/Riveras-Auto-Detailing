@@ -8,16 +8,27 @@ export interface User {
 
 export interface ServiceRequest {
   id: number;
+  requestNumber: string;
   requestedBy: string;
-  service: string;
-  vin: string;
+  manager?: string;
+  stockVin: string;
+  poNumber?: string;
+  vehicleDescription: string;
   year: number;
   make: string;
   model: string;
-  due: string;
+  color: string;
+  dateRequested: string;
+  dueDate: string;
+  dueTime: string;
+  mainServices: string[];
+  additionalServices: string[];
   notes: string;
   status: "Pending" | "In Progress" | "Completed";
   price: number;
+  service?: string;
+  vin?: string;
+  due?: string;
 }
 
 interface AuthContextType {
@@ -39,68 +50,123 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [requests, setRequests] = useState<ServiceRequest[]>([
     {
       id: 1,
+      requestNumber: "REQ-001",
       requestedBy: "robert@salesdealership.com",
-      service: "N/C Delivery",
-      vin: "1HGCM82633A004352",
+      manager: "manager@dealership.com",
+      stockVin: "1HGCM82633A004352",
+      poNumber: "PO-2024-001",
+      vehicleDescription: "Customer vehicle - Trade-in",
       year: 2023,
       make: "Honda",
       model: "Accord",
-      due: "2026-02-25 14:00",
+      color: "Silver",
+      dateRequested: "2026-02-23",
+      dueDate: "2026-02-25",
+      dueTime: "14:00",
+      mainServices: ["N/C Delivery", "Clean for Showroom"],
+      additionalServices: [],
       notes: "Need ready before customer pickup",
       status: "Pending",
       price: 0,
+      service: "N/C Delivery",
+      vin: "1HGCM82633A004352",
+      due: "2026-02-25 14:00",
     },
     {
       id: 2,
+      requestNumber: "REQ-002",
       requestedBy: "sarah@service.com",
-      service: "U/C Detail",
-      vin: "5FNYF4H75LB123456",
+      manager: "manager@dealership.com",
+      stockVin: "5FNYF4H75LB123456",
+      poNumber: "PO-2024-002",
+      vehicleDescription: "Lot vehicle",
       year: 2022,
       make: "Honda",
       model: "Pilot",
-      due: "2026-02-26 10:00",
+      color: "Black",
+      dateRequested: "2026-02-23",
+      dueDate: "2026-02-26",
+      dueTime: "10:00",
+      mainServices: ["U/C Detail"],
+      additionalServices: ["Interior Protection"],
       notes: "Full interior detail requested",
       status: "In Progress",
       price: 250,
+      service: "U/C Detail",
+      vin: "5FNYF4H75LB123456",
+      due: "2026-02-26 10:00",
     },
     {
       id: 3,
+      requestNumber: "REQ-003",
       requestedBy: "john@sales.com",
-      service: "Headlight Restoration",
-      vin: "4T1BF1AK5CU123456",
+      manager: "manager@dealership.com",
+      stockVin: "4T1BF1AK5CU123456",
+      poNumber: "",
+      vehicleDescription: "Customer vehicle",
       year: 2021,
       make: "Toyota",
       model: "Camry",
-      due: "2026-02-27 09:00",
+      color: "White",
+      dateRequested: "2026-02-23",
+      dueDate: "2026-02-27",
+      dueTime: "09:00",
+      mainServices: [],
+      additionalServices: ["Restore Headlights"],
       notes: "Cloudy headlights, needs full restoration",
       status: "Pending",
       price: 0,
+      service: "Headlight Restoration",
+      vin: "4T1BF1AK5CU123456",
+      due: "2026-02-27 09:00",
     },
     {
       id: 4,
+      requestNumber: "REQ-004",
       requestedBy: "maria@dealership.com",
-      service: "Tint Removal",
-      vin: "2G1FB1E39D1234567",
+      manager: "manager@dealership.com",
+      stockVin: "2G1FB1E39D1234567",
+      poNumber: "",
+      vehicleDescription: "Fleet vehicle",
       year: 2013,
       make: "Chevrolet",
       model: "Malibu",
-      due: "2026-02-24 11:00",
+      color: "Gray",
+      dateRequested: "2026-02-22",
+      dueDate: "2026-02-24",
+      dueTime: "11:00",
+      mainServices: [],
+      additionalServices: ["Tint Removal"],
       notes: "All windows, customer wants OEM look",
       status: "Completed",
       price: 150,
+      service: "Tint Removal",
+      vin: "2G1FB1E39D1234567",
+      due: "2026-02-24 11:00",
     },
     {
       id: 5,
+      requestNumber: "REQ-005",
       requestedBy: "robert@salesdealership.com",
-      service: "Ozone Odor Removal",
-      vin: "1G1FB1C56F2123456",
+      manager: "manager@dealership.com",
+      stockVin: "1G1FB1C56F2123456",
+      poNumber: "PO-2024-003",
+      vehicleDescription: "Wholesale vehicle",
       year: 2015,
       make: "Chevrolet",
       model: "Cruze",
-      due: "2026-02-28 15:00",
+      color: "Blue",
+      dateRequested: "2026-02-23",
+      dueDate: "2026-02-28",
+      dueTime: "15:00",
+      mainServices: [],
+      additionalServices: ["Ozone Odor Removal"],
       notes: "Odor issue, customer complaint",
       status: "Pending",
       price: 0,
+      service: "Ozone Odor Removal",
+      vin: "1G1FB1C56F2123456",
+      due: "2026-02-28 15:00",
     },
   ]);
 
