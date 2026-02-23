@@ -173,9 +173,14 @@ export default function Dashboard() {
     const pending = userRequests.filter((r) => r.status === "Pending").length;
     const inProgress = userRequests.filter((r) => r.status === "In Progress").length;
     const completed = userRequests.filter((r) => r.status === "Completed").length;
-    const revenue = userRequests.filter((r) => r.status === "Completed").reduce((sum, r) => sum + r.price, 0);
+    const amountDue = userRequests
+      .filter((r) => r.status === "Pending" || r.status === "In Progress")
+      .reduce((sum, r) => sum + r.price, 0);
+    const amountPaid = userRequests
+      .filter((r) => r.status === "Completed")
+      .reduce((sum, r) => sum + r.price, 0);
 
-    return { total, pending, inProgress, completed, revenue };
+    return { total, pending, inProgress, completed, amountDue, amountPaid };
   }, [userRequests]);
 
   const handleSavePrice = (id: number, newPrice: number) => {
@@ -706,15 +711,31 @@ export default function Dashboard() {
             <div className="w-8 h-[1px] bg-primary" />
           </div>
 
-          {/* Revenue */}
+          {/* Amount Due */}
           <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                  Revenue
+                  Amount Due
                 </p>
                 <p className="text-3xl font-display text-primary gold-gradient-text">
-                  ${stats.revenue.toLocaleString()}
+                  ${stats.amountDue.toLocaleString()}
+                </p>
+              </div>
+              <DollarSign className="w-10 h-10 text-primary/20" />
+            </div>
+            <div className="w-8 h-[1px] bg-primary" />
+          </div>
+
+          {/* Amount Paid */}
+          <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  Amount Paid
+                </p>
+                <p className="text-3xl font-display text-primary gold-gradient-text">
+                  ${stats.amountPaid.toLocaleString()}
                 </p>
               </div>
               <DollarSign className="w-10 h-10 text-primary/20" />
