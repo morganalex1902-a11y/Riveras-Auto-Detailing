@@ -122,23 +122,32 @@ export default function Dashboard() {
     return today.toISOString().split("T")[0];
   };
 
-  // Filter requests
+  // Filter requests based on user role
+  const userRequests = useMemo(() => {
+    if (user?.role === "admin") {
+      return requests;
+    }
+    // Sales reps only see their own requests
+    return requests.filter((r) => r.requestedBy === user?.email);
+  }, [requests, user]);
+
+  // Filter by status
   const filteredRequests = useMemo(() => {
     return statusFilter === "All"
-      ? requests
-      : requests.filter((r) => r.status === statusFilter);
-  }, [requests, statusFilter]);
+      ? userRequests
+      : userRequests.filter((r) => r.status === statusFilter);
+  }, [userRequests, statusFilter]);
 
-  // Calculate stats
+  // Calculate stats based on user's visible requests
   const stats = useMemo(() => {
-    const total = requests.length;
-    const pending = requests.filter((r) => r.status === "Pending").length;
-    const inProgress = requests.filter((r) => r.status === "In Progress").length;
-    const completed = requests.filter((r) => r.status === "Completed").length;
-    const revenue = requests.filter((r) => r.status === "Completed").reduce((sum, r) => sum + r.price, 0);
+    const total = userRequests.length;
+    const pending = userRequests.filter((r) => r.status === "Pending").length;
+    const inProgress = userRequests.filter((r) => r.status === "In Progress").length;
+    const completed = userRequests.filter((r) => r.status === "Completed").length;
+    const revenue = userRequests.filter((r) => r.status === "Completed").reduce((sum, r) => sum + r.price, 0);
 
     return { total, pending, inProgress, completed, revenue };
-  }, [requests]);
+  }, [userRequests]);
 
   const handleSavePrice = (id: number, newPrice: number) => {
     updateRequestPrice(id, newPrice);
