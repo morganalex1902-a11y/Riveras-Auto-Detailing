@@ -70,32 +70,32 @@ const Navbar = () => {
             {isLoggedIn && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8 bg-blue-900">
-                      <AvatarFallback className="bg-blue-900 text-white text-sm">
+                  <Button variant="ghost" className="flex items-center gap-2 text-foreground hover:text-primary">
+                    <Avatar className="h-8 w-8 bg-primary/20">
+                      <AvatarFallback className="bg-primary/20 text-primary text-sm font-display">
                         {user.name?.[0]?.toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm font-medium">{user.email}</span>
+                    <span className="text-xs font-display uppercase tracking-wider hidden sm:inline">{user.email}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <div className="px-2 py-1.5 text-sm font-medium text-gray-900">
+                <DropdownMenuContent align="end" className="w-48 bg-card border-border/30">
+                  <div className="px-2 py-1.5 text-xs font-display uppercase tracking-wider text-muted-foreground">
                     {user.role === "admin" ? "Admin" : "Sales Rep"}
                   </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/request")} className="gap-2">
+                  <DropdownMenuSeparator className="bg-border/30" />
+                  <DropdownMenuItem onClick={() => navigate("/request")} className="gap-2 text-foreground hover:bg-primary/10 hover:text-primary text-xs">
                     <FileText className="w-4 h-4" />
                     New Request
                   </DropdownMenuItem>
                   {user.role === "admin" && (
-                    <DropdownMenuItem onClick={() => navigate("/dashboard")} className="gap-2">
+                    <DropdownMenuItem onClick={() => navigate("/dashboard")} className="gap-2 text-foreground hover:bg-primary/10 hover:text-primary text-xs">
                       <LayoutDashboard className="w-4 h-4" />
                       Dashboard
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="gap-2 text-red-600">
+                  <DropdownMenuSeparator className="bg-border/30" />
+                  <DropdownMenuItem onClick={handleLogout} className="gap-2 text-destructive hover:bg-destructive/10 text-xs">
                     <LogOut className="w-4 h-4" />
                     Logout
                   </DropdownMenuItem>
@@ -103,7 +103,9 @@ const Navbar = () => {
               </DropdownMenu>
             ) : (
               <Link to="/login">
-                <Button className="bg-blue-900 hover:bg-blue-800 text-white">Login</Button>
+                <button className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-2 font-display uppercase text-xs tracking-widest hover:bg-primary hover:shadow-[0_0_20px_hsl(43_72%_50%/0.3)] transition-all duration-300">
+                  Login
+                </button>
               </Link>
             )}
           </div>
@@ -145,10 +147,10 @@ const Navbar = () => {
                 </Link>
               ))}
 
-              <div className="border-t w-3/4 pt-6 flex flex-col gap-3">
+              <div className="border-t border-border/30 w-3/4 pt-6 flex flex-col gap-3">
                 {isLoggedIn && user ? (
                   <>
-                    <div className="text-center text-sm text-gray-600 mb-2">
+                    <div className="text-center text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
                       {user.role === "admin" ? "Admin" : "Sales Rep"} • {user.email}
                     </div>
                     <Button
@@ -157,7 +159,7 @@ const Navbar = () => {
                         setOpen(false);
                       }}
                       variant="outline"
-                      className="w-full"
+                      className="w-full border-border/30 text-foreground hover:bg-primary/10 hover:text-primary text-xs"
                     >
                       <FileText className="w-4 h-4 mr-2" />
                       New Request
@@ -169,7 +171,7 @@ const Navbar = () => {
                           setOpen(false);
                         }}
                         variant="outline"
-                        className="w-full"
+                        className="w-full border-border/30 text-foreground hover:bg-primary/10 hover:text-primary text-xs"
                       >
                         <LayoutDashboard className="w-4 h-4 mr-2" />
                         Dashboard
@@ -178,7 +180,7 @@ const Navbar = () => {
                     <Button
                       onClick={handleLogout}
                       variant="outline"
-                      className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                      className="w-full border-border/30 text-destructive hover:bg-destructive/10 text-xs"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
                       Logout
@@ -186,9 +188,9 @@ const Navbar = () => {
                   </>
                 ) : (
                   <Link to="/login" onClick={() => setOpen(false)} className="w-full">
-                    <Button className="w-full bg-blue-900 hover:bg-blue-800 text-white">
+                    <button className="w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-2 font-display uppercase text-xs tracking-widest hover:shadow-[0_0_20px_hsl(43_72%_50%/0.3)] transition-all duration-300">
                       Login
-                    </Button>
+                    </button>
                   </Link>
                 )}
               </div>

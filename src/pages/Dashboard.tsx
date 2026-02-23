@@ -105,17 +105,23 @@ export default function Dashboard() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 pt-24 pb-12">
+    <main className="min-h-screen pt-20 pb-12">
       <div className="container">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-8"
+          className="mb-12"
         >
-          <h1 className="text-4xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-2">Manage service requests and track performance</p>
+          <div className="w-12 h-[2px] bg-primary mb-6" />
+          <h1 className="text-5xl md:text-6xl font-display uppercase tracking-wider mb-2">
+            Dashboard
+          </h1>
+          <p className="text-muted-foreground uppercase tracking-widest text-sm">
+            Service Requests Management
+          </p>
+          <div className="w-12 h-[2px] bg-primary mt-6" />
         </motion.div>
 
         {/* Stats Cards */}
@@ -123,64 +129,79 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-12"
         >
           {/* Total Requests */}
-          <Card className="p-6 border-0 shadow-sm">
-            <div className="flex items-center justify-between">
+          <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-gray-600 text-sm font-medium">Total Requests</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p>
+                <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  Total Requests
+                </p>
+                <p className="text-4xl font-display text-foreground">{stats.total}</p>
               </div>
-              <AlertCircle className="w-12 h-12 text-blue-100" />
+              <AlertCircle className="w-10 h-10 text-primary/20" />
             </div>
-          </Card>
+            <div className="w-8 h-[1px] bg-primary" />
+          </div>
 
           {/* Pending */}
-          <Card className="p-6 border-0 shadow-sm">
-            <div className="flex items-center justify-between">
+          <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-gray-600 text-sm font-medium">Pending</p>
-                <p className="text-3xl font-bold text-yellow-600 mt-2">{stats.pending}</p>
+                <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  Pending
+                </p>
+                <p className="text-4xl font-display text-foreground">{stats.pending}</p>
               </div>
-              <Clock className="w-12 h-12 text-yellow-100" />
+              <Clock className="w-10 h-10 text-primary/20" />
             </div>
-          </Card>
+            <div className="w-8 h-[1px] bg-primary" />
+          </div>
 
           {/* In Progress */}
-          <Card className="p-6 border-0 shadow-sm">
-            <div className="flex items-center justify-between">
+          <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-gray-600 text-sm font-medium">In Progress</p>
-                <p className="text-3xl font-bold text-blue-600 mt-2">{stats.inProgress}</p>
+                <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  In Progress
+                </p>
+                <p className="text-4xl font-display text-foreground">{stats.inProgress}</p>
               </div>
-              <AlertCircle className="w-12 h-12 text-blue-100" />
+              <AlertCircle className="w-10 h-10 text-primary/20" />
             </div>
-          </Card>
+            <div className="w-8 h-[1px] bg-primary" />
+          </div>
 
           {/* Completed */}
-          <Card className="p-6 border-0 shadow-sm">
-            <div className="flex items-center justify-between">
+          <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-gray-600 text-sm font-medium">Completed</p>
-                <p className="text-3xl font-bold text-green-600 mt-2">{stats.completed}</p>
+                <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  Completed
+                </p>
+                <p className="text-4xl font-display text-foreground">{stats.completed}</p>
               </div>
-              <CheckCircle2 className="w-12 h-12 text-green-100" />
+              <CheckCircle2 className="w-10 h-10 text-primary/20" />
             </div>
-          </Card>
+            <div className="w-8 h-[1px] bg-primary" />
+          </div>
 
           {/* Revenue */}
-          <Card className="p-6 border-0 shadow-sm">
-            <div className="flex items-center justify-between">
+          <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-gray-600 text-sm font-medium">Revenue</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
+                <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  Revenue
+                </p>
+                <p className="text-3xl font-display text-primary gold-gradient-text">
                   ${stats.revenue.toLocaleString()}
                 </p>
               </div>
-              <DollarSign className="w-12 h-12 text-green-100" />
+              <DollarSign className="w-10 h-10 text-primary/20" />
             </div>
-          </Card>
+            <div className="w-8 h-[1px] bg-primary" />
+          </div>
         </motion.div>
 
         {/* Filters and Actions */}
@@ -188,13 +209,13 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="flex flex-col sm:flex-row gap-4 mb-6"
+          className="flex flex-col sm:flex-row gap-4 mb-8"
         >
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-48 border-gray-300">
+            <SelectTrigger className="w-full sm:w-48 bg-card/50 border-border/30 text-foreground">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-card border-border/30">
               <SelectItem value="All">All Statuses</SelectItem>
               {STATUSES.map((status) => (
                 <SelectItem key={status} value={status}>
@@ -207,8 +228,7 @@ export default function Dashboard() {
           <div className="flex gap-2 ml-auto">
             <Button
               onClick={handleExport}
-              variant="outline"
-              className="border-gray-300 hover:bg-gray-100"
+              className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
             >
               <Download className="w-4 h-4 mr-2" />
               Export CSV
@@ -222,38 +242,61 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <Card className="border-0 shadow-sm overflow-hidden">
+          <div className="glass-card overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader className="bg-gray-50 border-b border-gray-200">
-                  <TableRow className="hover:bg-gray-50">
-                    <TableHead className="font-semibold text-gray-900">ID</TableHead>
-                    <TableHead className="font-semibold text-gray-900">Requested By</TableHead>
-                    <TableHead className="font-semibold text-gray-900">Service Type</TableHead>
-                    <TableHead className="font-semibold text-gray-900">Vehicle</TableHead>
-                    <TableHead className="font-semibold text-gray-900">Due Date/Time</TableHead>
-                    <TableHead className="font-semibold text-gray-900">Status</TableHead>
-                    <TableHead className="font-semibold text-gray-900">Price</TableHead>
-                    <TableHead className="font-semibold text-gray-900">Actions</TableHead>
+                <TableHeader className="border-b border-border/30">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                      ID
+                    </TableHead>
+                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                      Requested By
+                    </TableHead>
+                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                      Service Type
+                    </TableHead>
+                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                      Vehicle
+                    </TableHead>
+                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                      Due Date/Time
+                    </TableHead>
+                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                      Status
+                    </TableHead>
+                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                      Price
+                    </TableHead>
+                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                         No requests found
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredRequests.map((request) => (
-                      <TableRow key={request.id} className="hover:bg-gray-50 border-b border-gray-100">
-                        <TableCell className="font-semibold text-gray-900">#{request.id}</TableCell>
-                        <TableCell className="text-sm text-gray-600">{request.requestedBy}</TableCell>
-                        <TableCell className="text-sm text-gray-600">{request.service}</TableCell>
-                        <TableCell className="text-sm text-gray-600">
+                      <TableRow
+                        key={request.id}
+                        className="border-b border-border/20 hover:bg-card/50 transition-colors"
+                      >
+                        <TableCell className="font-display text-sm text-primary">
+                          #{request.id}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {request.requestedBy}
+                        </TableCell>
+                        <TableCell className="text-xs text-foreground">{request.service}</TableCell>
+                        <TableCell className="text-xs text-foreground">
                           {request.year} {request.make} {request.model}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600">{request.due}</TableCell>
+                        <TableCell className="text-xs text-foreground">{request.due}</TableCell>
                         <TableCell>
                           {editingId === request.id ? (
                             <div className="flex gap-1">
@@ -261,10 +304,10 @@ export default function Dashboard() {
                                 defaultValue={request.status}
                                 onValueChange={(value) => setEditingStatus(value)}
                               >
-                                <SelectTrigger className="w-32 h-8 text-xs">
+                                <SelectTrigger className="w-32 h-7 text-xs bg-card/50 border-border/30">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-card border-border/30">
                                   {STATUSES.map((status) => (
                                     <SelectItem key={status} value={status}>
                                       {status}
@@ -278,19 +321,19 @@ export default function Dashboard() {
                                 onClick={() =>
                                   handleSaveStatus(request.id, editingStatus || request.status)
                                 }
-                                className="h-8 px-2"
+                                className="h-7 px-2 text-primary hover:bg-card"
                               >
                                 ✓
                               </Button>
                             </div>
                           ) : (
                             <span
-                              className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                              className={`text-xs font-display uppercase tracking-wider px-3 py-1 rounded-sm inline-block ${
                                 request.status === "Completed"
-                                  ? "bg-green-100 text-green-800"
+                                  ? "bg-primary/20 text-primary"
                                   : request.status === "In Progress"
-                                    ? "bg-blue-100 text-blue-800"
-                                    : "bg-yellow-100 text-yellow-800"
+                                    ? "bg-card/50 text-primary border border-primary/30"
+                                    : "bg-card/50 text-muted-foreground border border-border/30"
                               }`}
                             >
                               {request.status}
@@ -304,19 +347,19 @@ export default function Dashboard() {
                                 type="number"
                                 value={editingPrice}
                                 onChange={(e) => setEditingPrice(parseFloat(e.target.value) || 0)}
-                                className="w-24 h-8 text-xs border-gray-300"
+                                className="w-20 h-7 text-xs bg-card/50 border-border/30"
                               />
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleSavePrice(request.id, editingPrice)}
-                                className="h-8 px-2"
+                                className="h-7 px-2 text-primary hover:bg-card"
                               >
                                 ✓
                               </Button>
                             </div>
                           ) : (
-                            <span className="font-semibold text-gray-900">
+                            <span className="font-display text-sm text-primary">
                               ${request.price.toFixed(2)}
                             </span>
                           )}
@@ -332,28 +375,34 @@ export default function Dashboard() {
                                   setEditingPrice(request.price);
                                   setEditingStatus(request.status);
                                 }}
-                                className="h-8 px-2"
+                                className="h-7 px-2 text-primary hover:bg-card"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="bg-card border-border/30">
                               <DialogHeader>
-                                <DialogTitle>Request Details</DialogTitle>
-                                <DialogDescription>
-                                  View and edit details for request #{request.id}
+                                <DialogTitle className="font-display text-xl uppercase tracking-wider">
+                                  Request Details
+                                </DialogTitle>
+                                <DialogDescription className="text-muted-foreground">
+                                  View details for request #{request.id}
                                 </DialogDescription>
                               </DialogHeader>
                               <div className="space-y-4">
                                 <div>
-                                  <p className="text-sm font-semibold text-gray-900">Notes</p>
-                                  <p className="text-sm text-gray-600 mt-1 bg-gray-50 p-3 rounded">
+                                  <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                    Notes
+                                  </p>
+                                  <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
                                     {request.notes || "No notes provided"}
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-sm font-semibold text-gray-900">VIN</p>
-                                  <p className="text-sm text-gray-600 mt-1">{request.vin}</p>
+                                  <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                    VIN
+                                  </p>
+                                  <p className="text-sm text-foreground">{request.vin}</p>
                                 </div>
                               </div>
                             </DialogContent>
@@ -365,7 +414,7 @@ export default function Dashboard() {
                 </TableBody>
               </Table>
             </div>
-          </Card>
+          </div>
         </motion.div>
       </div>
     </main>
