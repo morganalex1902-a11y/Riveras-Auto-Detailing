@@ -40,6 +40,9 @@ interface AuthContextType {
   addRequest: (request: Omit<ServiceRequest, "id">) => void;
   updateRequestStatus: (id: number, status: ServiceRequest["status"]) => void;
   updateRequestPrice: (id: number, price: number) => void;
+  newRequestCount: number;
+  resetNewRequestCount: () => void;
+  onNewRequest?: (request: ServiceRequest) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,6 +50,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [newRequestCount, setNewRequestCount] = useState(0);
   const [requests, setRequests] = useState<ServiceRequest[]>([
     {
       id: 1,
@@ -216,6 +220,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: Math.max(...requests.map((r) => r.id), 0) + 1,
     };
     setRequests([...requests, newRequest]);
+    // Notify admins of new request
+    setNewRequestCount((prev) => prev + 1);
+    // Trigger localStorage event for cross-tab notification
+    localStorage.setItem("new-request-notification", JSON.stringify({
+      requestNumber: newRequest.requestNumber,
+      requestedBy: newRequest.requestedBy,
+      timestamp: new Date().toISOString(),
+    }));
+  };
+
+  const resetNewRequestCount = () => {
+    setNewRequestCount(0);
   };
 
   const updateRequestStatus = (id: number, status: ServiceRequest["status"]) => {
@@ -237,6 +253,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addRequest,
         updateRequestStatus,
         updateRequestPrice,
+        newRequestCount,
+        resetNewRequestCount,
       }}
     >
       {children}

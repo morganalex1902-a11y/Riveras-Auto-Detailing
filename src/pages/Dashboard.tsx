@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useAuth, ServiceRequest } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -98,7 +98,7 @@ export default function Dashboard() {
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, user, addRequest } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, user, addRequest, newRequestCount, resetNewRequestCount } = useAuth();
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState("All");
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -106,9 +106,38 @@ export default function Dashboard() {
   const [editingStatus, setEditingStatus] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const [submittingForm, setSubmittingForm] = useState(false);
-  
+
   const mainServices = watch("mainServices");
   const additionalServices = watch("additionalServices");
+
+  // Listen for new request notifications
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "new-request-notification" && user?.role === "admin" && e.newValue) {
+        const notification = JSON.parse(e.newValue);
+        toast({
+          title: "New Request Received!",
+          description: `New request from ${notification.requestedBy} - ${notification.requestNumber}`,
+        });
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [user, toast]);
+
+  // Show notification toast when admin has new requests
+  useEffect(() => {
+    if (user?.role === "admin" && newRequestCount > 0) {
+      const unreadRequests = requests.filter((r) => r.status === "Pending");
+      if (unreadRequests.length > 0) {
+        toast({
+          title: `${newRequestCount} New Request${newRequestCount > 1 ? "s" : ""}`,
+          description: "Click 'New Requests' badge to review.",
+        });
+      }
+    }
+  }, [newRequestCount, user, requests, toast]);
 
   // Generate request number
   const generateRequestNumber = () => {
@@ -254,9 +283,20 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex-1">
               <div className="w-12 h-[2px] bg-primary mb-6" />
-              <h1 className="text-5xl md:text-6xl font-display uppercase tracking-wider mb-2">
-                Dashboard
-              </h1>
+              <div className="flex items-center gap-4 mb-2">
+                <h1 className="text-5xl md:text-6xl font-display uppercase tracking-wider">
+                  Dashboard
+                </h1>
+                {user?.role === "admin" && newRequestCount > 0 && (
+                  <button
+                    onClick={resetNewRequestCount}
+                    className="relative inline-flex items-center justify-center w-8 h-8 bg-destructive text-white text-xs font-bold rounded-full hover:bg-destructive/80 transition-colors"
+                    title={`${newRequestCount} new request${newRequestCount > 1 ? "s" : ""}`}
+                  >
+                    {newRequestCount}
+                  </button>
+                )}
+              </div>
               <p className="text-muted-foreground uppercase tracking-widest text-sm">
                 Service Requests Management
               </p>
@@ -800,7 +840,7 @@ export default function Dashboard() {
                           {request.dueDate} {request.dueTime}
                         </TableCell>
                         <TableCell>
-                          {editingId === request.id ? (
+                          {user?.role === "admin" && editingId === request.id ? (
                             <div className="flex gap-1">
                               <Select
                                 defaultValue={request.status}
@@ -843,7 +883,7 @@ export default function Dashboard() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {editingId === request.id ? (
+                          {user?.role === "admin" && editingId === request.id ? (
                             <div className="flex gap-1">
                               <Input
                                 type="number"
@@ -867,7 +907,8 @@ export default function Dashboard() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Dialog>
+                          {user?.role === "admin" && (
+                            <Dialog>
                             <DialogTrigger asChild>
                               <Button
                                 size="sm"
@@ -953,7 +994,8 @@ export default function Dashboard() {
                                 </div>
                               </div>
                             </DialogContent>
-                          </Dialog>
+                            </Dialog>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))
