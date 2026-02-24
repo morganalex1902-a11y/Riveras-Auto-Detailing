@@ -105,7 +105,7 @@ export default function Dashboard() {
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, user, addRequest, newRequestCount, resetNewRequestCount, loading } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, user, addRequest, newRequestCount, resetNewRequestCount, loading } = useAuth();
   const { toast } = useToast();
 
   // Request management state
@@ -115,6 +115,23 @@ export default function Dashboard() {
   const [editingStatus, setEditingStatus] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const [submittingForm, setSubmittingForm] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<ServiceRequest | null>(null);
+  const [editingDates, setEditingDates] = useState<{
+    dueDate: string;
+    dueTime: string;
+    startDate: string;
+    startTime: string;
+    completionDate: string;
+    completionTime: string;
+  }>({
+    dueDate: "",
+    dueTime: "",
+    startDate: "",
+    startTime: "",
+    completionDate: "",
+    completionTime: "",
+  });
+  const [isSavingDates, setIsSavingDates] = useState(false);
 
   // Admin account management state
   const [activeTab, setActiveTab] = useState<"requests" | "accounts">("requests");
@@ -215,6 +232,42 @@ export default function Dashboard() {
   const handleSaveStatus = (id: number, newStatus: string) => {
     updateRequestStatus(id, newStatus as ServiceRequest["status"]);
     setEditingId(null);
+  };
+
+  const handleOpenRequestDetails = (request: ServiceRequest) => {
+    setEditingRequest(request);
+    setEditingDates({
+      dueDate: request.dueDate || "",
+      dueTime: request.dueTime || "",
+      startDate: request.startDate || "",
+      startTime: request.startTime || "",
+      completionDate: request.completionDate || "",
+      completionTime: request.completionTime || "",
+    });
+    setEditingPrice(request.price);
+    setEditingStatus(request.status);
+  };
+
+  const handleSaveDates = async () => {
+    if (!editingRequest) return;
+
+    setIsSavingDates(true);
+    try {
+      await updateRequestDates(editingRequest.id, editingDates);
+      toast({
+        title: "Updated",
+        description: "Request dates updated successfully.",
+      });
+      setEditingRequest(null);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to update request.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingDates(false);
+    }
   };
 
   const handleExport = () => {
@@ -979,7 +1032,8 @@ export default function Dashboard() {
         {/* Show Stats and Requests only on Requests Tab */}
         {activeTab === "requests" && (
           <>
-        {/* Stats Cards */}
+        {/* Admin View - Stats Cards */}
+        {user?.role === "admin" && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1074,6 +1128,7 @@ export default function Dashboard() {
             <div className="w-8 h-[1px] bg-primary" />
           </div>
         </motion.div>
+        )}
 
         {/* Filters and Actions */}
         <motion.div
@@ -1107,7 +1162,8 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* Requests Table */}
+        {/* Requests Table - Admin Only */}
+        {user?.role === "admin" && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1260,92 +1316,283 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell>
                           {user?.role === "admin" && (
-                            <Dialog>
+                            <Dialog open={editingRequest?.id === request.id} onOpenChange={(open) => !open && setEditingRequest(null)}>
                             <DialogTrigger asChild>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => {
-                                  setEditingId(request.id);
-                                  setEditingPrice(request.price);
-                                  setEditingStatus(request.status);
-                                }}
+                                onClick={() => handleOpenRequestDetails(request)}
                                 className="h-7 px-2 text-primary hover:bg-card"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="bg-card border-border/30 max-w-2xl max-h-[90vh] overflow-y-auto">
+                            {editingRequest?.id === request.id && (
+                            <DialogContent className="bg-card border-border/30 max-w-3xl max-h-[90vh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle className="font-display text-xl uppercase tracking-wider">
-                                  Request Details
+                                  Manage Request {editingRequest.requestNumber}
                                 </DialogTitle>
                                 <DialogDescription className="text-muted-foreground">
-                                  View details for request {request.requestNumber}
+                                  Update pricing, dates, and status for this service request
                                 </DialogDescription>
                               </DialogHeader>
-                              <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                      Stock/VIN
-                                    </p>
-                                    <p className="text-sm text-foreground">{request.stockVin}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                      PO#
-                                    </p>
-                                    <p className="text-sm text-foreground">{request.poNumber || "-"}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                      Vehicle
-                                    </p>
-                                    <p className="text-sm text-foreground">
-                                      {request.year} {request.make} {request.model} ({request.color})
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                      Manager
-                                    </p>
-                                    <p className="text-sm text-foreground">{request.manager || "-"}</p>
+                              <div className="space-y-6">
+                                {/* Request Info */}
+                                <div className="border-b border-border/20 pb-6">
+                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                                    Request Information
+                                  </h4>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        Stock/VIN
+                                      </p>
+                                      <p className="text-sm text-foreground">{editingRequest.stockVin}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        PO#
+                                      </p>
+                                      <p className="text-sm text-foreground">{editingRequest.poNumber || "-"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        Vehicle
+                                      </p>
+                                      <p className="text-sm text-foreground">
+                                        {editingRequest.year} {editingRequest.make} {editingRequest.model} ({editingRequest.color})
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        Requested By
+                                      </p>
+                                      <p className="text-sm text-foreground">{editingRequest.requestedBy}</p>
+                                    </div>
                                   </div>
                                 </div>
 
-                                <div>
-                                  <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                    Main Services
-                                  </p>
-                                  <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                    {request.mainServices.length > 0
-                                      ? request.mainServices.join(", ")
-                                      : "None selected"}
-                                  </p>
+                                {/* Services */}
+                                <div className="border-b border-border/20 pb-6">
+                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                                    Services
+                                  </h4>
+                                  <div className="space-y-3">
+                                    <div>
+                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        Main Services
+                                      </p>
+                                      <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
+                                        {editingRequest.mainServices.length > 0
+                                          ? editingRequest.mainServices.join(", ")
+                                          : "None selected"}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        Additional Services
+                                      </p>
+                                      <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
+                                        {editingRequest.additionalServices.length > 0
+                                          ? editingRequest.additionalServices.join(", ")
+                                          : "None selected"}
+                                      </p>
+                                    </div>
+                                    {editingRequest.notes && (
+                                      <div>
+                                        <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                          Notes
+                                        </p>
+                                        <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
+                                          {editingRequest.notes}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
 
-                                <div>
-                                  <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                    Additional Services
-                                  </p>
-                                  <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                    {request.additionalServices.length > 0
-                                      ? request.additionalServices.join(", ")
-                                      : "None selected"}
-                                  </p>
+                                {/* Status & Price */}
+                                <div className="border-b border-border/20 pb-6">
+                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                                    Status & Pricing
+                                  </h4>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Status
+                                      </label>
+                                      <Select value={editingStatus} onValueChange={setEditingStatus}>
+                                        <SelectTrigger className="bg-card/50 border-border/30 text-foreground">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-card border-border/30">
+                                          {STATUSES.map((status) => (
+                                            <SelectItem key={status} value={status}>
+                                              {status}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div>
+                                      <label htmlFor="dialog-price" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Price
+                                      </label>
+                                      <Input
+                                        id="dialog-price"
+                                        type="number"
+                                        step="0.01"
+                                        value={editingPrice}
+                                        onChange={(e) => setEditingPrice(parseFloat(e.target.value) || 0)}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
 
+                                {/* Date Settings */}
+                                <div className="border-b border-border/20 pb-6">
+                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                                    Due Date
+                                  </h4>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label htmlFor="dialog-due-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Date
+                                      </label>
+                                      <Input
+                                        id="dialog-due-date"
+                                        type="date"
+                                        value={editingDates.dueDate}
+                                        onChange={(e) => setEditingDates({ ...editingDates, dueDate: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label htmlFor="dialog-due-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Time
+                                      </label>
+                                      <Input
+                                        id="dialog-due-time"
+                                        type="time"
+                                        value={editingDates.dueTime}
+                                        onChange={(e) => setEditingDates({ ...editingDates, dueTime: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Job Start Date */}
+                                <div className="border-b border-border/20 pb-6">
+                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                                    Job Start Date
+                                  </h4>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label htmlFor="dialog-start-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Date
+                                      </label>
+                                      <Input
+                                        id="dialog-start-date"
+                                        type="date"
+                                        value={editingDates.startDate}
+                                        onChange={(e) => setEditingDates({ ...editingDates, startDate: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label htmlFor="dialog-start-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Time
+                                      </label>
+                                      <Input
+                                        id="dialog-start-time"
+                                        type="time"
+                                        value={editingDates.startTime}
+                                        onChange={(e) => setEditingDates({ ...editingDates, startTime: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Job Completion Date */}
                                 <div>
-                                  <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                    Notes
-                                  </p>
-                                  <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                    {request.notes || "No notes provided"}
-                                  </p>
+                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                                    Job Completion Date
+                                  </h4>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label htmlFor="dialog-completion-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Date
+                                      </label>
+                                      <Input
+                                        id="dialog-completion-date"
+                                        type="date"
+                                        value={editingDates.completionDate}
+                                        onChange={(e) => setEditingDates({ ...editingDates, completionDate: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label htmlFor="dialog-completion-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Time
+                                      </label>
+                                      <Input
+                                        id="dialog-completion-time"
+                                        type="time"
+                                        value={editingDates.completionTime}
+                                        onChange={(e) => setEditingDates({ ...editingDates, completionTime: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Save Button */}
+                                <div className="border-t border-border/20 pt-6 flex gap-4">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setEditingRequest(null)}
+                                    disabled={isSavingDates}
+                                    className="flex-1 border-border/30 hover:bg-card text-foreground"
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    onClick={async () => {
+                                      setIsSavingDates(true);
+                                      try {
+                                        await updateRequestStatus(editingRequest.id, editingStatus as ServiceRequest["status"]);
+                                        await updateRequestPrice(editingRequest.id, editingPrice);
+                                        await updateRequestDates(editingRequest.id, editingDates);
+                                        toast({
+                                          title: "Updated",
+                                          description: "Request has been updated successfully.",
+                                        });
+                                        setEditingRequest(null);
+                                      } catch (error: any) {
+                                        toast({
+                                          title: "Error",
+                                          description: error?.message || "Failed to update request.",
+                                          variant: "destructive",
+                                        });
+                                      } finally {
+                                        setIsSavingDates(false);
+                                      }
+                                    }}
+                                    disabled={isSavingDates}
+                                    className="flex-1 bg-primary hover:bg-primary text-primary-foreground"
+                                  >
+                                    {isSavingDates ? "Saving..." : "Save All Changes"}
+                                  </Button>
                                 </div>
                               </div>
                             </DialogContent>
+                            )}
                             </Dialog>
                           )}
                         </TableCell>
@@ -1357,6 +1604,141 @@ export default function Dashboard() {
             </div>
           </div>
         </motion.div>
+        )}
+
+        {/* Sales Rep View - Request Cards */}
+        {user?.role !== "admin" && (
+        <div className="space-y-6">
+          {filteredRequests.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="glass-card p-12 text-center"
+            >
+              <AlertCircle className="w-12 h-12 text-primary/20 mx-auto mb-4" />
+              <h3 className="font-display text-xl uppercase tracking-wider mb-2">
+                No Requests Yet
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                Create your first service request by clicking "New Request" above.
+              </p>
+            </motion.div>
+          ) : (
+            filteredRequests.map((request, idx) => (
+              <motion.div
+                key={request.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: idx * 0.05 }}
+                className="glass-card p-6"
+              >
+                {/* Request Header */}
+                <div className="flex items-start justify-between mb-6 pb-6 border-b border-border/20">
+                  <div>
+                    <p className="text-xs font-display uppercase tracking-wider text-primary mb-2">
+                      {request.requestNumber}
+                    </p>
+                    <h3 className="text-lg font-display uppercase tracking-wider">
+                      {request.year} {request.make} {request.model}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">{request.color} • Stock: {request.stockVin}</p>
+                  </div>
+                  <div className="text-right">
+                    <span
+                      className={`text-xs font-display uppercase tracking-wider px-3 py-1 rounded-sm inline-block ${
+                        request.status === "Completed"
+                          ? "bg-primary/20 text-primary"
+                          : request.status === "In Progress"
+                            ? "bg-card/50 text-primary border border-primary/30"
+                            : "bg-card/50 text-muted-foreground border border-border/30"
+                      }`}
+                    >
+                      {request.status}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Services */}
+                <div className="mb-6 pb-6 border-b border-border/20">
+                  <p className="text-xs font-display uppercase tracking-wider text-primary mb-3">
+                    Services
+                  </p>
+                  <div className="space-y-2">
+                    {request.mainServices.length > 0 && (
+                      <p className="text-sm text-foreground">
+                        <span className="text-muted-foreground">Main:</span> {request.mainServices.join(", ")}
+                      </p>
+                    )}
+                    {request.additionalServices.length > 0 && (
+                      <p className="text-sm text-foreground">
+                        <span className="text-muted-foreground">Additional:</span> {request.additionalServices.join(", ")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Important Dates & Pricing */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 pb-6 border-b border-border/20">
+                  <div>
+                    <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                      Price
+                    </p>
+                    <p className="text-2xl font-display text-primary">${request.price.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                      Due Date
+                    </p>
+                    <p className="text-sm text-foreground">
+                      {request.dueDate && request.dueTime
+                        ? `${request.dueDate} at ${request.dueTime}`
+                        : request.dueDate || "Not set"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Timeline - Job Start and Completion */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-background/30 p-4 rounded-sm border border-border/20">
+                    <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                      Job Start
+                    </p>
+                    {request.startDate && request.startTime ? (
+                      <p className="text-sm text-foreground font-medium">
+                        {request.startDate} at {request.startTime}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Not scheduled yet</p>
+                    )}
+                  </div>
+                  <div className="bg-background/30 p-4 rounded-sm border border-border/20">
+                    <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                      Completion
+                    </p>
+                    {request.completionDate && request.completionTime ? (
+                      <p className="text-sm text-foreground font-medium">
+                        {request.completionDate} at {request.completionTime}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Not completed yet</p>
+                    )}
+                  </div>
+                </div>
+
+                {request.notes && (
+                  <div className="mt-6 pt-6 border-t border-border/20">
+                    <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                      Notes
+                    </p>
+                    <p className="text-sm text-foreground">{request.notes}</p>
+                  </div>
+                )}
+              </motion.div>
+            ))
+          )}
+        </div>
+        )}
           </>
         )}
       </div>

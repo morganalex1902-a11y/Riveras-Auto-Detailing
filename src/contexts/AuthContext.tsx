@@ -24,6 +24,10 @@ export interface ServiceRequest {
   dateRequested: string;
   dueDate: string;
   dueTime: string;
+  startDate?: string;
+  startTime?: string;
+  completionDate?: string;
+  completionTime?: string;
   mainServices: string[];
   additionalServices: string[];
   notes: string;
@@ -43,6 +47,7 @@ interface AuthContextType {
   addRequest: (request: Omit<ServiceRequest, "id">) => Promise<void>;
   updateRequestStatus: (id: number, status: ServiceRequest["status"]) => Promise<void>;
   updateRequestPrice: (id: number, price: number) => Promise<void>;
+  updateRequestDates: (id: number, data: { dueDate?: string; dueTime?: string; startDate?: string; startTime?: string; completionDate?: string; completionTime?: string }) => Promise<void>;
   newRequestCount: number;
   resetNewRequestCount: () => void;
   loading: boolean;
@@ -115,6 +120,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         dateRequested: req.date_requested,
         dueDate: req.due_date,
         dueTime: req.due_time,
+        startDate: req.start_date,
+        startTime: req.start_time,
+        completionDate: req.completion_date,
+        completionTime: req.completion_time,
         mainServices: req.main_services || [],
         additionalServices: req.additional_services || [],
         notes: req.notes,
@@ -273,6 +282,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateRequestDates = async (id: number, data: { dueDate?: string; dueTime?: string; startDate?: string; startTime?: string; completionDate?: string; completionTime?: string }) => {
+    try {
+      const updateData: any = {};
+      if (data.dueDate) updateData.due_date = data.dueDate;
+      if (data.dueTime) updateData.due_time = data.dueTime;
+      if (data.startDate) updateData.start_date = data.startDate;
+      if (data.startTime) updateData.start_time = data.startTime;
+      if (data.completionDate) updateData.completion_date = data.completionDate;
+      if (data.completionTime) updateData.completion_time = data.completionTime;
+
+      const { error } = await supabase
+        .from("service_requests")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // Update local state
+      setRequests(requests.map((r) => {
+        if (r.id === id) {
+          return {
+            ...r,
+            dueDate: data.dueDate || r.dueDate,
+            dueTime: data.dueTime || r.dueTime,
+            startDate: data.startDate || r.startDate,
+            startTime: data.startTime || r.startTime,
+            completionDate: data.completionDate || r.completionDate,
+            completionTime: data.completionTime || r.completionTime,
+          };
+        }
+        return r;
+      }));
+    } catch (error) {
+      console.error("Error updating request dates:", error);
+      throw error;
+    }
+  };
+
   const resetNewRequestCount = () => {
     setNewRequestCount(0);
   };
@@ -288,6 +335,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addRequest,
         updateRequestStatus,
         updateRequestPrice,
+        updateRequestDates,
         newRequestCount,
         resetNewRequestCount,
         loading,
