@@ -60,7 +60,7 @@ const Index = () => {
               The best prices and solutions for dealerships. Quality. Speed. Consistency.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <GoldButton to="/dashboard/login">
+              <GoldButton to="/login">
                 <LogIn className="w-4 h-4" />
                 Dealership Portal
               </GoldButton>
