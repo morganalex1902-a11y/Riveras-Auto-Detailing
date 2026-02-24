@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff } from "lucide-react";
+import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -142,6 +142,9 @@ export default function Dashboard() {
   const [showPassword, setShowPassword] = useState(false);
   const [teamUsers, setTeamUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { register: registerAccount, handleSubmit: handleAccountSubmit, reset: resetAccountForm, watch: watchAccount } = useForm<AccountFormData>({
     defaultValues: {
       name: "",
@@ -174,6 +177,37 @@ export default function Dashboard() {
       });
     } finally {
       setLoadingUsers(false);
+    }
+  };
+
+  // Delete user account
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setDeletingUserId(userToDelete.id);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userToDelete.id);
+
+      if (error) throw error;
+
+      setTeamUsers(teamUsers.filter(u => u.id !== userToDelete.id));
+      toast({
+        title: "Account Deleted",
+        description: `${userToDelete.email} has been removed from your team.`,
+      });
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -1088,6 +1122,7 @@ export default function Dashboard() {
                         <TableHead className="font-display uppercase tracking-wider text-xs">Role</TableHead>
                         <TableHead className="font-display uppercase tracking-wider text-xs">Status</TableHead>
                         <TableHead className="font-display uppercase tracking-wider text-xs">Created</TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1111,6 +1146,19 @@ export default function Dashboard() {
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {member.created_at ? new Date(member.created_at).toLocaleDateString() : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <button
+                              onClick={() => {
+                                setUserToDelete(member);
+                                setShowDeleteDialog(true);
+                              }}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                              title="Delete user account"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1835,6 +1883,40 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {/* Delete User Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="glass-card border-border/50">
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase tracking-wider">
+              Delete Account
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Are you sure you want to delete the account for{" "}
+              <span className="font-semibold text-foreground">{userToDelete?.email}</span>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 justify-end pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setUserToDelete(null);
+              }}
+              disabled={deletingUserId !== null}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteUser}
+              disabled={deletingUserId !== null}
+            >
+              {deletingUserId ? "Deleting..." : "Delete Account"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
