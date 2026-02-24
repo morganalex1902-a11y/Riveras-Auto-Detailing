@@ -142,8 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
-      // Simple authentication - check credentials against users table
-      // Since Supabase Auth has schema issues, we use direct database verification
+      // Fetch user from database
       const { data: userList, error: queryError } = await supabase
         .from("users")
         .select("*")
@@ -154,11 +153,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("Invalid email or password.");
       }
 
-      // For now, we'll do a simple password check
-      // In production, passwords are already hashed in the auth.users table
-      // For testing, we'll just verify the user exists
       if (!userList.is_active) {
         throw new Error("This account is inactive. Contact your administrator.");
+      }
+
+      // Verify password hash
+      const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      if (passwordHash !== userList.password_hash) {
+        throw new Error("Invalid email or password.");
       }
 
       // Set user data in context

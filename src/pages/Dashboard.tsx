@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useAuth, ServiceRequest } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -332,27 +333,23 @@ export default function Dashboard() {
     try {
       const password = data.password && data.password.trim() ? data.password : generatePassword();
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/signup`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: data.email,
-            password,
-            name: data.name,
-            dealership_id: user?.dealership_id,
-            role: data.role,
-          }),
-        }
-      );
+      // Call the signup edge function to create user with hashed password
+      const { data: response, error: functionError } = await supabase.functions.invoke('signup', {
+        body: {
+          email: data.email,
+          password,
+          name: data.name,
+          dealership_id: user?.dealership_id,
+          role: data.role,
+        },
+      });
 
-      const responseData = await response.json();
+      if (functionError) {
+        throw new Error(functionError.message || "Failed to create account");
+      }
 
-      if (!response.ok) {
-        throw new Error(responseData.error || "Failed to create account");
+      if (response?.error) {
+        throw new Error(response.error);
       }
 
       toast({
