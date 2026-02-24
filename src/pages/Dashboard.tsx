@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff } from "lucide-react";
+import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -56,7 +56,20 @@ interface AccountFormData {
   email: string;
   password: string;
   role: "sales_rep" | "admin" | "manager";
+  securityQuestion: string;
+  securityAnswer: string;
 }
+
+const SECURITY_QUESTIONS = [
+  "What is your mother's maiden name?",
+  "What was the name of your first pet?",
+  "In what city were you born?",
+  "What is your favorite color?",
+  "What was your first car make/model?",
+  "What is your favorite food?",
+  "What was the name of your elementary school?",
+  "What is your favorite movie?",
+];
 
 const MAIN_SERVICES = [
   "N/C Delivery",
@@ -140,14 +153,127 @@ export default function Dashboard() {
   const [creatingAccount, setCreatingAccount] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [teamUsers, setTeamUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [userToResetPassword, setUserToResetPassword] = useState<any>(null);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resettingPasswordId, setResettingPasswordId] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   const { register: registerAccount, handleSubmit: handleAccountSubmit, reset: resetAccountForm, watch: watchAccount } = useForm<AccountFormData>({
     defaultValues: {
       name: "",
       email: "",
       password: "",
       role: "sales_rep",
+      securityQuestion: SECURITY_QUESTIONS[0],
+      securityAnswer: "",
     },
   });
+
+  // Fetch all users in the dealership
+  const fetchTeamUsers = async () => {
+    if (!user?.dealership_id) return;
+
+    setLoadingUsers(true);
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('dealership_id', user.dealership_id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTeamUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load team members",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Delete user account
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setDeletingUserId(userToDelete.id);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userToDelete.id);
+
+      if (error) throw error;
+
+      setTeamUsers(teamUsers.filter(u => u.id !== userToDelete.id));
+      toast({
+        title: "Account Deleted",
+        description: `${userToDelete.email} has been removed from your team.`,
+      });
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
+
+  // Reset user password
+  const handleResetPassword = async () => {
+    if (!userToResetPassword) return;
+
+    setResettingPasswordId(userToResetPassword.id);
+    try {
+      // Generate a new random password
+      const tempPassword = generatePassword();
+
+      // Hash the new password
+      const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(tempPassword));
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      // Update the user's password
+      const { error } = await supabase
+        .from('users')
+        .update({ password_hash: passwordHash })
+        .eq('id', userToResetPassword.id);
+
+      if (error) throw error;
+
+      setNewPassword(tempPassword);
+      toast({
+        title: "Password Reset",
+        description: `A new password has been generated for ${userToResetPassword.email}. Copy and share it with them.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to reset password. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setResettingPasswordId(null);
+    }
+  };
+
+  // Load users when switching to accounts tab
+  useEffect(() => {
+    if (activeTab === "accounts" && user?.role === "admin") {
+      fetchTeamUsers();
+    }
+  }, [activeTab, user]);
 
   const mainServices = watch("mainServices");
   const additionalServices = watch("additionalServices");
@@ -333,23 +459,29 @@ export default function Dashboard() {
     try {
       const password = data.password && data.password.trim() ? data.password : generatePassword();
 
-      // Call the signup edge function to create user with hashed password
-      const { data: response, error: functionError } = await supabase.functions.invoke('signup', {
-        body: {
+      // Hash the password using SHA-256
+      const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      // Create user directly in the database
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert({
           email: data.email,
-          password,
           name: data.name,
           dealership_id: user?.dealership_id,
           role: data.role,
-        },
-      });
+          password_hash: passwordHash,
+          is_active: true,
+          security_question: data.securityQuestion,
+          security_answer: data.securityAnswer.toLowerCase().trim(),
+        })
+        .select()
+        .single();
 
-      if (functionError) {
-        throw new Error(functionError.message || "Failed to create account");
-      }
-
-      if (response?.error) {
-        throw new Error(response.error);
+      if (insertError) {
+        throw new Error(insertError.message || "Failed to create account");
       }
 
       toast({
@@ -946,6 +1078,49 @@ export default function Dashboard() {
                       </div>
                     </div>
 
+                    {/* Security Question */}
+                    <div className="border-t border-border/20 pt-6">
+                      <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                        Account Recovery
+                      </h4>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        Set up a security question for account recovery if the password is forgotten.
+                      </p>
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="sec-question" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Security Question <span className="text-destructive">*</span>
+                          </label>
+                          <select
+                            id="sec-question"
+                            {...registerAccount("securityQuestion", { required: true })}
+                            disabled={creatingAccount}
+                            className="w-full bg-background/50 border border-border/50 text-foreground px-3 py-2 rounded-sm text-sm"
+                          >
+                            {SECURITY_QUESTIONS.map((q) => (
+                              <option key={q} value={q}>{q}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="sec-answer" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Answer <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            id="sec-answer"
+                            type="text"
+                            placeholder="Your answer"
+                            {...registerAccount("securityAnswer", { required: true })}
+                            disabled={creatingAccount}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                          />
+                          <p className="text-xs text-muted-foreground mt-2">
+                            This answer is case-insensitive and will be trimmed of spaces.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Generated Password Display */}
                     {generatedPassword && (
                       <div className="border-t border-border/20 pt-6">
@@ -1014,15 +1189,98 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="mb-12 glass-card p-8 text-center"
+            className="mb-12"
           >
-            <Users className="w-12 h-12 text-primary/20 mx-auto mb-4" />
-            <h3 className="font-display text-xl uppercase tracking-wider mb-2">
-              Account Management
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              Create and manage user accounts for your dealership team. Click "Create Account" to add new team members.
-            </p>
+            {/* Header Section */}
+            <div className="glass-card p-8 text-center mb-8">
+              <Users className="w-12 h-12 text-primary/20 mx-auto mb-4" />
+              <h3 className="font-display text-xl uppercase tracking-wider mb-2">
+                Account Management
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                Create and manage user accounts for your dealership team. Click "Create Account" to add new team members.
+              </p>
+            </div>
+
+            {/* Team Members List */}
+            <div className="glass-card p-8">
+              <h4 className="font-display text-lg uppercase tracking-wider mb-6">Team Members</h4>
+
+              {loadingUsers ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading team members...</p>
+                </div>
+              ) : teamUsers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No team members created yet</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border/20">
+                        <TableHead className="font-display uppercase tracking-wider text-xs">Email</TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs">Name</TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs">Role</TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs">Status</TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs">Created</TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {teamUsers.map((member) => (
+                        <TableRow key={member.id} className="border-border/20 hover:bg-background/50 transition-colors">
+                          <TableCell className="font-mono text-sm">{member.email}</TableCell>
+                          <TableCell>{member.name || "—"}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-display uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                              {member.role}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-display uppercase tracking-wider ${
+                              member.is_active
+                                ? 'bg-green-500/10 text-green-600 border border-green-500/20'
+                                : 'bg-red-500/10 text-red-600 border border-red-500/20'
+                            }`}>
+                              {member.is_active ? "Active" : "Inactive"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {member.created_at ? new Date(member.created_at).toLocaleDateString() : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setUserToResetPassword(member);
+                                  setNewPassword("");
+                                  setShowResetDialog(true);
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs text-primary hover:bg-primary/10 transition-colors"
+                                title="Reset password"
+                              >
+                                <span>Reset</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setUserToDelete(member);
+                                  setShowDeleteDialog(true);
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                                title="Delete user account"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
 
@@ -1739,6 +1997,118 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <DialogContent className="glass-card border-border/50">
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase tracking-wider">
+              Reset Password
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Reset the password for <span className="font-semibold text-foreground">{userToResetPassword?.email}</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          {newPassword ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  New Temporary Password
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newPassword}
+                    readOnly
+                    className="flex-1 px-3 py-2 bg-background/50 border border-border/50 rounded text-sm font-mono"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(newPassword);
+                      toast({
+                        title: "Copied",
+                        description: "Password copied to clipboard",
+                      });
+                    }}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded text-sm bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground bg-background/50 p-3 rounded border border-border/30">
+                Share this password with the user. They can change it after logging in.
+              </p>
+              <div className="flex gap-3 justify-end pt-4">
+                <Button
+                  onClick={() => {
+                    setShowResetDialog(false);
+                    setUserToResetPassword(null);
+                    setNewPassword("");
+                  }}
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-3 justify-end pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowResetDialog(false);
+                  setUserToResetPassword(null);
+                }}
+                disabled={resettingPasswordId !== null}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleResetPassword}
+                disabled={resettingPasswordId !== null}
+              >
+                {resettingPasswordId ? "Resetting..." : "Generate New Password"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="glass-card border-border/50">
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase tracking-wider">
+              Delete Account
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Are you sure you want to delete the account for{" "}
+              <span className="font-semibold text-foreground">{userToDelete?.email}</span>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 justify-end pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setUserToDelete(null);
+              }}
+              disabled={deletingUserId !== null}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteUser}
+              disabled={deletingUserId !== null}
+            >
+              {deletingUserId ? "Deleting..." : "Delete Account"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
