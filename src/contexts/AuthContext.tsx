@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 export interface User {
   email: string;
   name?: string;
-  role: "sales_rep" | "admin";
+  role: "sales_rep" | "admin" | "manager";
+  dealership_id?: string;
+  id?: string;
 }
 
 export interface ServiceRequest {
@@ -21,6 +24,10 @@ export interface ServiceRequest {
   dateRequested: string;
   dueDate: string;
   dueTime: string;
+  startDate?: string;
+  startTime?: string;
+  completionDate?: string;
+  completionTime?: string;
   mainServices: string[];
   additionalServices: string[];
   notes: string;
@@ -37,12 +44,13 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   requests: ServiceRequest[];
-  addRequest: (request: Omit<ServiceRequest, "id">) => void;
-  updateRequestStatus: (id: number, status: ServiceRequest["status"]) => void;
-  updateRequestPrice: (id: number, price: number) => void;
+  addRequest: (request: Omit<ServiceRequest, "id">) => Promise<void>;
+  updateRequestStatus: (id: number, status: ServiceRequest["status"]) => Promise<void>;
+  updateRequestPrice: (id: number, price: number) => Promise<void>;
+  updateRequestDates: (id: number, data: { dueDate?: string; dueTime?: string; startDate?: string; startTime?: string; completionDate?: string; completionTime?: string }) => Promise<void>;
   newRequestCount: number;
   resetNewRequestCount: () => void;
-  onNewRequest?: (request: ServiceRequest) => void;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,195 +59,274 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [newRequestCount, setNewRequestCount] = useState(0);
-  const [requests, setRequests] = useState<ServiceRequest[]>([
-    {
-      id: 1,
-      requestNumber: "REQ-001",
-      requestedBy: "robert@salesdealership.com",
-      manager: "manager@dealership.com",
-      stockVin: "1HGCM82633A004352",
-      poNumber: "PO-2024-001",
-      vehicleDescription: "Customer vehicle - Trade-in",
-      year: 2023,
-      make: "Honda",
-      model: "Accord",
-      color: "Silver",
-      dateRequested: "2026-02-23",
-      dueDate: "2026-02-25",
-      dueTime: "14:00",
-      mainServices: ["N/C Delivery", "Clean for Showroom"],
-      additionalServices: [],
-      notes: "Need ready before customer pickup",
-      status: "Pending",
-      price: 0,
-      service: "N/C Delivery",
-      vin: "1HGCM82633A004352",
-      due: "2026-02-25 14:00",
-    },
-    {
-      id: 2,
-      requestNumber: "REQ-002",
-      requestedBy: "sarah@service.com",
-      manager: "manager@dealership.com",
-      stockVin: "5FNYF4H75LB123456",
-      poNumber: "PO-2024-002",
-      vehicleDescription: "Lot vehicle",
-      year: 2022,
-      make: "Honda",
-      model: "Pilot",
-      color: "Black",
-      dateRequested: "2026-02-23",
-      dueDate: "2026-02-26",
-      dueTime: "10:00",
-      mainServices: ["U/C Detail"],
-      additionalServices: ["Interior Protection"],
-      notes: "Full interior detail requested",
-      status: "In Progress",
-      price: 250,
-      service: "U/C Detail",
-      vin: "5FNYF4H75LB123456",
-      due: "2026-02-26 10:00",
-    },
-    {
-      id: 3,
-      requestNumber: "REQ-003",
-      requestedBy: "john@sales.com",
-      manager: "manager@dealership.com",
-      stockVin: "4T1BF1AK5CU123456",
-      poNumber: "",
-      vehicleDescription: "Customer vehicle",
-      year: 2021,
-      make: "Toyota",
-      model: "Camry",
-      color: "White",
-      dateRequested: "2026-02-23",
-      dueDate: "2026-02-27",
-      dueTime: "09:00",
-      mainServices: [],
-      additionalServices: ["Restore Headlights"],
-      notes: "Cloudy headlights, needs full restoration",
-      status: "Pending",
-      price: 0,
-      service: "Headlight Restoration",
-      vin: "4T1BF1AK5CU123456",
-      due: "2026-02-27 09:00",
-    },
-    {
-      id: 4,
-      requestNumber: "REQ-004",
-      requestedBy: "maria@dealership.com",
-      manager: "manager@dealership.com",
-      stockVin: "2G1FB1E39D1234567",
-      poNumber: "",
-      vehicleDescription: "Fleet vehicle",
-      year: 2013,
-      make: "Chevrolet",
-      model: "Malibu",
-      color: "Gray",
-      dateRequested: "2026-02-22",
-      dueDate: "2026-02-24",
-      dueTime: "11:00",
-      mainServices: [],
-      additionalServices: ["Tint Removal"],
-      notes: "All windows, customer wants OEM look",
-      status: "Completed",
-      price: 150,
-      service: "Tint Removal",
-      vin: "2G1FB1E39D1234567",
-      due: "2026-02-24 11:00",
-    },
-    {
-      id: 5,
-      requestNumber: "REQ-005",
-      requestedBy: "robert@salesdealership.com",
-      manager: "manager@dealership.com",
-      stockVin: "1G1FB1C56F2123456",
-      poNumber: "PO-2024-003",
-      vehicleDescription: "Wholesale vehicle",
-      year: 2015,
-      make: "Chevrolet",
-      model: "Cruze",
-      color: "Blue",
-      dateRequested: "2026-02-23",
-      dueDate: "2026-02-28",
-      dueTime: "15:00",
-      mainServices: [],
-      additionalServices: ["Ozone Odor Removal"],
-      notes: "Odor issue, customer complaint",
-      status: "Pending",
-      price: 0,
-      service: "Ozone Odor Removal",
-      vin: "1G1FB1C56F2123456",
-      due: "2026-02-28 15:00",
-    },
-  ]);
+  const [requests, setRequests] = useState<ServiceRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Load session from localStorage on mount
+  // Initialize auth session on mount
   useEffect(() => {
-    const savedSession = localStorage.getItem("dealership-session");
-    if (savedSession) {
-      const session = JSON.parse(savedSession);
-      setIsLoggedIn(true);
-      setUser(session.user);
-    }
+    const initializeAuth = async () => {
+      try {
+        // Check localStorage for existing session
+        const savedSession = localStorage.getItem("dealership-session");
+        if (savedSession) {
+          const session = JSON.parse(savedSession);
+          if (session?.user) {
+            setUser(session.user);
+            setIsLoggedIn(true);
+            // Fetch requests for this user's dealership
+            if (session.user.dealership_id) {
+              fetchRequests(session.user.dealership_id, session.user.role, session.user.email);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+        localStorage.removeItem("dealership-session");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
   }, []);
 
+  const fetchRequests = async (dealershipId: string, role: string, userEmail?: string) => {
+    try {
+      let query = supabase
+        .from("service_requests")
+        .select("*")
+        .eq("dealership_id", dealershipId);
+
+      if (role === "sales_rep" && userEmail) {
+        query = query.eq("requested_by", userEmail);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
+      
+      if (error) throw error;
+
+      const formattedRequests: ServiceRequest[] = (data || []).map((req: any) => ({
+        id: req.id,
+        requestNumber: req.request_number,
+        requestedBy: req.requested_by,
+        manager: req.manager,
+        stockVin: req.stock_vin,
+        poNumber: req.po_number,
+        vehicleDescription: req.vehicle_description,
+        year: req.year,
+        make: req.make,
+        model: req.model,
+        color: req.color,
+        dateRequested: req.date_requested,
+        dueDate: req.due_date,
+        dueTime: req.due_time,
+        startDate: req.start_date,
+        startTime: req.start_time,
+        completionDate: req.completion_date,
+        completionTime: req.completion_time,
+        mainServices: req.main_services || [],
+        additionalServices: req.additional_services || [],
+        notes: req.notes,
+        status: req.status,
+        price: req.price,
+        service: req.main_services?.[0],
+        vin: req.stock_vin,
+        due: `${req.due_date} ${req.due_time}`,
+      }));
+
+      setRequests(formattedRequests);
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+    }
+  };
+
   const login = async (email: string, password: string): Promise<void> => {
-    // Mock login - simulate async operation
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Determine role based on email
-        let role: "sales_rep" | "admin" = "sales_rep";
-        if (email === "manager@dealership.com" || email === "admin@dealership.com") {
-          role = "admin";
+    try {
+      // Fetch user from database
+      const { data: userList, error: queryError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", email)
+        .single();
+
+      if (queryError || !userList) {
+        throw new Error("Invalid email or password.");
+      }
+
+      if (!userList.is_active) {
+        throw new Error("This account is inactive. Contact your administrator.");
+      }
+
+      // Verify password hash
+      const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      if (passwordHash !== userList.password_hash) {
+        throw new Error("Invalid email or password.");
+      }
+
+      // Set user data in context
+      setUser({
+        email: userList.email,
+        name: userList.name,
+        role: userList.role,
+        dealership_id: userList.dealership_id,
+        id: userList.id,
+      });
+      setIsLoggedIn(true);
+
+      // Fetch requests for this user
+      if (userList.dealership_id) {
+        fetchRequests(userList.dealership_id, userList.role, userList.email);
+      }
+
+      // Store session in localStorage
+      localStorage.setItem("dealership-session", JSON.stringify({
+        user: {
+          email: userList.email,
+          name: userList.name,
+          role: userList.role,
+          dealership_id: userList.dealership_id,
+          id: userList.id,
         }
-
-        const newUser: User = {
-          email,
-          name: email.split("@")[0],
-          role,
-        };
-
-        setIsLoggedIn(true);
-        setUser(newUser);
-        localStorage.setItem("dealership-session", JSON.stringify({ user: newUser }));
-        resolve();
-      }, 500);
-    });
+      }));
+    } catch (error: any) {
+      console.error("Login error:", error);
+      throw new Error(error?.message || "Login failed. Please try again.");
+    }
   };
 
-  const logout = () => {
-    setIsLoggedIn(false);
-    setUser(null);
-    localStorage.removeItem("dealership-session");
+  const logout = async () => {
+    try {
+      setIsLoggedIn(false);
+      setUser(null);
+      setRequests([]);
+      localStorage.removeItem("dealership-session");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
-  const addRequest = (request: Omit<ServiceRequest, "id">) => {
-    const newRequest: ServiceRequest = {
-      ...request,
-      id: Math.max(...requests.map((r) => r.id), 0) + 1,
-    };
-    setRequests([...requests, newRequest]);
-    // Notify admins of new request
-    setNewRequestCount((prev) => prev + 1);
-    // Trigger localStorage event for cross-tab notification
-    localStorage.setItem("new-request-notification", JSON.stringify({
-      requestNumber: newRequest.requestNumber,
-      requestedBy: newRequest.requestedBy,
-      timestamp: new Date().toISOString(),
-    }));
+  const addRequest = async (requestData: Omit<ServiceRequest, "id">) => {
+    try {
+      if (!user?.dealership_id) throw new Error("User dealership not found");
+
+      const { data, error } = await supabase
+        .from("service_requests")
+        .insert({
+          request_number: requestData.requestNumber,
+          dealership_id: user.dealership_id,
+          requested_by: requestData.requestedBy,
+          manager: requestData.manager,
+          stock_vin: requestData.stockVin,
+          po_number: requestData.poNumber,
+          vehicle_description: requestData.vehicleDescription,
+          year: requestData.year,
+          make: requestData.make,
+          model: requestData.model,
+          color: requestData.color,
+          date_requested: requestData.dateRequested,
+          due_date: requestData.dueDate,
+          due_time: requestData.dueTime,
+          main_services: requestData.mainServices,
+          additional_services: requestData.additionalServices,
+          notes: requestData.notes,
+          status: requestData.status,
+          price: requestData.price,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Refresh requests list
+      if (user.dealership_id) {
+        fetchRequests(user.dealership_id, user.role);
+      }
+
+      // Notify admins
+      setNewRequestCount((prev) => prev + 1);
+    } catch (error) {
+      console.error("Error adding request:", error);
+      throw error;
+    }
+  };
+
+  const updateRequestStatus = async (id: number, status: ServiceRequest["status"]) => {
+    try {
+      const { error } = await supabase
+        .from("service_requests")
+        .update({ status })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // Update local state
+      setRequests(requests.map((r) => (r.id === id ? { ...r, status } : r)));
+    } catch (error) {
+      console.error("Error updating request status:", error);
+      throw error;
+    }
+  };
+
+  const updateRequestPrice = async (id: number, price: number) => {
+    try {
+      const { error } = await supabase
+        .from("service_requests")
+        .update({ price })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // Update local state
+      setRequests(requests.map((r) => (r.id === id ? { ...r, price } : r)));
+    } catch (error) {
+      console.error("Error updating request price:", error);
+      throw error;
+    }
+  };
+
+  const updateRequestDates = async (id: number, data: { dueDate?: string; dueTime?: string; startDate?: string; startTime?: string; completionDate?: string; completionTime?: string }) => {
+    try {
+      const updateData: any = {};
+      if (data.dueDate) updateData.due_date = data.dueDate;
+      if (data.dueTime) updateData.due_time = data.dueTime;
+      if (data.startDate) updateData.start_date = data.startDate;
+      if (data.startTime) updateData.start_time = data.startTime;
+      if (data.completionDate) updateData.completion_date = data.completionDate;
+      if (data.completionTime) updateData.completion_time = data.completionTime;
+
+      const { error } = await supabase
+        .from("service_requests")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // Update local state
+      setRequests(requests.map((r) => {
+        if (r.id === id) {
+          return {
+            ...r,
+            dueDate: data.dueDate || r.dueDate,
+            dueTime: data.dueTime || r.dueTime,
+            startDate: data.startDate || r.startDate,
+            startTime: data.startTime || r.startTime,
+            completionDate: data.completionDate || r.completionDate,
+            completionTime: data.completionTime || r.completionTime,
+          };
+        }
+        return r;
+      }));
+    } catch (error) {
+      console.error("Error updating request dates:", error);
+      throw error;
+    }
   };
 
   const resetNewRequestCount = () => {
     setNewRequestCount(0);
-  };
-
-  const updateRequestStatus = (id: number, status: ServiceRequest["status"]) => {
-    setRequests(requests.map((r) => (r.id === id ? { ...r, status } : r)));
-  };
-
-  const updateRequestPrice = (id: number, price: number) => {
-    setRequests(requests.map((r) => (r.id === id ? { ...r, price } : r)));
   };
 
   return (
@@ -253,8 +340,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addRequest,
         updateRequestStatus,
         updateRequestPrice,
+        updateRequestDates,
         newRequestCount,
         resetNewRequestCount,
+        loading,
       }}
     >
       {children}

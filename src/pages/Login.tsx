@@ -29,25 +29,20 @@ export default function Login() {
         description: "Welcome to the dealership portal!",
       });
       navigate("/dashboard");
-    } catch (err) {
-      setError("Login failed. Please try again.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    } catch (err: any) {
+      console.error("Login error:", err);
 
-  const handleDemoLogin = async (demoEmail: string) => {
-    setLoading(true);
-    try {
-      await login(demoEmail, "demo");
-      toast({
-        title: "Demo Login Successful",
-        description: `Logged in as ${demoEmail}`,
-      });
-      navigate("/dashboard");
-    } catch (err) {
-      setError("Login failed. Please try again.");
+      let errorMessage = "Login failed. Please check your credentials and try again.";
+
+      if (err?.message?.includes("Invalid login credentials")) {
+        errorMessage = "Invalid email or password. Please try again.";
+      } else if (err?.message?.includes("Database error")) {
+        errorMessage = "Server error. Please try again in a moment.";
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -141,35 +136,18 @@ export default function Login() {
             </Button>
           </form>
 
-          {/* Demo Section */}
+          {/* Info Section */}
           <div className="border-t border-border/30 pt-6 mb-6">
-            <p className="text-xs font-display uppercase tracking-wider text-muted-foreground text-center mb-4">
-              Demo Accounts
+            <p className="text-xs font-display uppercase tracking-wider text-muted-foreground text-center">
+              Log in with your dealership account credentials
             </p>
-            <div className="space-y-3">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={loading}
-                onClick={() => handleDemoLogin("robert@salesdealership.com")}
-                className="w-full border-border/50 hover:bg-card text-foreground text-xs font-display uppercase tracking-wider"
-              >
-                Sales Rep Demo
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={loading}
-                onClick={() => handleDemoLogin("manager@dealership.com")}
-                className="w-full border-border/50 hover:bg-card text-foreground text-xs font-display uppercase tracking-wider"
-              >
-                Admin Demo
-              </Button>
-            </div>
           </div>
 
           {/* Footer Links */}
           <div className="text-center border-t border-border/30 pt-6">
+            <p className="text-muted-foreground text-xs mb-3">
+              Contact your dealership admin to create an account
+            </p>
             <button className="text-primary hover:text-primary/80 text-xs font-display uppercase tracking-wider transition-colors">
               Forgot password?
             </button>
