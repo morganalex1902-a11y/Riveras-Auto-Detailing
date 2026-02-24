@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,6 @@ export default function Login() {
   const [forgotError, setForgotError] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
   const [foundUser, setFoundUser] = useState<any>(null);
-  const [emailSent, setEmailSent] = useState(false);
   const [securityAnswerInput, setSecurityAnswerInput] = useState("");
   const [securityAnswerVerified, setSecurityAnswerVerified] = useState(false);
   const [verifyingAnswer, setVerifyingAnswer] = useState(false);
@@ -31,49 +30,6 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  // Handle reset token from URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const resetToken = params.get('reset');
-
-    if (resetToken) {
-      handleVerifyResetToken(resetToken);
-    }
-  }, []);
-
-  const handleVerifyResetToken = async (token: string) => {
-    try {
-      // Fetch user with matching reset token
-      const { data: user, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("reset_token", token)
-        .single();
-
-      if (error || !user) {
-        setForgotError("Invalid or expired reset link");
-        return;
-      }
-
-      // Check if token has expired
-      const expiresAt = new Date(user.reset_token_expires_at);
-      if (expiresAt < new Date()) {
-        setForgotError("Reset link has expired. Please request a new one.");
-        return;
-      }
-
-      // Set the found user and proceed to security question verification
-      setFoundUser(user);
-      setShowForgotPassword(true);
-      setForgotEmail(user.email);
-      setSecurityAnswerVerified(false);
-      setSecurityAnswerInput("");
-    } catch (err: any) {
-      setForgotError("Failed to verify reset link");
-      console.error("Token verification error:", err);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,59 +80,6 @@ export default function Login() {
 
       if (!user.security_question || !user.security_answer) {
         throw new Error("This account does not have a security question set up. Please contact your admin.");
-      }
-
-      // Generate a reset token (32 character random string)
-      const resetToken = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-
-      // Set token expiration to 30 minutes from now
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-
-      // Store the reset token in the database
-      const { error: updateError } = await supabase
-        .from("users")
-        .update({ reset_token: resetToken, reset_token_expires_at: expiresAt })
-        .eq("id", user.id);
-
-      if (updateError) throw updateError;
-
-      // Generate the reset URL
-      const resetUrl = `${window.location.origin}/login?reset=${resetToken}`;
-
-      // Try to send email via Edge Function
-      try {
-        const { error: emailError } = await supabase.functions.invoke('send-reset-email', {
-          body: {
-            email: forgotEmail,
-            resetToken,
-            resetUrl,
-          },
-        });
-
-        if (!emailError) {
-          toast({
-            title: "Email Sent",
-            description: "Check your email for a link to reset your password",
-          });
-          setEmailSent(true);
-        } else {
-          // Email service not available, show manual instructions
-          toast({
-            title: "Email Service Unavailable",
-            description: "Please contact your administrator for password reset assistance",
-            variant: "destructive",
-          });
-        }
-      } catch (emailErr) {
-        // Fallback: show the reset link for manual sharing
-        console.error("Email service error:", emailErr);
-        toast({
-          title: "Email Service Not Configured",
-          description: "Please contact your administrator for password reset assistance",
-          variant: "destructive",
-        });
       }
 
       setFoundUser(user);
@@ -237,14 +140,10 @@ export default function Login() {
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-      // Update the user's password and clear the reset token
+      // Update the user's password
       const { error } = await supabase
         .from("users")
-        .update({
-          password_hash: passwordHash,
-          reset_token: null,
-          reset_token_expires_at: null
-        })
+        .update({ password_hash: passwordHash })
         .eq("id", foundUser.id);
 
       if (error) throw error;
@@ -262,7 +161,6 @@ export default function Login() {
       setSecurityAnswerVerified(false);
       setNewPassword("");
       setConfirmPassword("");
-      setEmailSent(false);
     } catch (err: any) {
       setForgotError(err?.message || "Failed to reset password. Please try again.");
     } finally {
@@ -297,7 +195,6 @@ export default function Login() {
                 setNewPassword("");
                 setConfirmPassword("");
                 setForgotError("");
-                setEmailSent(false);
               }}
               className="flex items-center gap-2 text-primary hover:text-primary/80 text-xs font-display uppercase tracking-wider mb-6 transition-colors"
             >
@@ -310,10 +207,10 @@ export default function Login() {
           <div className="text-center mb-8">
             <div className="w-16 h-[2px] bg-primary mx-auto mb-6 gold-glow" />
             <h1 className="text-3xl md:text-4xl font-display uppercase tracking-wider mb-2">
-              {foundUser ? "Set New Password" : showForgotPassword ? "Reset Password" : "Dealership Portal"}
+              {showForgotPassword ? "Reset Password" : "Dealership Portal"}
             </h1>
             <p className="text-muted-foreground text-sm uppercase tracking-wider">
-              {foundUser || showForgotPassword ? "Recover your account" : "Rivera's Auto Detailing"}
+              {showForgotPassword ? "Answer your security question to reset password" : "Rivera's Auto Detailing"}
             </p>
             <div className="w-16 h-[2px] bg-primary mx-auto mt-6" />
           </div>
@@ -382,62 +279,48 @@ export default function Login() {
 
           {/* Forgot Password - Email Search Form */}
           {showForgotPassword && !foundUser && (
-            <div className="space-y-5 mb-8">
-              {emailSent ? (
+            <form onSubmit={handleForgotPasswordSearch} className="space-y-5 mb-8">
+              <div>
+                <label htmlFor="forgot-email" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  Email Address
+                </label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  required
+                  disabled={forgotLoading}
+                  className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                />
+              </div>
+
+              {forgotError && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-green-500/20 border border-green-500/50 text-green-700 p-4 rounded-sm text-sm space-y-3"
+                  className="bg-destructive/20 border border-destructive/50 text-destructive p-3 rounded-sm text-sm"
                 >
-                  <p className="font-semibold">Verification email sent!</p>
-                  <p>Check your email for a link to reset your password. The link will expire in 30 minutes.</p>
-                  <p className="text-xs">Didn't receive an email? Check your spam folder or contact your administrator.</p>
+                  {forgotError}
                 </motion.div>
-              ) : (
-                <form onSubmit={handleForgotPasswordSearch} className="space-y-5">
-                  <div>
-                    <label htmlFor="forgot-email" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                      Email Address
-                    </label>
-                    <Input
-                      id="forgot-email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
-                      required
-                      disabled={forgotLoading}
-                      className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
-                    />
-                  </div>
-
-                  {forgotError && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-destructive/20 border border-destructive/50 text-destructive p-3 rounded-sm text-sm"
-                    >
-                      {forgotError}
-                    </motion.div>
-                  )}
-
-                  <Button
-                    type="submit"
-                    disabled={forgotLoading}
-                    className="w-full bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest py-2.5 h-auto text-sm"
-                  >
-                    {forgotLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sending email...
-                      </>
-                    ) : (
-                      "Send Verification Email"
-                    )}
-                  </Button>
-                </form>
               )}
-            </div>
+
+              <Button
+                type="submit"
+                disabled={forgotLoading}
+                className="w-full bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest py-2.5 h-auto text-sm"
+              >
+                {forgotLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Searching...
+                  </>
+                ) : (
+                  "Find Account"
+                )}
+              </Button>
+            </form>
           )}
 
           {/* Security Question Verification Form */}
