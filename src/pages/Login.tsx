@@ -30,9 +30,19 @@ export default function Login() {
       });
       navigate("/dashboard");
     } catch (err: any) {
-      const errorMessage = err?.message || "Login failed. Please check your credentials and try again.";
+      console.error("Login error:", err);
+
+      let errorMessage = "Login failed. Please check your credentials and try again.";
+
+      if (err?.message?.includes("Invalid login credentials")) {
+        errorMessage = "Invalid email or password. Please try again.";
+      } else if (err?.message?.includes("Database error")) {
+        errorMessage = "Server error. Please try again in a moment.";
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
       setError(errorMessage);
-      console.error(err);
     } finally {
       setLoading(false);
     }

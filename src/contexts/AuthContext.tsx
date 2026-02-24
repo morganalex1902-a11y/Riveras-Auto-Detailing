@@ -171,14 +171,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
-    } catch (error) {
-      throw error;
+      if (error) {
+        console.error("Auth error:", error);
+        throw new Error(error.message || "Authentication failed. Please check your credentials.");
+      }
+
+      if (!data.session) {
+        throw new Error("No session created. Please try again.");
+      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      throw new Error(error?.message || "Login failed. Please try again.");
     }
   };
 
