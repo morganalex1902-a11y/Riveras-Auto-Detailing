@@ -140,6 +140,8 @@ export default function Dashboard() {
   const [creatingAccount, setCreatingAccount] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [teamUsers, setTeamUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const { register: registerAccount, handleSubmit: handleAccountSubmit, reset: resetAccountForm, watch: watchAccount } = useForm<AccountFormData>({
     defaultValues: {
       name: "",
@@ -148,6 +150,39 @@ export default function Dashboard() {
       role: "sales_rep",
     },
   });
+
+  // Fetch all users in the dealership
+  const fetchTeamUsers = async () => {
+    if (!user?.dealership_id) return;
+
+    setLoadingUsers(true);
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('dealership_id', user.dealership_id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTeamUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load team members",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Load users when switching to accounts tab
+  useEffect(() => {
+    if (activeTab === "accounts" && user?.role === "admin") {
+      fetchTeamUsers();
+    }
+  }, [activeTab, user]);
 
   const mainServices = watch("mainServices");
   const additionalServices = watch("additionalServices");
@@ -1018,15 +1053,72 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="mb-12 glass-card p-8 text-center"
+            className="mb-12"
           >
-            <Users className="w-12 h-12 text-primary/20 mx-auto mb-4" />
-            <h3 className="font-display text-xl uppercase tracking-wider mb-2">
-              Account Management
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              Create and manage user accounts for your dealership team. Click "Create Account" to add new team members.
-            </p>
+            {/* Header Section */}
+            <div className="glass-card p-8 text-center mb-8">
+              <Users className="w-12 h-12 text-primary/20 mx-auto mb-4" />
+              <h3 className="font-display text-xl uppercase tracking-wider mb-2">
+                Account Management
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                Create and manage user accounts for your dealership team. Click "Create Account" to add new team members.
+              </p>
+            </div>
+
+            {/* Team Members List */}
+            <div className="glass-card p-8">
+              <h4 className="font-display text-lg uppercase tracking-wider mb-6">Team Members</h4>
+
+              {loadingUsers ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading team members...</p>
+                </div>
+              ) : teamUsers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No team members created yet</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border/20">
+                        <TableHead className="font-display uppercase tracking-wider text-xs">Email</TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs">Name</TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs">Role</TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs">Status</TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs">Created</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {teamUsers.map((member) => (
+                        <TableRow key={member.id} className="border-border/20 hover:bg-background/50 transition-colors">
+                          <TableCell className="font-mono text-sm">{member.email}</TableCell>
+                          <TableCell>{member.name || "—"}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-display uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                              {member.role}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-display uppercase tracking-wider ${
+                              member.is_active
+                                ? 'bg-green-500/10 text-green-600 border border-green-500/20'
+                                : 'bg-red-500/10 text-red-600 border border-red-500/20'
+                            }`}>
+                              {member.is_active ? "Active" : "Inactive"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {member.created_at ? new Date(member.created_at).toLocaleDateString() : "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
 
