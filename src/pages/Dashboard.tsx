@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus } from "lucide-react";
+import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -48,6 +48,13 @@ interface RequestFormData {
   additionalServices: string[];
   notes: string;
   price?: number;
+}
+
+interface AccountFormData {
+  name: string;
+  email: string;
+  password: string;
+  role: "sales_rep" | "admin" | "manager";
 }
 
 const MAIN_SERVICES = [
@@ -100,12 +107,29 @@ export default function Dashboard() {
 
   const { requests, updateRequestStatus, updateRequestPrice, user, addRequest, newRequestCount, resetNewRequestCount, loading } = useAuth();
   const { toast } = useToast();
+
+  // Request management state
   const [statusFilter, setStatusFilter] = useState("All");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingPrice, setEditingPrice] = useState<number>(0);
   const [editingStatus, setEditingStatus] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
   const [submittingForm, setSubmittingForm] = useState(false);
+
+  // Admin account management state
+  const [activeTab, setActiveTab] = useState<"requests" | "accounts">("requests");
+  const [showAccountForm, setShowAccountForm] = useState(false);
+  const [creatingAccount, setCreatingAccount] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const { register: registerAccount, handleSubmit: handleAccountSubmit, reset: resetAccountForm, watch: watchAccount } = useForm<AccountFormData>({
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      role: "sales_rep",
+    },
+  });
 
   const mainServices = watch("mainServices");
   const additionalServices = watch("additionalServices");
@@ -237,6 +261,65 @@ export default function Dashboard() {
     a.click();
   };
 
+  // Generate random password
+  const generatePassword = () => {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+  };
+
+  // Create new user account
+  const onAccountSubmit = async (data: AccountFormData) => {
+    setCreatingAccount(true);
+
+    try {
+      const password = data.password && data.password.trim() ? data.password : generatePassword();
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/signup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: data.email,
+            password,
+            name: data.name,
+            dealership_id: user?.dealership_id,
+            role: data.role,
+          }),
+        }
+      );
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Failed to create account");
+      }
+
+      toast({
+        title: "Account Created",
+        description: `New account created for ${data.email}.`,
+      });
+
+      setGeneratedPassword(password);
+      resetAccountForm();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to create account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingAccount(false);
+    }
+  };
+
   const onFormSubmit = async (data: RequestFormData) => {
     setSubmittingForm(true);
 
@@ -328,17 +411,57 @@ export default function Dashboard() {
                 )}
               </div>
               <p className="text-muted-foreground uppercase tracking-widest text-sm">
-                Service Requests Management
+                {activeTab === "requests" ? "Service Requests Management" : "Account Management"}
               </p>
             </div>
-            <Button
-              onClick={() => setShowForm(!showForm)}
-              className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs h-auto py-2 px-4"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              {showForm ? "Close" : "New Request"}
-            </Button>
+            {activeTab === "requests" && (
+              <Button
+                onClick={() => setShowForm(!showForm)}
+                className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs h-auto py-2 px-4"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {showForm ? "Close" : "New Request"}
+              </Button>
+            )}
+            {activeTab === "accounts" && (
+              <Button
+                onClick={() => setShowAccountForm(!showAccountForm)}
+                className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs h-auto py-2 px-4"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {showAccountForm ? "Close" : "Create Account"}
+              </Button>
+            )}
           </div>
+
+          {/* Admin Tab Navigation */}
+          {user?.role === "admin" && (
+            <div className="flex gap-4 mb-6">
+              <button
+                onClick={() => setActiveTab("requests")}
+                className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
+                  activeTab === "requests"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+                }`}
+              >
+                <AlertCircle className="w-4 h-4" />
+                Service Requests
+              </button>
+              <button
+                onClick={() => setActiveTab("accounts")}
+                className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
+                  activeTab === "accounts"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                Account Management
+              </button>
+            </div>
+          )}
+
           <div className="w-12 h-[2px] bg-primary mt-6" />
         </motion.div>
 
@@ -673,6 +796,189 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
+        {/* Account Management Form - Admin Only */}
+        {user?.role === "admin" && activeTab === "accounts" && (
+          <AnimatePresence>
+            {showAccountForm && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.4 }}
+                className="mb-12 overflow-hidden"
+              >
+                <div className="glass-card p-8 md:p-10">
+                  <h3 className="font-display text-2xl uppercase tracking-wider mb-8">
+                    Create <span className="text-primary">New Account</span>
+                  </h3>
+
+                  <form onSubmit={handleAccountSubmit(onAccountSubmit)} className="space-y-6">
+                    {/* Account Info */}
+                    <div>
+                      <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                        Account Information
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="acc-name" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Full Name <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            id="acc-name"
+                            placeholder="John Doe"
+                            {...registerAccount("name", { required: true })}
+                            disabled={creatingAccount}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="acc-email" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Email <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            id="acc-email"
+                            type="email"
+                            placeholder="email@dealership.com"
+                            {...registerAccount("email", { required: true })}
+                            disabled={creatingAccount}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Password & Role */}
+                    <div className="border-t border-border/20 pt-6">
+                      <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                        Access Settings
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="acc-password" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Password <span className="text-destructive">*</span>
+                          </label>
+                          <div className="relative">
+                            <Input
+                              id="acc-password"
+                              type={showPassword ? "text" : "password"}
+                              placeholder="Leave empty to auto-generate"
+                              {...registerAccount("password")}
+                              disabled={creatingAccount}
+                              className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50 pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label htmlFor="acc-role" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Role <span className="text-destructive">*</span>
+                          </label>
+                          <select
+                            {...registerAccount("role")}
+                            disabled={creatingAccount}
+                            className="w-full bg-background/50 border border-border/50 text-foreground px-3 py-2 rounded-sm text-sm"
+                          >
+                            <option value="sales_rep">Sales Rep</option>
+                            <option value="manager">Manager</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Generated Password Display */}
+                    {generatedPassword && (
+                      <div className="border-t border-border/20 pt-6">
+                        <div className="bg-primary/10 border border-primary/30 p-4 rounded-sm">
+                          <p className="text-xs font-display uppercase tracking-wider text-primary mb-3">
+                            Auto-Generated Password
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <code className="flex-1 bg-background/50 px-3 py-2 rounded text-sm font-mono text-foreground break-all">
+                              {generatedPassword}
+                            </code>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(generatedPassword);
+                                toast({
+                                  title: "Copied",
+                                  description: "Password copied to clipboard",
+                                });
+                              }}
+                              className="p-2 hover:bg-primary/20 transition-colors rounded"
+                            >
+                              <Copy className="w-4 h-4 text-primary" />
+                            </button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Share this password securely with the new user. They can change it after logging in.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Form Actions */}
+                    <div className="border-t border-border/20 pt-6 flex gap-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowAccountForm(false);
+                          setGeneratedPassword("");
+                          resetAccountForm();
+                        }}
+                        disabled={creatingAccount}
+                        className="flex-1 border-border/30 hover:bg-card text-foreground font-display uppercase tracking-widest text-xs"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={creatingAccount}
+                        className="flex-1 bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+                      >
+                        {creatingAccount ? "Creating Account..." : "Create Account"}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
+
+        {/* Account Management Info */}
+        {user?.role === "admin" && activeTab === "accounts" && !showAccountForm && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-12 glass-card p-8 text-center"
+          >
+            <Users className="w-12 h-12 text-primary/20 mx-auto mb-4" />
+            <h3 className="font-display text-xl uppercase tracking-wider mb-2">
+              Account Management
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              Create and manage user accounts for your dealership team. Click "Create Account" to add new team members.
+            </p>
+          </motion.div>
+        )}
+
+        {/* Show Stats and Requests only on Requests Tab */}
+        {activeTab === "requests" && (
+          <>
         {/* Stats Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1051,6 +1357,8 @@ export default function Dashboard() {
             </div>
           </div>
         </motion.div>
+          </>
+        )}
       </div>
     </main>
   );

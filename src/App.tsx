@@ -22,7 +22,6 @@ import ServiceArea from "./pages/ServiceArea";
 import Trusted from "./pages/Trusted";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
-import Signup from "./pages/Signup";
 import Request from "./pages/Request";
 import Dashboard from "./pages/Dashboard";
 
@@ -160,7 +159,6 @@ const AppContent = () => {
 
                 {/* Auth routes */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
 
                 {/* Protected routes */}
                 <Route

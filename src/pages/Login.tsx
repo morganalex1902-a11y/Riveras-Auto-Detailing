@@ -136,13 +136,7 @@ export default function Login() {
           {/* Footer Links */}
           <div className="text-center border-t border-border/30 pt-6">
             <p className="text-muted-foreground text-xs mb-3">
-              Don't have an account?{" "}
-              <a
-                href="/signup"
-                className="text-primary hover:text-primary/80 font-display uppercase tracking-wider transition-colors"
-              >
-                Create One
-              </a>
+              Contact your dealership admin to create an account
             </p>
             <button className="text-primary hover:text-primary/80 text-xs font-display uppercase tracking-wider transition-colors">
               Forgot password?
