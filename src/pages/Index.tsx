@@ -1,4 +1,4 @@
-import { Phone, DollarSign, RefreshCw, Target, MessageCircle } from "lucide-react";
+import { Phone, DollarSign, RefreshCw, Target, MessageCircle, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -60,9 +60,9 @@ const Index = () => {
               The best prices and solutions for dealerships. Quality. Speed. Consistency.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <GoldButton href="tel:3239948612">
-                <Phone className="w-4 h-4" />
-                Call Now – 323-994-8612
+              <GoldButton to="/dashboard/login">
+                <LogIn className="w-4 h-4" />
+                Dealership Portal
               </GoldButton>
             </div>
           </motion.div>
