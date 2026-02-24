@@ -94,26 +94,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const { data: userProfile } = await supabase
-          .from("users")
-          .select("*")
-          .eq("auth_id", session.user.id)
-          .single();
+      try {
+        if (session?.user) {
+          const { data: userProfile, error } = await supabase
+            .from("users")
+            .select("*")
+            .eq("auth_id", session.user.id)
+            .single();
 
-        if (userProfile) {
-          setUser({
-            email: userProfile.email,
-            name: userProfile.name,
-            role: userProfile.role,
-            dealership_id: userProfile.dealership_id,
-            id: userProfile.id,
-          });
-          setIsLoggedIn(true);
+          if (error) {
+            console.error("Error fetching user profile:", error);
+            return;
+          }
+
+          if (userProfile) {
+            setUser({
+              email: userProfile.email,
+              name: userProfile.name,
+              role: userProfile.role,
+              dealership_id: userProfile.dealership_id,
+              id: userProfile.id,
+            });
+            setIsLoggedIn(true);
+            // Fetch requests for this user's dealership
+            if (userProfile.dealership_id) {
+              fetchRequests(userProfile.dealership_id, userProfile.role);
+            }
+          }
+        } else {
+          setIsLoggedIn(false);
+          setUser(null);
         }
-      } else {
-        setIsLoggedIn(false);
-        setUser(null);
+      } catch (error) {
+        console.error("Auth state change error:", error);
       }
     });
 
