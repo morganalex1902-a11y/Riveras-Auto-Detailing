@@ -56,7 +56,20 @@ interface AccountFormData {
   email: string;
   password: string;
   role: "sales_rep" | "admin" | "manager";
+  securityQuestion: string;
+  securityAnswer: string;
 }
+
+const SECURITY_QUESTIONS = [
+  "What is your mother's maiden name?",
+  "What was the name of your first pet?",
+  "In what city were you born?",
+  "What is your favorite color?",
+  "What was your first car make/model?",
+  "What is your favorite food?",
+  "What was the name of your elementary school?",
+  "What is your favorite movie?",
+];
 
 const MAIN_SERVICES = [
   "N/C Delivery",
@@ -155,6 +168,8 @@ export default function Dashboard() {
       email: "",
       password: "",
       role: "sales_rep",
+      securityQuestion: SECURITY_QUESTIONS[0],
+      securityAnswer: "",
     },
   });
 
@@ -459,6 +474,8 @@ export default function Dashboard() {
           role: data.role,
           password_hash: passwordHash,
           is_active: true,
+          security_question: data.securityQuestion,
+          security_answer: data.securityAnswer.toLowerCase().trim(),
         })
         .select()
         .single();
@@ -1057,6 +1074,49 @@ export default function Dashboard() {
                             <option value="manager">Manager</option>
                             <option value="admin">Admin</option>
                           </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Security Question */}
+                    <div className="border-t border-border/20 pt-6">
+                      <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                        Account Recovery
+                      </h4>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        Set up a security question for account recovery if the password is forgotten.
+                      </p>
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="sec-question" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Security Question <span className="text-destructive">*</span>
+                          </label>
+                          <select
+                            id="sec-question"
+                            {...registerAccount("securityQuestion", { required: true })}
+                            disabled={creatingAccount}
+                            className="w-full bg-background/50 border border-border/50 text-foreground px-3 py-2 rounded-sm text-sm"
+                          >
+                            {SECURITY_QUESTIONS.map((q) => (
+                              <option key={q} value={q}>{q}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="sec-answer" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Answer <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            id="sec-answer"
+                            type="text"
+                            placeholder="Your answer"
+                            {...registerAccount("securityAnswer", { required: true })}
+                            disabled={creatingAccount}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                          />
+                          <p className="text-xs text-muted-foreground mt-2">
+                            This answer is case-insensitive and will be trimmed of spaces.
+                          </p>
                         </div>
                       </div>
                     </div>

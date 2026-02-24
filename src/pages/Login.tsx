@@ -19,6 +19,9 @@ export default function Login() {
   const [forgotError, setForgotError] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
   const [foundUser, setFoundUser] = useState<any>(null);
+  const [securityAnswerInput, setSecurityAnswerInput] = useState("");
+  const [securityAnswerVerified, setSecurityAnswerVerified] = useState(false);
+  const [verifyingAnswer, setVerifyingAnswer] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -75,7 +78,13 @@ export default function Login() {
         throw new Error("No account found with this email");
       }
 
+      if (!user.security_question || !user.security_answer) {
+        throw new Error("This account does not have a security question set up. Please contact your admin.");
+      }
+
       setFoundUser(user);
+      setSecurityAnswerVerified(false);
+      setSecurityAnswerInput("");
     } catch (err: any) {
       setForgotError(err?.message || "Failed to find account. Please check your email.");
     } finally {
@@ -83,9 +92,35 @@ export default function Login() {
     }
   };
 
+  const handleVerifySecurityAnswer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError("");
+    setVerifyingAnswer(true);
+
+    try {
+      const userAnswer = securityAnswerInput.toLowerCase().trim();
+      const storedAnswer = foundUser.security_answer.toLowerCase().trim();
+
+      if (userAnswer !== storedAnswer) {
+        throw new Error("Incorrect security answer. Please try again.");
+      }
+
+      setSecurityAnswerVerified(true);
+    } catch (err: any) {
+      setForgotError(err?.message || "Failed to verify security answer.");
+    } finally {
+      setVerifyingAnswer(false);
+    }
+  };
+
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotError("");
+
+    if (!securityAnswerVerified) {
+      setForgotError("Please verify your security answer first");
+      return;
+    }
 
     if (newPassword !== confirmPassword) {
       setForgotError("Passwords do not match");
@@ -122,6 +157,8 @@ export default function Login() {
       setShowForgotPassword(false);
       setForgotEmail("");
       setFoundUser(null);
+      setSecurityAnswerInput("");
+      setSecurityAnswerVerified(false);
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: any) {
@@ -153,6 +190,8 @@ export default function Login() {
                 setShowForgotPassword(false);
                 setFoundUser(null);
                 setForgotEmail("");
+                setSecurityAnswerInput("");
+                setSecurityAnswerVerified(false);
                 setNewPassword("");
                 setConfirmPassword("");
                 setForgotError("");
@@ -284,8 +323,69 @@ export default function Login() {
             </form>
           )}
 
+          {/* Security Question Verification Form */}
+          {foundUser && !securityAnswerVerified && (
+            <form onSubmit={handleVerifySecurityAnswer} className="space-y-5 mb-8">
+              <div className="bg-background/50 p-3 rounded border border-border/30 mb-4">
+                <p className="text-xs text-muted-foreground">
+                  Account: <span className="font-semibold text-foreground">{foundUser.email}</span>
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="sec-question-display" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  Security Question
+                </label>
+                <div className="bg-background/50 p-3 rounded border border-border/30">
+                  <p className="text-sm text-foreground">{foundUser.security_question}</p>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="sec-answer-input" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  Your Answer <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  id="sec-answer-input"
+                  type="text"
+                  placeholder="Enter your answer"
+                  value={securityAnswerInput}
+                  onChange={(e) => setSecurityAnswerInput(e.target.value)}
+                  required
+                  disabled={verifyingAnswer}
+                  className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                />
+              </div>
+
+              {forgotError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-destructive/20 border border-destructive/50 text-destructive p-3 rounded-sm text-sm"
+                >
+                  {forgotError}
+                </motion.div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={verifyingAnswer}
+                className="w-full bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest py-2.5 h-auto text-sm"
+              >
+                {verifyingAnswer ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify Answer"
+                )}
+              </Button>
+            </form>
+          )}
+
           {/* Reset Password Form */}
-          {foundUser && (
+          {foundUser && securityAnswerVerified && (
             <form onSubmit={handleResetPassword} className="space-y-5 mb-8">
               <div className="bg-background/50 p-3 rounded border border-border/30 mb-4">
                 <p className="text-xs text-muted-foreground">
