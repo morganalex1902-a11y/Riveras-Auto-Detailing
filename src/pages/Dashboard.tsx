@@ -98,7 +98,7 @@ export default function Dashboard() {
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, user, addRequest, newRequestCount, resetNewRequestCount } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, user, addRequest, newRequestCount, resetNewRequestCount, loading } = useAuth();
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState("All");
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -239,41 +239,66 @@ export default function Dashboard() {
 
   const onFormSubmit = async (data: RequestFormData) => {
     setSubmittingForm(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
 
-    addRequest({
-      requestNumber: generateRequestNumber(),
-      requestedBy: user?.email || "unknown@dealership.com",
-      manager: data.manager || undefined,
-      stockVin: data.stockVin,
-      poNumber: data.poNumber || undefined,
-      vehicleDescription: data.vehicleDescription,
-      year: data.year,
-      make: data.make,
-      model: data.model,
-      color: data.color,
-      dateRequested: getTodayDate(),
-      dueDate: data.dueDate,
-      dueTime: data.dueTime,
-      mainServices: data.mainServices,
-      additionalServices: data.additionalServices,
-      notes: data.notes,
-      status: "Pending",
-      price: data.price || 0,
-      service: data.mainServices[0] || "Custom Service",
-      vin: data.stockVin,
-      due: `${data.dueDate} ${data.dueTime}`,
-    });
+    try {
+      await addRequest({
+        requestNumber: generateRequestNumber(),
+        requestedBy: user?.email || "unknown@dealership.com",
+        manager: data.manager || undefined,
+        stockVin: data.stockVin,
+        poNumber: data.poNumber || undefined,
+        vehicleDescription: data.vehicleDescription,
+        year: data.year,
+        make: data.make,
+        model: data.model,
+        color: data.color,
+        dateRequested: getTodayDate(),
+        dueDate: data.dueDate,
+        dueTime: data.dueTime,
+        mainServices: data.mainServices,
+        additionalServices: data.additionalServices,
+        notes: data.notes,
+        status: "Pending",
+        price: data.price || 0,
+        service: data.mainServices[0] || "Custom Service",
+        vin: data.stockVin,
+        due: `${data.dueDate} ${data.dueTime}`,
+      });
 
-    setSubmittingForm(false);
-    reset();
-    setShowForm(false);
+      reset();
+      setShowForm(false);
 
-    toast({
-      title: "Request Submitted",
-      description: "Your service request has been successfully created.",
-    });
+      toast({
+        title: "Request Submitted",
+        description: "Your service request has been successfully created.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to create request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingForm(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen pt-20 pb-12 flex items-center justify-center">
+        <div className="text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"
+          />
+          <p className="text-muted-foreground font-display uppercase tracking-wider">
+            Loading dashboard...
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen pt-20 pb-12">

@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 export interface User {
   email: string;
   name?: string;
-  role: "sales_rep" | "admin";
+  role: "sales_rep" | "admin" | "manager";
+  dealership_id?: string;
+  id?: string;
 }
 
 export interface ServiceRequest {
@@ -37,12 +40,12 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   requests: ServiceRequest[];
-  addRequest: (request: Omit<ServiceRequest, "id">) => void;
-  updateRequestStatus: (id: number, status: ServiceRequest["status"]) => void;
-  updateRequestPrice: (id: number, price: number) => void;
+  addRequest: (request: Omit<ServiceRequest, "id">) => Promise<void>;
+  updateRequestStatus: (id: number, status: ServiceRequest["status"]) => Promise<void>;
+  updateRequestPrice: (id: number, price: number) => Promise<void>;
   newRequestCount: number;
   resetNewRequestCount: () => void;
-  onNewRequest?: (request: ServiceRequest) => void;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,195 +54,226 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [newRequestCount, setNewRequestCount] = useState(0);
-  const [requests, setRequests] = useState<ServiceRequest[]>([
-    {
-      id: 1,
-      requestNumber: "REQ-001",
-      requestedBy: "robert@salesdealership.com",
-      manager: "manager@dealership.com",
-      stockVin: "1HGCM82633A004352",
-      poNumber: "PO-2024-001",
-      vehicleDescription: "Customer vehicle - Trade-in",
-      year: 2023,
-      make: "Honda",
-      model: "Accord",
-      color: "Silver",
-      dateRequested: "2026-02-23",
-      dueDate: "2026-02-25",
-      dueTime: "14:00",
-      mainServices: ["N/C Delivery", "Clean for Showroom"],
-      additionalServices: [],
-      notes: "Need ready before customer pickup",
-      status: "Pending",
-      price: 0,
-      service: "N/C Delivery",
-      vin: "1HGCM82633A004352",
-      due: "2026-02-25 14:00",
-    },
-    {
-      id: 2,
-      requestNumber: "REQ-002",
-      requestedBy: "sarah@service.com",
-      manager: "manager@dealership.com",
-      stockVin: "5FNYF4H75LB123456",
-      poNumber: "PO-2024-002",
-      vehicleDescription: "Lot vehicle",
-      year: 2022,
-      make: "Honda",
-      model: "Pilot",
-      color: "Black",
-      dateRequested: "2026-02-23",
-      dueDate: "2026-02-26",
-      dueTime: "10:00",
-      mainServices: ["U/C Detail"],
-      additionalServices: ["Interior Protection"],
-      notes: "Full interior detail requested",
-      status: "In Progress",
-      price: 250,
-      service: "U/C Detail",
-      vin: "5FNYF4H75LB123456",
-      due: "2026-02-26 10:00",
-    },
-    {
-      id: 3,
-      requestNumber: "REQ-003",
-      requestedBy: "john@sales.com",
-      manager: "manager@dealership.com",
-      stockVin: "4T1BF1AK5CU123456",
-      poNumber: "",
-      vehicleDescription: "Customer vehicle",
-      year: 2021,
-      make: "Toyota",
-      model: "Camry",
-      color: "White",
-      dateRequested: "2026-02-23",
-      dueDate: "2026-02-27",
-      dueTime: "09:00",
-      mainServices: [],
-      additionalServices: ["Restore Headlights"],
-      notes: "Cloudy headlights, needs full restoration",
-      status: "Pending",
-      price: 0,
-      service: "Headlight Restoration",
-      vin: "4T1BF1AK5CU123456",
-      due: "2026-02-27 09:00",
-    },
-    {
-      id: 4,
-      requestNumber: "REQ-004",
-      requestedBy: "maria@dealership.com",
-      manager: "manager@dealership.com",
-      stockVin: "2G1FB1E39D1234567",
-      poNumber: "",
-      vehicleDescription: "Fleet vehicle",
-      year: 2013,
-      make: "Chevrolet",
-      model: "Malibu",
-      color: "Gray",
-      dateRequested: "2026-02-22",
-      dueDate: "2026-02-24",
-      dueTime: "11:00",
-      mainServices: [],
-      additionalServices: ["Tint Removal"],
-      notes: "All windows, customer wants OEM look",
-      status: "Completed",
-      price: 150,
-      service: "Tint Removal",
-      vin: "2G1FB1E39D1234567",
-      due: "2026-02-24 11:00",
-    },
-    {
-      id: 5,
-      requestNumber: "REQ-005",
-      requestedBy: "robert@salesdealership.com",
-      manager: "manager@dealership.com",
-      stockVin: "1G1FB1C56F2123456",
-      poNumber: "PO-2024-003",
-      vehicleDescription: "Wholesale vehicle",
-      year: 2015,
-      make: "Chevrolet",
-      model: "Cruze",
-      color: "Blue",
-      dateRequested: "2026-02-23",
-      dueDate: "2026-02-28",
-      dueTime: "15:00",
-      mainServices: [],
-      additionalServices: ["Ozone Odor Removal"],
-      notes: "Odor issue, customer complaint",
-      status: "Pending",
-      price: 0,
-      service: "Ozone Odor Removal",
-      vin: "1G1FB1C56F2123456",
-      due: "2026-02-28 15:00",
-    },
-  ]);
+  const [requests, setRequests] = useState<ServiceRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Load session from localStorage on mount
+  // Initialize auth session on mount
   useEffect(() => {
-    const savedSession = localStorage.getItem("dealership-session");
-    if (savedSession) {
-      const session = JSON.parse(savedSession);
-      setIsLoggedIn(true);
-      setUser(session.user);
-    }
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          // Fetch user profile from users table
+          const { data: userProfile } = await supabase
+            .from("users")
+            .select("*")
+            .eq("auth_id", session.user.id)
+            .single();
+
+          if (userProfile) {
+            setUser({
+              email: userProfile.email,
+              name: userProfile.name,
+              role: userProfile.role,
+              dealership_id: userProfile.dealership_id,
+              id: userProfile.id,
+            });
+            setIsLoggedIn(true);
+            // Fetch requests for this user's dealership
+            fetchRequests(userProfile.dealership_id, userProfile.role);
+          }
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const { data: userProfile } = await supabase
+          .from("users")
+          .select("*")
+          .eq("auth_id", session.user.id)
+          .single();
+
+        if (userProfile) {
+          setUser({
+            email: userProfile.email,
+            name: userProfile.name,
+            role: userProfile.role,
+            dealership_id: userProfile.dealership_id,
+            id: userProfile.id,
+          });
+          setIsLoggedIn(true);
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUser(null);
+      }
+    });
+
+    return () => subscription?.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
-    // Mock login - simulate async operation
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Determine role based on email
-        let role: "sales_rep" | "admin" = "sales_rep";
-        if (email === "manager@dealership.com" || email === "admin@dealership.com") {
-          role = "admin";
+  const fetchRequests = async (dealershipId: string, role: string) => {
+    try {
+      let query = supabase
+        .from("service_requests")
+        .select("*")
+        .eq("dealership_id", dealershipId);
+
+      if (role === "sales_rep") {
+        const { data: currentUser } = await supabase.auth.getUser();
+        if (currentUser.user?.email) {
+          query = query.eq("requested_by", currentUser.user.email);
         }
+      }
 
-        const newUser: User = {
-          email,
-          name: email.split("@")[0],
-          role,
-        };
+      const { data, error } = await query.order("created_at", { ascending: false });
+      
+      if (error) throw error;
 
-        setIsLoggedIn(true);
-        setUser(newUser);
-        localStorage.setItem("dealership-session", JSON.stringify({ user: newUser }));
-        resolve();
-      }, 500);
-    });
+      const formattedRequests: ServiceRequest[] = (data || []).map((req: any) => ({
+        id: req.id,
+        requestNumber: req.request_number,
+        requestedBy: req.requested_by,
+        manager: req.manager,
+        stockVin: req.stock_vin,
+        poNumber: req.po_number,
+        vehicleDescription: req.vehicle_description,
+        year: req.year,
+        make: req.make,
+        model: req.model,
+        color: req.color,
+        dateRequested: req.date_requested,
+        dueDate: req.due_date,
+        dueTime: req.due_time,
+        mainServices: req.main_services || [],
+        additionalServices: req.additional_services || [],
+        notes: req.notes,
+        status: req.status,
+        price: req.price,
+        service: req.main_services?.[0],
+        vin: req.stock_vin,
+        due: `${req.due_date} ${req.due_time}`,
+      }));
+
+      setRequests(formattedRequests);
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+    }
   };
 
-  const logout = () => {
-    setIsLoggedIn(false);
-    setUser(null);
-    localStorage.removeItem("dealership-session");
+  const login = async (email: string, password: string): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      throw error;
+    }
   };
 
-  const addRequest = (request: Omit<ServiceRequest, "id">) => {
-    const newRequest: ServiceRequest = {
-      ...request,
-      id: Math.max(...requests.map((r) => r.id), 0) + 1,
-    };
-    setRequests([...requests, newRequest]);
-    // Notify admins of new request
-    setNewRequestCount((prev) => prev + 1);
-    // Trigger localStorage event for cross-tab notification
-    localStorage.setItem("new-request-notification", JSON.stringify({
-      requestNumber: newRequest.requestNumber,
-      requestedBy: newRequest.requestedBy,
-      timestamp: new Date().toISOString(),
-    }));
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setIsLoggedIn(false);
+      setUser(null);
+      setRequests([]);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  const addRequest = async (requestData: Omit<ServiceRequest, "id">) => {
+    try {
+      if (!user?.dealership_id) throw new Error("User dealership not found");
+
+      const { data, error } = await supabase
+        .from("service_requests")
+        .insert({
+          request_number: requestData.requestNumber,
+          dealership_id: user.dealership_id,
+          requested_by: requestData.requestedBy,
+          manager: requestData.manager,
+          stock_vin: requestData.stockVin,
+          po_number: requestData.poNumber,
+          vehicle_description: requestData.vehicleDescription,
+          year: requestData.year,
+          make: requestData.make,
+          model: requestData.model,
+          color: requestData.color,
+          date_requested: requestData.dateRequested,
+          due_date: requestData.dueDate,
+          due_time: requestData.dueTime,
+          main_services: requestData.mainServices,
+          additional_services: requestData.additionalServices,
+          notes: requestData.notes,
+          status: requestData.status,
+          price: requestData.price,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Refresh requests list
+      if (user.dealership_id) {
+        fetchRequests(user.dealership_id, user.role);
+      }
+
+      // Notify admins
+      setNewRequestCount((prev) => prev + 1);
+    } catch (error) {
+      console.error("Error adding request:", error);
+      throw error;
+    }
+  };
+
+  const updateRequestStatus = async (id: number, status: ServiceRequest["status"]) => {
+    try {
+      const { error } = await supabase
+        .from("service_requests")
+        .update({ status })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // Update local state
+      setRequests(requests.map((r) => (r.id === id ? { ...r, status } : r)));
+    } catch (error) {
+      console.error("Error updating request status:", error);
+      throw error;
+    }
+  };
+
+  const updateRequestPrice = async (id: number, price: number) => {
+    try {
+      const { error } = await supabase
+        .from("service_requests")
+        .update({ price })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // Update local state
+      setRequests(requests.map((r) => (r.id === id ? { ...r, price } : r)));
+    } catch (error) {
+      console.error("Error updating request price:", error);
+      throw error;
+    }
   };
 
   const resetNewRequestCount = () => {
     setNewRequestCount(0);
-  };
-
-  const updateRequestStatus = (id: number, status: ServiceRequest["status"]) => {
-    setRequests(requests.map((r) => (r.id === id ? { ...r, status } : r)));
-  };
-
-  const updateRequestPrice = (id: number, price: number) => {
-    setRequests(requests.map((r) => (r.id === id ? { ...r, price } : r)));
   };
 
   return (
@@ -255,6 +289,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateRequestPrice,
         newRequestCount,
         resetNewRequestCount,
+        loading,
       }}
     >
       {children}
