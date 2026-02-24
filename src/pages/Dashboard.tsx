@@ -145,6 +145,10 @@ export default function Dashboard() {
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [userToResetPassword, setUserToResetPassword] = useState<any>(null);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resettingPasswordId, setResettingPasswordId] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   const { register: registerAccount, handleSubmit: handleAccountSubmit, reset: resetAccountForm, watch: watchAccount } = useForm<AccountFormData>({
     defaultValues: {
       name: "",
@@ -208,6 +212,44 @@ export default function Dashboard() {
       });
     } finally {
       setDeletingUserId(null);
+    }
+  };
+
+  // Reset user password
+  const handleResetPassword = async () => {
+    if (!userToResetPassword) return;
+
+    setResettingPasswordId(userToResetPassword.id);
+    try {
+      // Generate a new random password
+      const tempPassword = generatePassword();
+
+      // Hash the new password
+      const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(tempPassword));
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      // Update the user's password
+      const { error } = await supabase
+        .from('users')
+        .update({ password_hash: passwordHash })
+        .eq('id', userToResetPassword.id);
+
+      if (error) throw error;
+
+      setNewPassword(tempPassword);
+      toast({
+        title: "Password Reset",
+        description: `A new password has been generated for ${userToResetPassword.email}. Copy and share it with them.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to reset password. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setResettingPasswordId(null);
     }
   };
 
@@ -1148,17 +1190,29 @@ export default function Dashboard() {
                             {member.created_at ? new Date(member.created_at).toLocaleDateString() : "—"}
                           </TableCell>
                           <TableCell>
-                            <button
-                              onClick={() => {
-                                setUserToDelete(member);
-                                setShowDeleteDialog(true);
-                              }}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                              title="Delete user account"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Delete
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setUserToResetPassword(member);
+                                  setNewPassword("");
+                                  setShowResetDialog(true);
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs text-primary hover:bg-primary/10 transition-colors"
+                                title="Reset password"
+                              >
+                                <span>Reset</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setUserToDelete(member);
+                                  setShowDeleteDialog(true);
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                                title="Delete user account"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1883,6 +1937,84 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <DialogContent className="glass-card border-border/50">
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase tracking-wider">
+              Reset Password
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Reset the password for <span className="font-semibold text-foreground">{userToResetPassword?.email}</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          {newPassword ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                  New Temporary Password
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newPassword}
+                    readOnly
+                    className="flex-1 px-3 py-2 bg-background/50 border border-border/50 rounded text-sm font-mono"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(newPassword);
+                      toast({
+                        title: "Copied",
+                        description: "Password copied to clipboard",
+                      });
+                    }}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded text-sm bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground bg-background/50 p-3 rounded border border-border/30">
+                Share this password with the user. They can change it after logging in.
+              </p>
+              <div className="flex gap-3 justify-end pt-4">
+                <Button
+                  onClick={() => {
+                    setShowResetDialog(false);
+                    setUserToResetPassword(null);
+                    setNewPassword("");
+                  }}
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-3 justify-end pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowResetDialog(false);
+                  setUserToResetPassword(null);
+                }}
+                disabled={resettingPasswordId !== null}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleResetPassword}
+                disabled={resettingPasswordId !== null}
+              >
+                {resettingPasswordId ? "Resetting..." : "Generate New Password"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete User Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
