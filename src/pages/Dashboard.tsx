@@ -333,23 +333,27 @@ export default function Dashboard() {
     try {
       const password = data.password && data.password.trim() ? data.password : generatePassword();
 
-      // Call the signup edge function to create user with hashed password
-      const { data: response, error: functionError } = await supabase.functions.invoke('signup', {
-        body: {
+      // Hash the password using SHA-256
+      const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      // Create user directly in the database
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert({
           email: data.email,
-          password,
           name: data.name,
           dealership_id: user?.dealership_id,
           role: data.role,
-        },
-      });
+          password_hash: passwordHash,
+          is_active: true,
+        })
+        .select()
+        .single();
 
-      if (functionError) {
-        throw new Error(functionError.message || "Failed to create account");
-      }
-
-      if (response?.error) {
-        throw new Error(response.error);
+      if (insertError) {
+        throw new Error(insertError.message || "Failed to create account");
       }
 
       toast({
