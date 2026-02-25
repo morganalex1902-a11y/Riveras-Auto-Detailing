@@ -34,6 +34,19 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
+const formatDateInput = (value: string): string => {
+  const cleaned = value.replace(/\D/g, "");
+  if (cleaned.length <= 4) return cleaned;
+  if (cleaned.length <= 6) return `${cleaned.slice(0, 4)}-${cleaned.slice(4)}`;
+  return `${cleaned.slice(0, 4)}-${cleaned.slice(4, 6)}-${cleaned.slice(6, 8)}`;
+};
+
+const formatTimeInput = (value: string): string => {
+  const cleaned = value.replace(/\D/g, "");
+  if (cleaned.length <= 2) return cleaned;
+  return `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}`;
+};
+
 interface RequestFormData {
   manager: string;
   stockVin: string;
@@ -827,8 +840,16 @@ export default function Dashboard() {
                         <Input
                           id="dueDate"
                           type="text"
-                          placeholder="YYYY-MM-DD (e.g., 2024-03-15)"
-                          {...register("dueDate", { required: true })}
+                          placeholder="YYYY-MM-DD"
+                          {...register("dueDate", {
+                            required: true,
+                            onChange: (e) => {
+                              e.target.value = formatDateInput(e.target.value);
+                            }
+                          })}
+                          inputMode="numeric"
+                          maxLength={10}
+                          pattern="\d{4}-\d{2}-\d{2}"
                           className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
                         />
                       </div>
@@ -839,8 +860,16 @@ export default function Dashboard() {
                         <Input
                           id="dueTime"
                           type="text"
-                          placeholder="HH:MM (e.g., 14:30)"
-                          {...register("dueTime", { required: true })}
+                          placeholder="HH:MM"
+                          {...register("dueTime", {
+                            required: true,
+                            onChange: (e) => {
+                              e.target.value = formatTimeInput(e.target.value);
+                            }
+                          })}
+                          inputMode="numeric"
+                          maxLength={5}
+                          pattern="\d{2}:\d{2}"
                           className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
                         />
                       </div>
