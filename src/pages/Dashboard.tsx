@@ -826,9 +826,10 @@ export default function Dashboard() {
                         </label>
                         <Input
                           id="dueDate"
-                          type="date"
+                          type="text"
+                          placeholder="YYYY-MM-DD (e.g., 2024-03-15)"
                           {...register("dueDate", { required: true })}
-                          className="bg-background/50 border-border/50 text-foreground"
+                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
                         />
                       </div>
                       <div>
@@ -837,9 +838,10 @@ export default function Dashboard() {
                         </label>
                         <Input
                           id="dueTime"
-                          type="time"
+                          type="text"
+                          placeholder="HH:MM (e.g., 14:30)"
                           {...register("dueTime", { required: true })}
-                          className="bg-background/50 border-border/50 text-foreground"
+                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
                         />
                       </div>
                     </div>
