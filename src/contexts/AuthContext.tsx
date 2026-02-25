@@ -149,7 +149,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq("email", email)
         .single();
 
-      if (queryError || !userList) {
+      if (queryError) {
+        console.error("Database query error:", queryError);
+        throw new Error("Invalid email or password.");
+      }
+
+      if (!userList) {
+        console.warn("User not found:", email);
         throw new Error("Invalid email or password.");
       }
 
@@ -163,6 +169,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const passwordHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
       if (passwordHash !== userList.password_hash) {
+        console.error("Password hash mismatch for user:", email);
+        console.error("Expected:", userList.password_hash);
+        console.error("Got:", passwordHash);
         throw new Error("Invalid email or password.");
       }
 
@@ -193,6 +202,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }));
     } catch (error: any) {
       console.error("Login error:", error);
+      console.error("Error details:", {
+        message: error?.message,
+        code: error?.code,
+        status: error?.status,
+        hint: error?.hint,
+      });
       throw new Error(error?.message || "Login failed. Please try again.");
     }
   };
