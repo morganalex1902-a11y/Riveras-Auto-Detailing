@@ -78,7 +78,7 @@ const MAIN_SERVICES = [
   "U/C Delivery",
   "Wholesale Detail",
   "Service Wash In/Out",
-  "Service Express Wax",
+  "Loaner wash",
   "Service Full Detail",
   "Exterior Detail Only",
   "Interior Detail Only",
