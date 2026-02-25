@@ -212,10 +212,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (!user?.dealership_id) throw new Error("User dealership not found");
 
+      // Generate request number server-side to avoid race conditions
+      const { data: lastRequest, error: queryError } = await supabase
+        .from("service_requests")
+        .select("request_number")
+        .eq("dealership_id", user.dealership_id)
+        .order("id", { ascending: false })
+        .limit(1)
+        .single();
+
+      let nextRequestNumber = "REQ-001";
+      if (lastRequest?.request_number) {
+        const lastNumber = parseInt(lastRequest.request_number.replace("REQ-", ""), 10);
+        nextRequestNumber = `REQ-${String(lastNumber + 1).padStart(3, "0")}`;
+      }
+
       const { data, error } = await supabase
         .from("service_requests")
         .insert({
-          request_number: requestData.requestNumber,
+          request_number: nextRequestNumber,
           dealership_id: user.dealership_id,
           requested_by: requestData.requestedBy,
           manager: requestData.manager,
