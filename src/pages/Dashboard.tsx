@@ -55,9 +55,6 @@ interface RequestFormData {
   year: number;
   make: string;
   model: string;
-  color: string;
-  dueDate: string;
-  dueTime: string;
   mainServices: string[];
   additionalServices: string[];
   notes: string;
@@ -122,13 +119,9 @@ export default function Dashboard() {
       year: new Date().getFullYear(),
       make: "",
       model: "",
-      color: "",
-      dueDate: "",
-      dueTime: "",
       mainServices: [],
       additionalServices: [],
       notes: "",
-      price: 0,
     },
   });
 
@@ -326,7 +319,7 @@ export default function Dashboard() {
     return `REQ-${String(maxId + 1).padStart(3, "0")}`;
   };
 
-  // Get today's date formatted
+  // Get today's date formatted (US timezone)
   const getTodayDate = () => {
     const today = new Date();
     return today.toISOString().split("T")[0];
@@ -416,25 +409,21 @@ export default function Dashboard() {
       "Requested By",
       "Manager",
       "Vehicle",
-      "Color",
       "Stock/VIN",
       "PO#",
-      "Due Date",
       "Main Services",
       "Additional Services",
       "Status",
       "Price",
     ];
-    
+
     const rows = filteredRequests.map((r) => [
       r.requestNumber,
       r.requestedBy,
       r.manager || "-",
       `${r.year} ${r.make} ${r.model}`,
-      r.color,
       r.stockVin,
       r.poNumber || "-",
-      `${r.dueDate} ${r.dueTime}`,
       r.mainServices.join("; "),
       r.additionalServices.join("; "),
       r.status,
@@ -529,10 +518,7 @@ export default function Dashboard() {
         year: data.year,
         make: data.make,
         model: data.model,
-        color: data.color,
         dateRequested: getTodayDate(),
-        dueDate: data.dueDate,
-        dueTime: data.dueTime,
         mainServices: data.mainServices,
         additionalServices: data.additionalServices,
         notes: data.notes,
@@ -540,7 +526,6 @@ export default function Dashboard() {
         price: data.price || 0,
         service: data.mainServices[0] || "Custom Service",
         vin: data.stockVin,
-        due: `${data.dueDate} ${data.dueTime}`,
       });
 
       reset();
@@ -802,24 +787,13 @@ export default function Dashboard() {
                           className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
                         />
                       </div>
-                      <div className="md:col-span-2">
-                        <label htmlFor="color" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                          Color <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                          id="color"
-                          placeholder="Silver"
-                          {...register("color", { required: true })}
-                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
-                        />
-                      </div>
                     </div>
                   </div>
 
                   {/* Date & Time */}
                   <div className="border-t border-border/20 pt-6">
                     <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                      Request Dates & Times
+                      Request Date
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
@@ -831,46 +805,6 @@ export default function Dashboard() {
                           disabled
                           value={getTodayDate()}
                           className="bg-background/50 border-border/50 text-foreground"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="dueDate" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                          Due Date <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                          id="dueDate"
-                          type="text"
-                          placeholder="YYYY-MM-DD"
-                          {...register("dueDate", {
-                            required: true,
-                            onChange: (e) => {
-                              e.target.value = formatDateInput(e.target.value);
-                            }
-                          })}
-                          inputMode="numeric"
-                          maxLength={10}
-                          pattern="\d{4}-\d{2}-\d{2}"
-                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="dueTime" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                          Due Time <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                          id="dueTime"
-                          type="text"
-                          placeholder="HH:MM"
-                          {...register("dueTime", {
-                            required: true,
-                            onChange: (e) => {
-                              e.target.value = formatTimeInput(e.target.value);
-                            }
-                          })}
-                          inputMode="numeric"
-                          maxLength={5}
-                          pattern="\d{2}:\d{2}"
-                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
                         />
                       </div>
                     </div>
@@ -975,8 +909,7 @@ export default function Dashboard() {
                         <Input
                           id="price"
                           type="number"
-                          step="0.01"
-                          placeholder="0.00"
+                          step="1"
                           {...register("price", { valueAsNumber: true })}
                           className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
                         />
@@ -1437,15 +1370,17 @@ export default function Dashboard() {
             </SelectContent>
           </Select>
 
-          <div className="flex gap-2 ml-auto">
-            <Button
-              onClick={handleExport}
-              className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
-          </div>
+          {user?.role === "admin" && (
+            <div className="flex gap-2 ml-auto">
+              <Button
+                onClick={handleExport}
+                className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
+          )}
         </motion.div>
 
         {/* Requests Table - Admin Only */}
@@ -1474,9 +1409,6 @@ export default function Dashboard() {
                     </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                       Services
-                    </TableHead>
-                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
-                      Due Date
                     </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                       Status
@@ -1509,7 +1441,7 @@ export default function Dashboard() {
                           {request.requestedBy}
                         </TableCell>
                         <TableCell className="text-xs text-foreground">
-                          {request.year} {request.make} {request.model} ({request.color})
+                          {request.year} {request.make} {request.model}
                         </TableCell>
                         <TableCell className="text-xs text-foreground">
                           {request.stockVin}
@@ -1529,9 +1461,6 @@ export default function Dashboard() {
                               </p>
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-xs text-foreground">
-                          {request.dueDate} {request.dueTime}
                         </TableCell>
                         <TableCell>
                           {user?.role === "admin" && editingId === request.id ? (
@@ -1581,8 +1510,9 @@ export default function Dashboard() {
                             <div className="flex gap-1">
                               <Input
                                 type="number"
-                                value={editingPrice}
-                                onChange={(e) => setEditingPrice(parseFloat(e.target.value) || 0)}
+                                step="1"
+                                value={editingPrice || ""}
+                                onChange={(e) => setEditingPrice(e.target.value ? parseFloat(e.target.value) : 0)}
                                 className="w-20 h-7 text-xs bg-card/50 border-border/30"
                               />
                               <Button
@@ -1728,42 +1658,9 @@ export default function Dashboard() {
                                       <Input
                                         id="dialog-price"
                                         type="number"
-                                        step="0.01"
-                                        value={editingPrice}
-                                        onChange={(e) => setEditingPrice(parseFloat(e.target.value) || 0)}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Date Settings */}
-                                <div className="border-b border-border/20 pb-6">
-                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                                    Due Date
-                                  </h4>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <label htmlFor="dialog-due-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Date
-                                      </label>
-                                      <Input
-                                        id="dialog-due-date"
-                                        type="date"
-                                        value={editingDates.dueDate}
-                                        onChange={(e) => setEditingDates({ ...editingDates, dueDate: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label htmlFor="dialog-due-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Time
-                                      </label>
-                                      <Input
-                                        id="dialog-due-time"
-                                        type="time"
-                                        value={editingDates.dueTime}
-                                        onChange={(e) => setEditingDates({ ...editingDates, dueTime: e.target.value })}
+                                        step="1"
+                                        value={editingPrice || ""}
+                                        onChange={(e) => setEditingPrice(e.target.value ? parseFloat(e.target.value) : 0)}
                                         className="bg-card/50 border-border/30 text-foreground"
                                       />
                                     </div>
@@ -1964,23 +1861,13 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Important Dates & Pricing */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 pb-6 border-b border-border/20">
+                {/* Pricing */}
+                <div className="mb-6 pb-6 border-b border-border/20">
                   <div>
                     <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
                       Price
                     </p>
                     <p className="text-2xl font-display text-primary">${request.price.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                      Due Date
-                    </p>
-                    <p className="text-sm text-foreground">
-                      {request.dueDate && request.dueTime
-                        ? `${request.dueDate} at ${request.dueTime}`
-                        : request.dueDate || "Not set"}
-                    </p>
                   </div>
                 </div>
 

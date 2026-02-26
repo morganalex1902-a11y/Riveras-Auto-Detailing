@@ -20,10 +20,10 @@ export interface ServiceRequest {
   year: number;
   make: string;
   model: string;
-  color: string;
+  color?: string;
   dateRequested: string;
-  dueDate: string;
-  dueTime: string;
+  dueDate?: string;
+  dueTime?: string;
   startDate?: string;
   startTime?: string;
   completionDate?: string;
@@ -257,8 +257,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           model: requestData.model,
           color: requestData.color,
           date_requested: requestData.dateRequested,
-          due_date: requestData.dueDate,
-          due_time: requestData.dueTime,
           main_services: requestData.mainServices,
           additional_services: requestData.additionalServices,
           notes: requestData.notes,
