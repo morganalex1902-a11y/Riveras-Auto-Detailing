@@ -122,7 +122,6 @@ export default function Dashboard() {
       mainServices: [],
       additionalServices: [],
       notes: "",
-      price: 0,
     },
   });
 
@@ -911,7 +910,6 @@ export default function Dashboard() {
                           id="price"
                           type="number"
                           step="0.01"
-                          placeholder="0.00"
                           {...register("price", { valueAsNumber: true })}
                           className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
                         />
@@ -1512,8 +1510,9 @@ export default function Dashboard() {
                             <div className="flex gap-1">
                               <Input
                                 type="number"
-                                value={editingPrice}
-                                onChange={(e) => setEditingPrice(parseFloat(e.target.value) || 0)}
+                                step="0.01"
+                                value={editingPrice || ""}
+                                onChange={(e) => setEditingPrice(e.target.value ? parseFloat(e.target.value) : 0)}
                                 className="w-20 h-7 text-xs bg-card/50 border-border/30"
                               />
                               <Button
@@ -1660,8 +1659,8 @@ export default function Dashboard() {
                                         id="dialog-price"
                                         type="number"
                                         step="0.01"
-                                        value={editingPrice}
-                                        onChange={(e) => setEditingPrice(parseFloat(e.target.value) || 0)}
+                                        value={editingPrice || ""}
+                                        onChange={(e) => setEditingPrice(e.target.value ? parseFloat(e.target.value) : 0)}
                                         className="bg-card/50 border-border/30 text-foreground"
                                       />
                                     </div>
