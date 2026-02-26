@@ -20,7 +20,7 @@ export interface ServiceRequest {
   year: number;
   make: string;
   model: string;
-  color: string;
+  color?: string;
   dateRequested: string;
   dueDate?: string;
   dueTime?: string;

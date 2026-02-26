@@ -55,7 +55,6 @@ interface RequestFormData {
   year: number;
   make: string;
   model: string;
-  color: string;
   mainServices: string[];
   additionalServices: string[];
   notes: string;
@@ -120,7 +119,6 @@ export default function Dashboard() {
       year: new Date().getFullYear(),
       make: "",
       model: "",
-      color: "",
       mainServices: [],
       additionalServices: [],
       notes: "",
@@ -412,7 +410,6 @@ export default function Dashboard() {
       "Requested By",
       "Manager",
       "Vehicle",
-      "Color",
       "Stock/VIN",
       "PO#",
       "Main Services",
@@ -426,7 +423,6 @@ export default function Dashboard() {
       r.requestedBy,
       r.manager || "-",
       `${r.year} ${r.make} ${r.model}`,
-      r.color,
       r.stockVin,
       r.poNumber || "-",
       r.mainServices.join("; "),
@@ -523,7 +519,6 @@ export default function Dashboard() {
         year: data.year,
         make: data.make,
         model: data.model,
-        color: data.color,
         dateRequested: getTodayDate(),
         mainServices: data.mainServices,
         additionalServices: data.additionalServices,
@@ -790,17 +785,6 @@ export default function Dashboard() {
                           id="model"
                           placeholder="Accord"
                           {...register("model", { required: true })}
-                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label htmlFor="color" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                          Color <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                          id="color"
-                          placeholder="Silver"
-                          {...register("color", { required: true })}
                           className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
                         />
                       </div>
@@ -1457,7 +1441,7 @@ export default function Dashboard() {
                           {request.requestedBy}
                         </TableCell>
                         <TableCell className="text-xs text-foreground">
-                          {request.year} {request.make} {request.model} ({request.color})
+                          {request.year} {request.make} {request.model}
                         </TableCell>
                         <TableCell className="text-xs text-foreground">
                           {request.stockVin}
