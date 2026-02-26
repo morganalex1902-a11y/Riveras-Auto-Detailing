@@ -1372,15 +1372,17 @@ export default function Dashboard() {
             </SelectContent>
           </Select>
 
-          <div className="flex gap-2 ml-auto">
-            <Button
-              onClick={handleExport}
-              className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
-          </div>
+          {user?.role === "admin" && (
+            <div className="flex gap-2 ml-auto">
+              <Button
+                onClick={handleExport}
+                className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
+          )}
         </motion.div>
 
         {/* Requests Table - Admin Only */}
