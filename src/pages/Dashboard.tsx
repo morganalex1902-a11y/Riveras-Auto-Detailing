@@ -56,8 +56,6 @@ interface RequestFormData {
   make: string;
   model: string;
   color: string;
-  dueDate: string;
-  dueTime: string;
   mainServices: string[];
   additionalServices: string[];
   notes: string;
@@ -123,8 +121,6 @@ export default function Dashboard() {
       make: "",
       model: "",
       color: "",
-      dueDate: "",
-      dueTime: "",
       mainServices: [],
       additionalServices: [],
       notes: "",
@@ -419,13 +415,12 @@ export default function Dashboard() {
       "Color",
       "Stock/VIN",
       "PO#",
-      "Due Date",
       "Main Services",
       "Additional Services",
       "Status",
       "Price",
     ];
-    
+
     const rows = filteredRequests.map((r) => [
       r.requestNumber,
       r.requestedBy,
@@ -434,7 +429,6 @@ export default function Dashboard() {
       r.color,
       r.stockVin,
       r.poNumber || "-",
-      `${r.dueDate} ${r.dueTime}`,
       r.mainServices.join("; "),
       r.additionalServices.join("; "),
       r.status,
@@ -531,8 +525,6 @@ export default function Dashboard() {
         model: data.model,
         color: data.color,
         dateRequested: getTodayDate(),
-        dueDate: data.dueDate,
-        dueTime: data.dueTime,
         mainServices: data.mainServices,
         additionalServices: data.additionalServices,
         notes: data.notes,
@@ -540,7 +532,6 @@ export default function Dashboard() {
         price: data.price || 0,
         service: data.mainServices[0] || "Custom Service",
         vin: data.stockVin,
-        due: `${data.dueDate} ${data.dueTime}`,
       });
 
       reset();
@@ -819,7 +810,7 @@ export default function Dashboard() {
                   {/* Date & Time */}
                   <div className="border-t border-border/20 pt-6">
                     <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                      Request Dates & Times
+                      Request Date
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
@@ -831,46 +822,6 @@ export default function Dashboard() {
                           disabled
                           value={getTodayDate()}
                           className="bg-background/50 border-border/50 text-foreground"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="dueDate" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                          Due Date <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                          id="dueDate"
-                          type="text"
-                          placeholder="YYYY-MM-DD"
-                          {...register("dueDate", {
-                            required: true,
-                            onChange: (e) => {
-                              e.target.value = formatDateInput(e.target.value);
-                            }
-                          })}
-                          inputMode="numeric"
-                          maxLength={10}
-                          pattern="\d{4}-\d{2}-\d{2}"
-                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="dueTime" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                          Due Time <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                          id="dueTime"
-                          type="text"
-                          placeholder="HH:MM"
-                          {...register("dueTime", {
-                            required: true,
-                            onChange: (e) => {
-                              e.target.value = formatTimeInput(e.target.value);
-                            }
-                          })}
-                          inputMode="numeric"
-                          maxLength={5}
-                          pattern="\d{2}:\d{2}"
-                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
                         />
                       </div>
                     </div>
@@ -1476,9 +1427,6 @@ export default function Dashboard() {
                       Services
                     </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
-                      Due Date
-                    </TableHead>
-                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                       Status
                     </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
@@ -1529,9 +1477,6 @@ export default function Dashboard() {
                               </p>
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell className="text-xs text-foreground">
-                          {request.dueDate} {request.dueTime}
                         </TableCell>
                         <TableCell>
                           {user?.role === "admin" && editingId === request.id ? (
@@ -1737,39 +1682,6 @@ export default function Dashboard() {
                                   </div>
                                 </div>
 
-                                {/* Date Settings */}
-                                <div className="border-b border-border/20 pb-6">
-                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                                    Due Date
-                                  </h4>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <label htmlFor="dialog-due-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Date
-                                      </label>
-                                      <Input
-                                        id="dialog-due-date"
-                                        type="date"
-                                        value={editingDates.dueDate}
-                                        onChange={(e) => setEditingDates({ ...editingDates, dueDate: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label htmlFor="dialog-due-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Time
-                                      </label>
-                                      <Input
-                                        id="dialog-due-time"
-                                        type="time"
-                                        value={editingDates.dueTime}
-                                        onChange={(e) => setEditingDates({ ...editingDates, dueTime: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-
                                 {/* Job Start Date */}
                                 <div className="border-b border-border/20 pb-6">
                                   <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
@@ -1964,23 +1876,13 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Important Dates & Pricing */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 pb-6 border-b border-border/20">
+                {/* Pricing */}
+                <div className="mb-6 pb-6 border-b border-border/20">
                   <div>
                     <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
                       Price
                     </p>
                     <p className="text-2xl font-display text-primary">${request.price.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                      Due Date
-                    </p>
-                    <p className="text-sm text-foreground">
-                      {request.dueDate && request.dueTime
-                        ? `${request.dueDate} at ${request.dueTime}`
-                        : request.dueDate || "Not set"}
-                    </p>
                   </div>
                 </div>
 
