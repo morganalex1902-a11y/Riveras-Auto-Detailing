@@ -1667,71 +1667,7 @@ export default function Dashboard() {
                                   </div>
                                 </div>
 
-                                {/* Job Start Date */}
-                                <div className="border-b border-border/20 pb-6">
-                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                                    Job Start Date
-                                  </h4>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <label htmlFor="dialog-start-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Date
-                                      </label>
-                                      <Input
-                                        id="dialog-start-date"
-                                        type="date"
-                                        value={editingDates.startDate}
-                                        onChange={(e) => setEditingDates({ ...editingDates, startDate: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label htmlFor="dialog-start-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Time
-                                      </label>
-                                      <Input
-                                        id="dialog-start-time"
-                                        type="time"
-                                        value={editingDates.startTime}
-                                        onChange={(e) => setEditingDates({ ...editingDates, startTime: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
 
-                                {/* Job Completion Date */}
-                                <div>
-                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                                    Job Completion Date
-                                  </h4>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <label htmlFor="dialog-completion-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Date
-                                      </label>
-                                      <Input
-                                        id="dialog-completion-date"
-                                        type="date"
-                                        value={editingDates.completionDate}
-                                        onChange={(e) => setEditingDates({ ...editingDates, completionDate: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label htmlFor="dialog-completion-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Time
-                                      </label>
-                                      <Input
-                                        id="dialog-completion-time"
-                                        type="time"
-                                        value={editingDates.completionTime}
-                                        onChange={(e) => setEditingDates({ ...editingDates, completionTime: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
 
                                 {/* Save Button */}
                                 <div className="border-t border-border/20 pt-6 flex gap-4">
@@ -1751,7 +1687,6 @@ export default function Dashboard() {
                                       try {
                                         await updateRequestStatus(editingRequest.id, editingStatus as ServiceRequest["status"]);
                                         await updateRequestPrice(editingRequest.id, editingPrice);
-                                        await updateRequestDates(editingRequest.id, editingDates);
                                         toast({
                                           title: "Updated",
                                           description: "Request has been updated successfully.",
@@ -1770,7 +1705,7 @@ export default function Dashboard() {
                                     disabled={isSavingDates}
                                     className="flex-1 bg-primary hover:bg-primary text-primary-foreground"
                                   >
-                                    {isSavingDates ? "Saving..." : "Save All Changes"}
+                                    {isSavingDates ? "Saving..." : "Save Changes"}
                                   </Button>
                                 </div>
                               </div>
