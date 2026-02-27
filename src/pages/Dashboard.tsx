@@ -313,6 +313,20 @@ export default function Dashboard() {
     }
   }, [newRequestCount, user, requests, toast]);
 
+  // Auto-refresh requests list weekly (every 7 days)
+  useEffect(() => {
+    const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+    const interval = setInterval(() => {
+      // Trigger a refresh by re-fetching requests from the auth context
+      if (user?.dealership_id) {
+        window.location.reload();
+      }
+    }, WEEK_IN_MS);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   // Generate request number
   const generateRequestNumber = () => {
     const maxId = Math.max(...requests.map((r) => r.id), 0);
@@ -411,19 +425,26 @@ export default function Dashboard() {
       "Vehicle",
       "Stock/VIN",
       "PO#",
+      "Date Requested",
       "Main Services",
       "Additional Services",
       "Status",
       "Price",
     ];
 
-    const rows = filteredRequests.map((r) => [
+    // Filter to only include In Progress and Completed requests
+    const completedRequests = filteredRequests.filter(
+      (r) => r.status === "In Progress" || r.status === "Completed"
+    );
+
+    const rows = completedRequests.map((r) => [
       r.requestNumber,
       r.requestedBy,
       r.manager || "-",
       `${r.year} ${r.make} ${r.model}`,
       r.stockVin,
       r.poNumber || "-",
+      r.dateRequested || "-",
       r.mainServices.join("; "),
       r.additionalServices.join("; "),
       r.status,
@@ -439,7 +460,7 @@ export default function Dashboard() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `requests-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `weekly-services-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
   };
 
@@ -1402,6 +1423,9 @@ export default function Dashboard() {
                       Requested By
                     </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                      Date Requested
+                    </TableHead>
+                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                       Vehicle
                     </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
@@ -1424,7 +1448,7 @@ export default function Dashboard() {
                 <TableBody>
                   {filteredRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                         No requests found
                       </TableCell>
                     </TableRow>
@@ -1439,6 +1463,9 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {request.requestedBy}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {request.dateRequested || "-"}
                         </TableCell>
                         <TableCell className="text-xs text-foreground">
                           {request.year} {request.make} {request.model}
