@@ -52,6 +52,7 @@ interface AuthContextType {
   resetNewRequestCount: () => void;
   deleteAllRequests: () => Promise<void>;
   refreshRequests: () => Promise<void>;
+  getRequestsByDateRange: (startDate: string, endDate: string) => Promise<ServiceRequest[]>;
   loading: boolean;
 }
 
@@ -412,6 +413,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const getRequestsByDateRange = async (startDate: string, endDate: string): Promise<ServiceRequest[]> => {
+    try {
+      if (!user?.dealership_id) throw new Error("User dealership not found");
+
+      const { data, error } = await supabase
+        .from("service_requests")
+        .select("*")
+        .eq("dealership_id", user.dealership_id)
+        .gte("date_requested", startDate)
+        .lte("date_requested", endDate)
+        .order("date_requested", { ascending: false });
+
+      if (error) throw error;
+
+      const formattedRequests: ServiceRequest[] = (data || []).map((req: any) => ({
+        id: req.id,
+        requestNumber: req.request_number,
+        requestedBy: req.requested_by,
+        manager: req.manager,
+        stockVin: req.stock_vin,
+        poNumber: req.po_number,
+        vehicleDescription: req.vehicle_description,
+        year: req.year,
+        make: req.make,
+        model: req.model,
+        color: req.color,
+        dateRequested: req.date_requested,
+        dueDate: req.due_date,
+        dueTime: req.due_time,
+        startDate: req.start_date,
+        startTime: req.start_time,
+        completionDate: req.completion_date,
+        completionTime: req.completion_time,
+        mainServices: req.main_services || [],
+        additionalServices: req.additional_services || [],
+        notes: req.notes,
+        status: req.status,
+        price: req.price,
+      }));
+
+      return formattedRequests;
+    } catch (error) {
+      console.error("Error fetching requests by date range:", error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -428,6 +476,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetNewRequestCount,
         deleteAllRequests,
         refreshRequests,
+        getRequestsByDateRange,
         loading,
       }}
     >
