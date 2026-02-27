@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2 } from "lucide-react";
+import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -125,7 +125,7 @@ export default function Dashboard() {
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, user, addRequest, newRequestCount, resetNewRequestCount, loading } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests } = useAuth();
   const { toast } = useToast();
 
   // Request management state
@@ -168,6 +168,9 @@ export default function Dashboard() {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resettingPasswordId, setResettingPasswordId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDeletingAllRequests, setIsDeletingAllRequests] = useState(false);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const { register: registerAccount, handleSubmit: handleAccountSubmit, reset: resetAccountForm, watch: watchAccount } = useForm<AccountFormData>({
     defaultValues: {
       name: "",
@@ -462,6 +465,45 @@ export default function Dashboard() {
     a.href = url;
     a.download = `weekly-services-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshRequests();
+      toast({
+        title: "Refreshed",
+        description: "Service request list has been refreshed.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to refresh service requests.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleDeleteAllRequests = async () => {
+    setIsDeletingAllRequests(true);
+    try {
+      await deleteAllRequests();
+      setShowDeleteAllDialog(false);
+      toast({
+        title: "Deleted",
+        description: "All service requests have been deleted. The list will refresh automatically.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete service requests.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingAllRequests(false);
+    }
   };
 
   // Generate random password
@@ -1394,12 +1436,53 @@ export default function Dashboard() {
           {user?.role === "admin" && (
             <div className="flex gap-2 ml-auto">
               <Button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+                {isRefreshing ? "Refreshing..." : "Refresh"}
+              </Button>
+              <Button
                 onClick={handleExport}
                 className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
               </Button>
+              <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+                <Button
+                  onClick={() => setShowDeleteAllDialog(true)}
+                  className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-display uppercase tracking-widest text-xs"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete All
+                </Button>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Delete All Requests?</DialogTitle>
+                    <DialogDescription>
+                      This will permanently delete all service requests from your dashboard. This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex gap-3 justify-end mt-6">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowDeleteAllDialog(false)}
+                      disabled={isDeletingAllRequests}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDeleteAllRequests}
+                      disabled={isDeletingAllRequests}
+                    >
+                      {isDeletingAllRequests ? "Deleting..." : "Delete All"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
         </motion.div>

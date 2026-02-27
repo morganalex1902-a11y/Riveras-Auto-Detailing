@@ -50,6 +50,8 @@ interface AuthContextType {
   updateRequestDates: (id: number, data: { dueDate?: string; dueTime?: string; startDate?: string; startTime?: string; completionDate?: string; completionTime?: string }) => Promise<void>;
   newRequestCount: number;
   resetNewRequestCount: () => void;
+  deleteAllRequests: () => Promise<void>;
+  refreshRequests: () => Promise<void>;
   loading: boolean;
 }
 
@@ -283,15 +285,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateRequestStatus = async (id: number, status: ServiceRequest["status"]) => {
     try {
+      const updateData: any = { status };
+
+      // Auto-set completion date and time when status is changed to Completed
+      if (status === "Completed") {
+        const now = new Date();
+        const completionDate = now.toISOString().split("T")[0];
+        const completionTime = now.toTimeString().slice(0, 5); // HH:MM format
+        updateData.completion_date = completionDate;
+        updateData.completion_time = completionTime;
+      }
+
       const { error } = await supabase
         .from("service_requests")
-        .update({ status })
+        .update(updateData)
         .eq("id", id);
 
       if (error) throw error;
 
       // Update local state
-      setRequests(requests.map((r) => (r.id === id ? { ...r, status } : r)));
+      setRequests(requests.map((r) => {
+        if (r.id === id) {
+          const updatedRequest = { ...r, status };
+          if (status === "Completed") {
+            const now = new Date();
+            updatedRequest.completionDate = now.toISOString().split("T")[0];
+            updatedRequest.completionTime = now.toTimeString().slice(0, 5);
+          }
+          return updatedRequest;
+        }
+        return r;
+      }));
     } catch (error) {
       console.error("Error updating request status:", error);
       throw error;
@@ -357,6 +381,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setNewRequestCount(0);
   };
 
+  const deleteAllRequests = async () => {
+    try {
+      if (!user?.dealership_id) throw new Error("User dealership not found");
+
+      const { error } = await supabase
+        .from("service_requests")
+        .delete()
+        .eq("dealership_id", user.dealership_id);
+
+      if (error) throw error;
+
+      // Clear local state
+      setRequests([]);
+      setNewRequestCount(0);
+    } catch (error) {
+      console.error("Error deleting all requests:", error);
+      throw error;
+    }
+  };
+
+  const refreshRequests = async () => {
+    try {
+      if (user?.dealership_id) {
+        await fetchRequests(user.dealership_id, user.role, user.email);
+      }
+    } catch (error) {
+      console.error("Error refreshing requests:", error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -371,6 +426,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateRequestDates,
         newRequestCount,
         resetNewRequestCount,
+        deleteAllRequests,
+        refreshRequests,
         loading,
       }}
     >
