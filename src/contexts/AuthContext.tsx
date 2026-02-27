@@ -50,6 +50,9 @@ interface AuthContextType {
   updateRequestDates: (id: number, data: { dueDate?: string; dueTime?: string; startDate?: string; startTime?: string; completionDate?: string; completionTime?: string }) => Promise<void>;
   newRequestCount: number;
   resetNewRequestCount: () => void;
+  deleteAllRequests: () => Promise<void>;
+  refreshRequests: () => Promise<void>;
+  getRequestsByDateRange: (startDate: string, endDate: string) => Promise<ServiceRequest[]>;
   loading: boolean;
 }
 
@@ -283,15 +286,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateRequestStatus = async (id: number, status: ServiceRequest["status"]) => {
     try {
+      const updateData: any = { status };
+
+      // Auto-set completion date and time when status is changed to Completed
+      if (status === "Completed") {
+        const now = new Date();
+        const completionDate = now.toISOString().split("T")[0];
+        const completionTime = now.toTimeString().slice(0, 5); // HH:MM format
+        updateData.completion_date = completionDate;
+        updateData.completion_time = completionTime;
+      }
+
       const { error } = await supabase
         .from("service_requests")
-        .update({ status })
+        .update(updateData)
         .eq("id", id);
 
       if (error) throw error;
 
       // Update local state
-      setRequests(requests.map((r) => (r.id === id ? { ...r, status } : r)));
+      setRequests(requests.map((r) => {
+        if (r.id === id) {
+          const updatedRequest = { ...r, status };
+          if (status === "Completed") {
+            const now = new Date();
+            updatedRequest.completionDate = now.toISOString().split("T")[0];
+            updatedRequest.completionTime = now.toTimeString().slice(0, 5);
+          }
+          return updatedRequest;
+        }
+        return r;
+      }));
     } catch (error) {
       console.error("Error updating request status:", error);
       throw error;
@@ -357,6 +382,84 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setNewRequestCount(0);
   };
 
+  const deleteAllRequests = async () => {
+    try {
+      if (!user?.dealership_id) throw new Error("User dealership not found");
+
+      const { error } = await supabase
+        .from("service_requests")
+        .delete()
+        .eq("dealership_id", user.dealership_id);
+
+      if (error) throw error;
+
+      // Clear local state
+      setRequests([]);
+      setNewRequestCount(0);
+    } catch (error) {
+      console.error("Error deleting all requests:", error);
+      throw error;
+    }
+  };
+
+  const refreshRequests = async () => {
+    try {
+      if (user?.dealership_id) {
+        await fetchRequests(user.dealership_id, user.role, user.email);
+      }
+    } catch (error) {
+      console.error("Error refreshing requests:", error);
+      throw error;
+    }
+  };
+
+  const getRequestsByDateRange = async (startDate: string, endDate: string): Promise<ServiceRequest[]> => {
+    try {
+      if (!user?.dealership_id) throw new Error("User dealership not found");
+
+      const { data, error } = await supabase
+        .from("service_requests")
+        .select("*")
+        .eq("dealership_id", user.dealership_id)
+        .gte("date_requested", startDate)
+        .lte("date_requested", endDate)
+        .order("date_requested", { ascending: false });
+
+      if (error) throw error;
+
+      const formattedRequests: ServiceRequest[] = (data || []).map((req: any) => ({
+        id: req.id,
+        requestNumber: req.request_number,
+        requestedBy: req.requested_by,
+        manager: req.manager,
+        stockVin: req.stock_vin,
+        poNumber: req.po_number,
+        vehicleDescription: req.vehicle_description,
+        year: req.year,
+        make: req.make,
+        model: req.model,
+        color: req.color,
+        dateRequested: req.date_requested,
+        dueDate: req.due_date,
+        dueTime: req.due_time,
+        startDate: req.start_date,
+        startTime: req.start_time,
+        completionDate: req.completion_date,
+        completionTime: req.completion_time,
+        mainServices: req.main_services || [],
+        additionalServices: req.additional_services || [],
+        notes: req.notes,
+        status: req.status,
+        price: req.price,
+      }));
+
+      return formattedRequests;
+    } catch (error) {
+      console.error("Error fetching requests by date range:", error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -371,6 +474,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateRequestDates,
         newRequestCount,
         resetNewRequestCount,
+        deleteAllRequests,
+        refreshRequests,
+        getRequestsByDateRange,
         loading,
       }}
     >

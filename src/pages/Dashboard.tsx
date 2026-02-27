@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2 } from "lucide-react";
+import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -125,7 +125,7 @@ export default function Dashboard() {
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, user, addRequest, newRequestCount, resetNewRequestCount, loading } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
   const { toast } = useToast();
 
   // Request management state
@@ -168,6 +168,14 @@ export default function Dashboard() {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resettingPasswordId, setResettingPasswordId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDeletingAllRequests, setIsDeletingAllRequests] = useState(false);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [showDateRangeDialog, setShowDateRangeDialog] = useState(false);
+  const [dateRangeOption, setDateRangeOption] = useState("thisWeek");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+  const [isExportingByDate, setIsExportingByDate] = useState(false);
   const { register: registerAccount, handleSubmit: handleAccountSubmit, reset: resetAccountForm, watch: watchAccount } = useForm<AccountFormData>({
     defaultValues: {
       name: "",
@@ -313,6 +321,20 @@ export default function Dashboard() {
     }
   }, [newRequestCount, user, requests, toast]);
 
+  // Auto-refresh requests list weekly (every 7 days)
+  useEffect(() => {
+    const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+    const interval = setInterval(() => {
+      // Trigger a refresh by re-fetching requests from the auth context
+      if (user?.dealership_id) {
+        window.location.reload();
+      }
+    }, WEEK_IN_MS);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   // Generate request number
   const generateRequestNumber = () => {
     const maxId = Math.max(...requests.map((r) => r.id), 0);
@@ -411,19 +433,26 @@ export default function Dashboard() {
       "Vehicle",
       "Stock/VIN",
       "PO#",
+      "Date Requested",
       "Main Services",
       "Additional Services",
       "Status",
       "Price",
     ];
 
-    const rows = filteredRequests.map((r) => [
+    // Filter to only include In Progress and Completed requests
+    const completedRequests = filteredRequests.filter(
+      (r) => r.status === "In Progress" || r.status === "Completed"
+    );
+
+    const rows = completedRequests.map((r) => [
       r.requestNumber,
       r.requestedBy,
       r.manager || "-",
       `${r.year} ${r.make} ${r.model}`,
       r.stockVin,
       r.poNumber || "-",
+      r.dateRequested || "-",
       r.mainServices.join("; "),
       r.additionalServices.join("; "),
       r.status,
@@ -439,8 +468,176 @@ export default function Dashboard() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `requests-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `weekly-services-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshRequests();
+      toast({
+        title: "Refreshed",
+        description: "Service request list has been refreshed.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to refresh service requests.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleDeleteAllRequests = async () => {
+    setIsDeletingAllRequests(true);
+    try {
+      await deleteAllRequests();
+      setShowDeleteAllDialog(false);
+      toast({
+        title: "Deleted",
+        description: "All service requests have been deleted. The list will refresh automatically.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete service requests.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingAllRequests(false);
+    }
+  };
+
+  const getDateRangeFromOption = (option: string): { start: string; end: string } => {
+    const today = new Date();
+    const start = new Date();
+
+    switch (option) {
+      case "thisWeek":
+        start.setDate(today.getDate() - today.getDay()); // Sunday
+        return {
+          start: start.toISOString().split("T")[0],
+          end: today.toISOString().split("T")[0],
+        };
+      case "lastWeek":
+        const lastWeekEnd = new Date(start);
+        lastWeekEnd.setDate(today.getDate() - today.getDay() - 1);
+        const lastWeekStart = new Date(lastWeekEnd);
+        lastWeekStart.setDate(lastWeekEnd.getDate() - 6);
+        return {
+          start: lastWeekStart.toISOString().split("T")[0],
+          end: lastWeekEnd.toISOString().split("T")[0],
+        };
+      case "thisMonth":
+        start.setDate(1);
+        return {
+          start: start.toISOString().split("T")[0],
+          end: today.toISOString().split("T")[0],
+        };
+      case "lastMonth":
+        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+        const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        return {
+          start: lastMonthStart.toISOString().split("T")[0],
+          end: lastMonthEnd.toISOString().split("T")[0],
+        };
+      case "custom":
+        return {
+          start: customStartDate,
+          end: customEndDate,
+        };
+      default:
+        return {
+          start: today.toISOString().split("T")[0],
+          end: today.toISOString().split("T")[0],
+        };
+    }
+  };
+
+  const handleExportByDateRange = async () => {
+    if (dateRangeOption === "custom" && (!customStartDate || !customEndDate)) {
+      toast({
+        title: "Error",
+        description: "Please select both start and end dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsExportingByDate(true);
+    try {
+      const { start, end } = getDateRangeFromOption(dateRangeOption);
+      const dateRangeRequests = await getRequestsByDateRange(start, end);
+
+      const headers = [
+        "Request #",
+        "Requested By",
+        "Manager",
+        "Vehicle",
+        "Stock/VIN",
+        "PO#",
+        "Date Requested",
+        "Main Services",
+        "Additional Services",
+        "Status",
+        "Price",
+      ];
+
+      const rows = dateRangeRequests.map((r) => [
+        r.requestNumber,
+        r.requestedBy,
+        r.manager || "-",
+        `${r.year} ${r.make} ${r.model}`,
+        r.stockVin,
+        r.poNumber || "-",
+        r.dateRequested || "-",
+        r.mainServices.join("; "),
+        r.additionalServices.join("; "),
+        r.status,
+        `$${r.price.toFixed(2)}`,
+      ]);
+
+      const csv = [
+        headers.join(","),
+        ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+
+      // Create filename with date range
+      const { start: startDate, end: endDate } = getDateRangeFromOption(dateRangeOption);
+      let fileName = `services-${startDate}-to-${endDate}.csv`;
+      if (dateRangeOption === "thisWeek") fileName = `services-this-week-${new Date().toISOString().split("T")[0]}.csv`;
+      if (dateRangeOption === "lastWeek") fileName = `services-last-week-${new Date().toISOString().split("T")[0]}.csv`;
+      if (dateRangeOption === "thisMonth") fileName = `services-this-month-${new Date().toISOString().split("T")[0]}.csv`;
+      if (dateRangeOption === "lastMonth") fileName = `services-last-month-${new Date().toISOString().split("T")[0]}.csv`;
+
+      a.download = fileName;
+      a.click();
+
+      toast({
+        title: "Exported",
+        description: `CSV exported with ${dateRangeRequests.length} request(s).`,
+      });
+
+      setShowDateRangeDialog(false);
+      setCustomStartDate("");
+      setCustomEndDate("");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to export CSV by date range.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExportingByDate(false);
+    }
   };
 
   // Generate random password
@@ -1373,12 +1570,171 @@ export default function Dashboard() {
           {user?.role === "admin" && (
             <div className="flex gap-2 ml-auto">
               <Button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+                {isRefreshing ? "Refreshing..." : "Refresh"}
+              </Button>
+              <Button
                 onClick={handleExport}
                 className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Export CSV
               </Button>
+              <Dialog open={showDateRangeDialog} onOpenChange={setShowDateRangeDialog}>
+                <Button
+                  onClick={() => setShowDateRangeDialog(true)}
+                  className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export by Date
+                </Button>
+                <DialogContent className="bg-card border-border/30">
+                  <DialogHeader>
+                    <DialogTitle className="font-display uppercase tracking-wider">
+                      Export by Date Range
+                    </DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
+                      Select a date range or time period to export service requests
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded border border-border/30 hover:bg-background/50 transition-colors">
+                        <input
+                          type="radio"
+                          name="dateRange"
+                          value="thisWeek"
+                          checked={dateRangeOption === "thisWeek"}
+                          onChange={(e) => setDateRangeOption(e.target.value)}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm font-medium">This Week</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded border border-border/30 hover:bg-background/50 transition-colors">
+                        <input
+                          type="radio"
+                          name="dateRange"
+                          value="lastWeek"
+                          checked={dateRangeOption === "lastWeek"}
+                          onChange={(e) => setDateRangeOption(e.target.value)}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm font-medium">Last Week</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded border border-border/30 hover:bg-background/50 transition-colors">
+                        <input
+                          type="radio"
+                          name="dateRange"
+                          value="thisMonth"
+                          checked={dateRangeOption === "thisMonth"}
+                          onChange={(e) => setDateRangeOption(e.target.value)}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm font-medium">This Month</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded border border-border/30 hover:bg-background/50 transition-colors">
+                        <input
+                          type="radio"
+                          name="dateRange"
+                          value="lastMonth"
+                          checked={dateRangeOption === "lastMonth"}
+                          onChange={(e) => setDateRangeOption(e.target.value)}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm font-medium">Last Month</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded border border-border/30 hover:bg-background/50 transition-colors">
+                        <input
+                          type="radio"
+                          name="dateRange"
+                          value="custom"
+                          checked={dateRangeOption === "custom"}
+                          onChange={(e) => setDateRangeOption(e.target.value)}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm font-medium">Custom Range</span>
+                      </label>
+                    </div>
+
+                    {dateRangeOption === "custom" && (
+                      <div className="space-y-3 border-t border-border/30 pt-4">
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-1 block">Start Date</label>
+                          <input
+                            type="date"
+                            value={customStartDate}
+                            onChange={(e) => setCustomStartDate(e.target.value)}
+                            className="w-full px-3 py-2 bg-background/50 border border-border/30 rounded text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-1 block">End Date</label>
+                          <input
+                            type="date"
+                            value={customEndDate}
+                            onChange={(e) => setCustomEndDate(e.target.value)}
+                            className="w-full px-3 py-2 bg-background/50 border border-border/30 rounded text-sm"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3 justify-end mt-6 pt-6 border-t border-border/30">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowDateRangeDialog(false)}
+                      disabled={isExportingByDate}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleExportByDateRange}
+                      disabled={isExportingByDate}
+                      className="bg-primary hover:bg-primary text-primary-foreground"
+                    >
+                      {isExportingByDate ? "Exporting..." : "Export"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+                <Button
+                  onClick={() => setShowDeleteAllDialog(true)}
+                  className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-display uppercase tracking-widest text-xs"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete All
+                </Button>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Delete All Requests?</DialogTitle>
+                    <DialogDescription>
+                      This will permanently delete all service requests from your dashboard. This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex gap-3 justify-end mt-6">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowDeleteAllDialog(false)}
+                      disabled={isDeletingAllRequests}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDeleteAllRequests}
+                      disabled={isDeletingAllRequests}
+                    >
+                      {isDeletingAllRequests ? "Deleting..." : "Delete All"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
         </motion.div>
@@ -1400,6 +1756,9 @@ export default function Dashboard() {
                     </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                       Requested By
+                    </TableHead>
+                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                      Date Requested
                     </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                       Vehicle
@@ -1424,7 +1783,7 @@ export default function Dashboard() {
                 <TableBody>
                   {filteredRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                         No requests found
                       </TableCell>
                     </TableRow>
@@ -1439,6 +1798,9 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {request.requestedBy}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {request.dateRequested || "-"}
                         </TableCell>
                         <TableCell className="text-xs text-foreground">
                           {request.year} {request.make} {request.model}
