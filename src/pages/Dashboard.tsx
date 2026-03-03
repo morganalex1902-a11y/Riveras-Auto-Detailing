@@ -151,10 +151,16 @@ export default function Dashboard() {
     completionDate: "",
     completionTime: "",
   });
-  const [editingManager, setEditingManager] = useState("");
   const [editingMainServices, setEditingMainServices] = useState<string[]>([]);
   const [editingAdditionalServices, setEditingAdditionalServices] = useState<string[]>([]);
   const [editingNotes, setEditingNotes] = useState("");
+  const [editingVehicle, setEditingVehicle] = useState<{
+    year: number;
+    make: string;
+    model: string;
+    color: string;
+  }>({ year: new Date().getFullYear(), make: "", model: "", color: "" });
+  const [editingStockVin, setEditingStockVin] = useState("");
   const [isSavingDates, setIsSavingDates] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<ServiceRequest | null>(null);
   const [showDeleteRequestDialog, setShowDeleteRequestDialog] = useState(false);
@@ -471,10 +477,16 @@ export default function Dashboard() {
     });
     setEditingPrice(request.price);
     setEditingStatus(request.status);
-    setEditingManager(request.manager || "");
     setEditingMainServices(request.mainServices || []);
     setEditingAdditionalServices(request.additionalServices || []);
     setEditingNotes(request.notes || "");
+    setEditingVehicle({
+      year: request.year || new Date().getFullYear(),
+      make: request.make || "",
+      model: request.model || "",
+      color: request.color || "",
+    });
+    setEditingStockVin(request.stockVin || "");
   };
 
   const handleDeleteRequest = async () => {
@@ -813,6 +825,7 @@ export default function Dashboard() {
       await addRequest({
         requestNumber: generateRequestNumber(),
         requestedBy: user?.email || "unknown@dealership.com",
+        requesterRole: user?.role,
         manager: data.manager || undefined,
         stockVin: data.stockVin,
         poNumber: data.poNumber || undefined,
@@ -2197,8 +2210,15 @@ export default function Dashboard() {
                         <TableCell className="font-display text-sm text-primary">
                           {request.requestNumber}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {request.requestedBy}
+                        <TableCell className="text-xs">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-foreground font-medium">{request.requestedBy}</span>
+                            {request.requesterRole && (
+                              <span className="text-muted-foreground capitalize text-xs">
+                                {request.requesterRole.replace(/_/g, ' ')}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {request.dateRequested || "-"}
@@ -2348,10 +2368,16 @@ export default function Dashboard() {
                                   </h4>
                                   <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                      <label htmlFor="stock-vin" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
                                         Stock/VIN
-                                      </p>
-                                      <p className="text-sm text-foreground">{editingRequest.stockVin}</p>
+                                      </label>
+                                      <Input
+                                        id="stock-vin"
+                                        type="text"
+                                        value={editingStockVin}
+                                        onChange={(e) => setEditingStockVin(e.target.value)}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
                                     </div>
                                     <div>
                                       <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
@@ -2360,12 +2386,40 @@ export default function Dashboard() {
                                       <p className="text-sm text-foreground">{editingRequest.poNumber || "-"}</p>
                                     </div>
                                     <div>
-                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                        Vehicle
-                                      </p>
-                                      <p className="text-sm text-foreground">
-                                        {editingRequest.year} {editingRequest.make} {editingRequest.model} ({editingRequest.color})
-                                      </p>
+                                      <label htmlFor="vehicle-year" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        Vehicle Year
+                                      </label>
+                                      <Input
+                                        id="vehicle-year"
+                                        type="number"
+                                        value={editingVehicle.year}
+                                        onChange={(e) => setEditingVehicle({ ...editingVehicle, year: parseInt(e.target.value) || new Date().getFullYear() })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label htmlFor="vehicle-make" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        Make
+                                      </label>
+                                      <Input
+                                        id="vehicle-make"
+                                        type="text"
+                                        value={editingVehicle.make}
+                                        onChange={(e) => setEditingVehicle({ ...editingVehicle, make: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label htmlFor="vehicle-model" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        Model
+                                      </label>
+                                      <Input
+                                        id="vehicle-model"
+                                        type="text"
+                                        value={editingVehicle.model}
+                                        onChange={(e) => setEditingVehicle({ ...editingVehicle, model: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
                                     </div>
                                     <div>
                                       <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
@@ -2382,80 +2436,31 @@ export default function Dashboard() {
                                     Manager & Services
                                   </h4>
                                   <div className="space-y-4">
-                                    {editingRequest.status === "Pending" && (
-                                      <div>
-                                        <label htmlFor="manager" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                          Assigned Manager
-                                        </label>
-                                        <Input
-                                          id="manager"
-                                          type="text"
-                                          value={editingManager}
-                                          onChange={(e) => setEditingManager(e.target.value)}
-                                          placeholder="Enter manager name"
-                                          className="bg-card/50 border-border/30 text-foreground"
-                                        />
-                                      </div>
-                                    )}
                                     <div>
-                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                      <label htmlFor="main-services" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
                                         Main Services
-                                      </p>
-                                      {editingRequest.status === "Pending" ? (
-                                        <div className="space-y-2">
-                                          {MAIN_SERVICES.map((service) => (
-                                            <label key={service} className="flex items-center gap-2 cursor-pointer">
-                                              <Checkbox
-                                                checked={editingMainServices.includes(service)}
-                                                onCheckedChange={(checked) => {
-                                                  if (checked) {
-                                                    setEditingMainServices([...editingMainServices, service]);
-                                                  } else {
-                                                    setEditingMainServices(editingMainServices.filter(s => s !== service));
-                                                  }
-                                                }}
-                                              />
-                                              <span className="text-sm text-foreground">{service}</span>
-                                            </label>
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                          {editingRequest.mainServices.length > 0
-                                            ? editingRequest.mainServices.join(", ")
-                                            : "None selected"}
-                                        </p>
-                                      )}
+                                      </label>
+                                      <Input
+                                        id="main-services"
+                                        type="text"
+                                        value={editingMainServices.join(", ")}
+                                        onChange={(e) => setEditingMainServices(e.target.value.split(",").map(s => s.trim()).filter(s => s))}
+                                        placeholder="Enter services separated by commas"
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
                                     </div>
                                     <div>
-                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                      <label htmlFor="additional-services" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
                                         Additional Services
-                                      </p>
-                                      {editingRequest.status === "Pending" ? (
-                                        <div className="space-y-2">
-                                          {ADDITIONAL_SERVICES.map((service) => (
-                                            <label key={service} className="flex items-center gap-2 cursor-pointer">
-                                              <Checkbox
-                                                checked={editingAdditionalServices.includes(service)}
-                                                onCheckedChange={(checked) => {
-                                                  if (checked) {
-                                                    setEditingAdditionalServices([...editingAdditionalServices, service]);
-                                                  } else {
-                                                    setEditingAdditionalServices(editingAdditionalServices.filter(s => s !== service));
-                                                  }
-                                                }}
-                                              />
-                                              <span className="text-sm text-foreground">{service}</span>
-                                            </label>
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                          {editingRequest.additionalServices.length > 0
-                                            ? editingRequest.additionalServices.join(", ")
-                                            : "None selected"}
-                                        </p>
-                                      )}
+                                      </label>
+                                      <Input
+                                        id="additional-services"
+                                        type="text"
+                                        value={editingAdditionalServices.join(", ")}
+                                        onChange={(e) => setEditingAdditionalServices(e.target.value.split(",").map(s => s.trim()).filter(s => s))}
+                                        placeholder="Enter services separated by commas"
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
                                     </div>
                                     {editingRequest.status === "Pending" ? (
                                       <div>
@@ -2485,40 +2490,6 @@ export default function Dashboard() {
                                   </div>
                                 </div>
 
-                                {/* Due Dates - Only for Pending */}
-                                {editingRequest.status === "Pending" && (
-                                <div className="border-b border-border/20 pb-6">
-                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                                    Due Date & Time
-                                  </h4>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <label htmlFor="due-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Due Date
-                                      </label>
-                                      <Input
-                                        id="due-date"
-                                        type="date"
-                                        value={editingDates.dueDate}
-                                        onChange={(e) => setEditingDates({ ...editingDates, dueDate: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label htmlFor="due-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Due Time
-                                      </label>
-                                      <Input
-                                        id="due-time"
-                                        type="time"
-                                        value={editingDates.dueTime}
-                                        onChange={(e) => setEditingDates({ ...editingDates, dueTime: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                                )}
 
                                 {/* Status & Price */}
                                 <div className="border-b border-border/20 pb-6">
@@ -2559,38 +2530,6 @@ export default function Dashboard() {
                                   </div>
                                 </div>
 
-                                {/* Completion Date - For All Statuses */}
-                                <div className="border-b border-border/20 pb-6">
-                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                                    Completion Date & Time
-                                  </h4>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <label htmlFor="completion-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Completion Date
-                                      </label>
-                                      <Input
-                                        id="completion-date"
-                                        type="date"
-                                        value={editingDates.completionDate}
-                                        onChange={(e) => setEditingDates({ ...editingDates, completionDate: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label htmlFor="completion-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Completion Time
-                                      </label>
-                                      <Input
-                                        id="completion-time"
-                                        type="time"
-                                        value={editingDates.completionTime}
-                                        onChange={(e) => setEditingDates({ ...editingDates, completionTime: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
 
                                 {/* Save Buttons */}
                                 <div className="border-t border-border/20 pt-6 flex gap-4">
@@ -2609,17 +2548,22 @@ export default function Dashboard() {
                                       onClick={async () => {
                                         setIsSavingDates(true);
                                         try {
+                                          const completionDate = editingStatus === "Completed" ? new Date().toISOString().split('T')[0] : editingDates.completionDate;
+                                          const completionTime = editingStatus === "Completed" ? new Date().toTimeString().split(' ')[0] : editingDates.completionTime;
+
                                           await updateRequest(editingRequest.id, {
                                             status: editingStatus as ServiceRequest["status"],
                                             price: editingPrice,
-                                            manager: editingManager,
                                             mainServices: editingMainServices,
                                             additionalServices: editingAdditionalServices,
                                             notes: editingNotes,
-                                            dueDate: editingDates.dueDate,
-                                            dueTime: editingDates.dueTime,
-                                            completionDate: editingDates.completionDate,
-                                            completionTime: editingDates.completionTime,
+                                            year: editingVehicle.year,
+                                            make: editingVehicle.make,
+                                            model: editingVehicle.model,
+                                            color: editingVehicle.color,
+                                            stockVin: editingStockVin,
+                                            completionDate: completionDate,
+                                            completionTime: completionTime,
                                           });
                                           toast({
                                             title: "Updated",
@@ -2648,10 +2592,17 @@ export default function Dashboard() {
                                       onClick={async () => {
                                         setIsSavingDates(true);
                                         try {
+                                          const completionDate = editingStatus === "Completed" ? new Date().toISOString().split('T')[0] : editingDates.completionDate;
+                                          const completionTime = editingStatus === "Completed" ? new Date().toTimeString().split(' ')[0] : editingDates.completionTime;
+
                                           await updateRequest(editingRequest.id, {
                                             price: editingPrice,
-                                            completionDate: editingDates.completionDate,
-                                            completionTime: editingDates.completionTime,
+                                            year: editingVehicle.year,
+                                            make: editingVehicle.make,
+                                            model: editingVehicle.model,
+                                            color: editingVehicle.color,
+                                            stockVin: editingStockVin,
+                                            status: editingStatus as ServiceRequest["status"],
                                           });
                                           toast({
                                             title: "Updated",

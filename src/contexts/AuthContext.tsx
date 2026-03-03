@@ -13,6 +13,7 @@ export interface ServiceRequest {
   id: number;
   requestNumber: string;
   requestedBy: string;
+  requesterRole?: string;
   manager?: string;
   stockVin: string;
   poNumber?: string;
@@ -114,6 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: req.id,
         requestNumber: req.request_number,
         requestedBy: req.requested_by,
+        requesterRole: req.requester_role,
         manager: req.manager,
         stockVin: req.stock_vin,
         poNumber: req.po_number,
@@ -253,6 +255,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           request_number: nextRequestNumber,
           dealership_id: user.dealership_id,
           requested_by: requestData.requestedBy,
+          requester_role: requestData.requesterRole || user.role,
           manager: requestData.manager,
           stock_vin: requestData.stockVin,
           po_number: requestData.poNumber,
@@ -410,6 +413,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.mainServices !== undefined) updateData.main_services = data.mainServices;
       if (data.additionalServices !== undefined) updateData.additional_services = data.additionalServices;
       if (data.notes !== undefined) updateData.notes = data.notes;
+      if (data.year !== undefined) updateData.year = data.year;
+      if (data.make !== undefined) updateData.make = data.make;
+      if (data.model !== undefined) updateData.model = data.model;
+      if (data.color !== undefined) updateData.color = data.color;
+      if (data.stockVin !== undefined) updateData.stock_vin = data.stockVin;
 
       const { error } = await supabase
         .from("service_requests")
