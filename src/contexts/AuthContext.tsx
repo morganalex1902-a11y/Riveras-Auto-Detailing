@@ -482,12 +482,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (!user?.dealership_id) throw new Error("User dealership not found");
 
+      // Add one day to endDate to include the entire end date
+      const endDateObj = new Date(endDate);
+      endDateObj.setDate(endDateObj.getDate() + 1);
+      const adjustedEndDate = endDateObj.toISOString().split("T")[0];
+
       const { data, error } = await supabase
         .from("service_requests")
         .select("*")
         .eq("dealership_id", user.dealership_id)
         .gte("date_requested", startDate)
-        .lte("date_requested", endDate)
+        .lt("date_requested", adjustedEndDate)
         .order("date_requested", { ascending: false });
 
       if (error) throw error;
