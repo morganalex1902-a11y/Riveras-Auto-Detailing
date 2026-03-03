@@ -125,7 +125,7 @@ export default function Dashboard() {
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
   const { toast } = useToast();
 
   // Request management state
@@ -151,16 +151,25 @@ export default function Dashboard() {
     completionDate: "",
     completionTime: "",
   });
+  const [editingManager, setEditingManager] = useState("");
+  const [editingMainServices, setEditingMainServices] = useState<string[]>([]);
+  const [editingAdditionalServices, setEditingAdditionalServices] = useState<string[]>([]);
+  const [editingNotes, setEditingNotes] = useState("");
   const [isSavingDates, setIsSavingDates] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<ServiceRequest | null>(null);
+  const [showDeleteRequestDialog, setShowDeleteRequestDialog] = useState(false);
+  const [deletingRequestId, setDeletingRequestId] = useState<number | null>(null);
 
-  // Admin account management state
-  const [activeTab, setActiveTab] = useState<"requests" | "accounts">("requests");
+  // Admin/Manager account management state
+  const [activeTab, setActiveTab] = useState<"requests" | "accounts" | "activity">("requests");
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [creatingAccount, setCreatingAccount] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [teamUsers, setTeamUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [accountActivity, setAccountActivity] = useState<any[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -219,6 +228,9 @@ export default function Dashboard() {
 
     setDeletingUserId(userToDelete.id);
     try {
+      // Log the activity before deletion
+      await logAccountActivity('delete', userToDelete.id, userToDelete.email, userToDelete.name);
+
       const { error } = await supabase
         .from('users')
         .delete()
@@ -266,6 +278,9 @@ export default function Dashboard() {
 
       if (error) throw error;
 
+      // Log the activity
+      await logAccountActivity('password_reset', userToResetPassword.id, userToResetPassword.email, userToResetPassword.name);
+
       setNewPassword(tempPassword);
       toast({
         title: "Password Reset",
@@ -282,10 +297,65 @@ export default function Dashboard() {
     }
   };
 
-  // Load users when switching to accounts tab
+  // Log account activity
+  const logAccountActivity = async (actionType: 'create' | 'delete' | 'password_reset', targetUserId: string, targetUserEmail: string, targetUserName: string) => {
+    if (!user?.dealership_id || !user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('account_activity')
+        .insert({
+          dealership_id: user.dealership_id,
+          actor_id: user.id,
+          action_type: actionType,
+          target_user_id: targetUserId,
+          target_user_email: targetUserEmail,
+          target_user_name: targetUserName,
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error logging account activity:', error);
+    }
+  };
+
+  // Fetch account activity
+  const fetchAccountActivity = async () => {
+    if (!user?.dealership_id) return;
+
+    setLoadingActivity(true);
+    try {
+      const { data, error } = await supabase
+        .from('account_activity')
+        .select(`
+          *,
+          actor:actor_id(name, email),
+          target_user:target_user_id(name, email)
+        `)
+        .eq('dealership_id', user.dealership_id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAccountActivity(data || []);
+    } catch (error) {
+      console.error('Error fetching account activity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load account activity",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  // Load users and activity when switching tabs
   useEffect(() => {
     if (activeTab === "accounts" && user?.role === "admin") {
       fetchTeamUsers();
+    }
+    if (activeTab === "activity" && user?.role === "admin") {
+      fetchAccountActivity();
     }
   }, [activeTab, user]);
 
@@ -401,6 +471,33 @@ export default function Dashboard() {
     });
     setEditingPrice(request.price);
     setEditingStatus(request.status);
+    setEditingManager(request.manager || "");
+    setEditingMainServices(request.mainServices || []);
+    setEditingAdditionalServices(request.additionalServices || []);
+    setEditingNotes(request.notes || "");
+  };
+
+  const handleDeleteRequest = async () => {
+    if (!requestToDelete) return;
+
+    setDeletingRequestId(requestToDelete.id);
+    try {
+      await deleteRequest(requestToDelete.id);
+      toast({
+        title: "Deleted",
+        description: `Request ${requestToDelete.requestNumber} has been deleted.`,
+      });
+      setShowDeleteRequestDialog(false);
+      setRequestToDelete(null);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to delete request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingRequestId(null);
+    }
   };
 
   const handleSaveDates = async () => {
@@ -437,6 +534,7 @@ export default function Dashboard() {
       "Main Services",
       "Additional Services",
       "Status",
+      "Completion Date",
       "Price",
     ];
 
@@ -456,6 +554,7 @@ export default function Dashboard() {
       r.mainServices.join("; "),
       r.additionalServices.join("; "),
       r.status,
+      r.completionDate || "-",
       `$${r.price.toFixed(2)}`,
     ]);
 
@@ -583,6 +682,7 @@ export default function Dashboard() {
         "Main Services",
         "Additional Services",
         "Status",
+        "Completion Date",
         "Price",
       ];
 
@@ -597,6 +697,7 @@ export default function Dashboard() {
         r.mainServices.join("; "),
         r.additionalServices.join("; "),
         r.status,
+        r.completionDate || "-",
         `$${r.price.toFixed(2)}`,
       ]);
 
@@ -683,6 +784,9 @@ export default function Dashboard() {
         throw new Error(insertError.message || "Failed to create account");
       }
 
+      // Log the activity
+      await logAccountActivity('create', newUser.id, data.email, data.name);
+
       toast({
         title: "Account Created",
         description: `New account created for ${data.email}.`,
@@ -690,6 +794,7 @@ export default function Dashboard() {
 
       setGeneratedPassword(password);
       resetAccountForm();
+      fetchTeamUsers(); // Refresh team users list
     } catch (error: any) {
       toast({
         title: "Error",
@@ -800,7 +905,7 @@ export default function Dashboard() {
                 {showForm ? "Close" : "New Request"}
               </Button>
             )}
-            {activeTab === "accounts" && (
+            {user?.role === "admin" && activeTab === "accounts" && (
               <Button
                 onClick={() => setShowAccountForm(!showAccountForm)}
                 className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs h-auto py-2 px-4"
@@ -811,9 +916,22 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* Manager Account Creation (Managers Only) */}
+          {user?.role === "manager" && (
+            <div className="flex gap-4 mb-6">
+              <Button
+                onClick={() => setShowAccountForm(!showAccountForm)}
+                className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs h-auto py-2 px-4"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {showAccountForm ? "Close" : "Create Account"}
+              </Button>
+            </div>
+          )}
+
           {/* Admin Tab Navigation */}
           {user?.role === "admin" && (
-            <div className="flex gap-4 mb-6">
+            <div className="flex gap-4 mb-6 flex-wrap">
               <button
                 onClick={() => setActiveTab("requests")}
                 className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
@@ -835,6 +953,17 @@ export default function Dashboard() {
               >
                 <Users className="w-4 h-4" />
                 Account Management
+              </button>
+              <button
+                onClick={() => setActiveTab("activity")}
+                className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
+                  activeTab === "activity"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+                }`}
+              >
+                <AlertCircle className="w-4 h-4" />
+                Activity Log
               </button>
             </div>
           )}
@@ -1139,6 +1268,190 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
+        {/* Manager Account Creation Form - Manager Only */}
+        {user?.role === "manager" && (
+          <AnimatePresence>
+            {showAccountForm && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.4 }}
+                className="mb-12 overflow-hidden"
+              >
+                <div className="glass-card p-8 md:p-10">
+                  <h3 className="font-display text-2xl uppercase tracking-wider mb-8">
+                    Create <span className="text-primary">New Account</span>
+                  </h3>
+
+                  <form onSubmit={handleAccountSubmit(onAccountSubmit)} className="space-y-6">
+                    {/* Account Info */}
+                    <div>
+                      <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                        Account Information
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="mgr-name" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Full Name <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            id="mgr-name"
+                            placeholder="John Doe"
+                            {...registerAccount("name", { required: true })}
+                            disabled={creatingAccount}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="mgr-email" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Email <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            id="mgr-email"
+                            type="email"
+                            placeholder="john@dealership.com"
+                            {...registerAccount("email", { required: true })}
+                            disabled={creatingAccount}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="mgr-password" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Password
+                          </label>
+                          <div className="relative">
+                            <Input
+                              id="mgr-password"
+                              type={showPassword ? "text" : "password"}
+                              placeholder="Leave empty to auto-generate"
+                              {...registerAccount("password")}
+                              disabled={creatingAccount}
+                              className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50 pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label htmlFor="mgr-role" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Role <span className="text-destructive">*</span>
+                          </label>
+                          <select
+                            {...registerAccount("role")}
+                            disabled={creatingAccount}
+                            className="w-full bg-background/50 border border-border/50 text-foreground px-3 py-2 rounded-sm text-sm"
+                          >
+                            <option value="sales_rep">Sales Rep</option>
+                            <option value="manager">Manager</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Security Question */}
+                    <div className="border-t border-border/20 pt-6">
+                      <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                        Account Recovery
+                      </h4>
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="mgr-question" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Security Question <span className="text-destructive">*</span>
+                          </label>
+                          <select
+                            {...registerAccount("securityQuestion", { required: true })}
+                            disabled={creatingAccount}
+                            className="w-full bg-background/50 border border-border/50 text-foreground px-3 py-2 rounded-sm text-sm"
+                          >
+                            {SECURITY_QUESTIONS.map((q) => (
+                              <option key={q} value={q}>
+                                {q}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="mgr-answer" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Answer <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            id="mgr-answer"
+                            placeholder="Your answer"
+                            {...registerAccount("securityAnswer", { required: true })}
+                            disabled={creatingAccount}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Form Actions */}
+                    <div className="border-t border-border/20 pt-6 flex gap-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowAccountForm(false);
+                          resetAccountForm();
+                        }}
+                        disabled={creatingAccount}
+                        className="flex-1 border-border/30 hover:bg-card text-foreground font-display uppercase tracking-widest text-xs"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={creatingAccount}
+                        className="flex-1 bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+                      >
+                        {creatingAccount ? "Creating Account..." : "Create Account"}
+                      </Button>
+                    </div>
+                  </form>
+
+                  {generatedPassword && (
+                    <div className="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-sm">
+                      <p className="text-xs font-display uppercase tracking-wider text-primary mb-2">
+                        Generated Password
+                      </p>
+                      <div className="flex gap-2">
+                        <code className="flex-1 bg-background/50 p-2 rounded text-sm text-foreground font-mono">
+                          {generatedPassword}
+                        </code>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(generatedPassword);
+                            toast({
+                              title: "Copied",
+                              description: "Password copied to clipboard",
+                            });
+                          }}
+                          className="border-border/30 hover:bg-card"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
+
         {/* Account Management Form - Admin Only */}
         {user?.role === "admin" && activeTab === "accounts" && (
           <AnimatePresence>
@@ -1233,7 +1546,7 @@ export default function Dashboard() {
                           >
                             <option value="sales_rep">Sales Rep</option>
                             <option value="manager">Manager</option>
-                            <option value="admin">Admin</option>
+                            {user?.role === "admin" && <option value="admin">Admin</option>}
                           </select>
                         </div>
                       </div>
@@ -1344,7 +1657,7 @@ export default function Dashboard() {
           </AnimatePresence>
         )}
 
-        {/* Account Management Info */}
+        {/* Account Management Info - Admin Only */}
         {user?.role === "admin" && activeTab === "accounts" && !showAccountForm && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1433,6 +1746,91 @@ export default function Dashboard() {
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Account Activity Log - Admin Only */}
+        {user?.role === "admin" && activeTab === "activity" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="glass-card overflow-hidden">
+              <div className="p-6 border-b border-border/20">
+                <h3 className="font-display text-xl uppercase tracking-wider">
+                  Account <span className="text-primary">Activity Log</span>
+                </h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Track all account creation, deletion, and password reset activities
+                </p>
+              </div>
+
+              {loadingActivity ? (
+                <div className="p-12 text-center text-muted-foreground">
+                  Loading activity log...
+                </div>
+              ) : accountActivity.length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground">
+                  No account activities recorded yet
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="border-b border-border/30">
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                          Date & Time
+                        </TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                          Action
+                        </TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                          Target Account
+                        </TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                          Performed By
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {accountActivity.map((activity: any) => (
+                        <TableRow key={activity.id} className="border-b border-border/20 hover:bg-card/50 transition-colors">
+                          <TableCell className="text-xs text-muted-foreground">
+                            {new Date(activity.created_at).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`text-xs font-display uppercase tracking-wider px-3 py-1 rounded-sm inline-block ${
+                              activity.action_type === 'create'
+                                ? 'bg-primary/20 text-primary'
+                                : activity.action_type === 'delete'
+                                  ? 'bg-destructive/20 text-destructive'
+                                  : 'bg-blue-500/20 text-blue-500'
+                            }`}>
+                              {activity.action_type === 'create' && 'Account Created'}
+                              {activity.action_type === 'delete' && 'Account Deleted'}
+                              {activity.action_type === 'password_reset' && 'Password Reset'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs text-foreground">
+                            <div>
+                              <p className="font-medium">{activity.target_user_name || activity.target_user?.name || '-'}</p>
+                              <p className="text-muted-foreground">{activity.target_user_email || activity.target_user?.email || '-'}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-foreground">
+                            <div>
+                              <p className="font-medium">{activity.actor?.name || 'System'}</p>
+                              <p className="text-muted-foreground">{activity.actor?.email || '-'}</p>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1773,6 +2171,9 @@ export default function Dashboard() {
                       Status
                     </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                      Completion Date
+                    </TableHead>
+                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                       Price
                     </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
@@ -1783,7 +2184,7 @@ export default function Dashboard() {
                 <TableBody>
                   {filteredRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
                         No requests found
                       </TableCell>
                     </TableRow>
@@ -1867,6 +2268,11 @@ export default function Dashboard() {
                             </span>
                           )}
                         </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {request.status === "Completed" && request.completionDate
+                            ? request.completionDate
+                            : "-"}
+                        </TableCell>
                         <TableCell>
                           {user?.role === "admin" && editingId === request.id ? (
                             <div className="flex gap-1">
@@ -1896,14 +2302,31 @@ export default function Dashboard() {
                           {user?.role === "admin" && (
                             <Dialog open={editingRequest?.id === request.id} onOpenChange={(open) => !open && setEditingRequest(null)}>
                             <DialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleOpenRequestDetails(request)}
-                                className="h-7 px-2 text-primary hover:bg-card"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleOpenRequestDetails(request)}
+                                  title="Edit request details"
+                                  className="h-7 px-2 text-primary hover:bg-card"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </Button>
+                                {request.status === "Pending" && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setRequestToDelete(request);
+                                      setShowDeleteRequestDialog(true);
+                                    }}
+                                    title="Delete pending request"
+                                    className="h-7 px-2 text-destructive hover:bg-destructive/10"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </DialogTrigger>
                             {editingRequest?.id === request.id && (
                             <DialogContent className="bg-card border-border/30 max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -1912,7 +2335,9 @@ export default function Dashboard() {
                                   Manage Request {editingRequest.requestNumber}
                                 </DialogTitle>
                                 <DialogDescription className="text-muted-foreground">
-                                  Update pricing, dates, and status for this service request
+                                  {editingRequest.status === "Pending"
+                                    ? "Update all details for this pending request"
+                                    : "Edit completion date and pricing for this request"}
                                 </DialogDescription>
                               </DialogHeader>
                               <div className="space-y-6">
@@ -1951,44 +2376,149 @@ export default function Dashboard() {
                                   </div>
                                 </div>
 
-                                {/* Services */}
+                                {/* Manager & Services */}
                                 <div className="border-b border-border/20 pb-6">
                                   <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                                    Services
+                                    Manager & Services
                                   </h4>
-                                  <div className="space-y-3">
+                                  <div className="space-y-4">
+                                    {editingRequest.status === "Pending" && (
+                                      <div>
+                                        <label htmlFor="manager" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                          Assigned Manager
+                                        </label>
+                                        <Input
+                                          id="manager"
+                                          type="text"
+                                          value={editingManager}
+                                          onChange={(e) => setEditingManager(e.target.value)}
+                                          placeholder="Enter manager name"
+                                          className="bg-card/50 border-border/30 text-foreground"
+                                        />
+                                      </div>
+                                    )}
                                     <div>
-                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
                                         Main Services
                                       </p>
-                                      <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                        {editingRequest.mainServices.length > 0
-                                          ? editingRequest.mainServices.join(", ")
-                                          : "None selected"}
-                                      </p>
+                                      {editingRequest.status === "Pending" ? (
+                                        <div className="space-y-2">
+                                          {MAIN_SERVICES.map((service) => (
+                                            <label key={service} className="flex items-center gap-2 cursor-pointer">
+                                              <Checkbox
+                                                checked={editingMainServices.includes(service)}
+                                                onCheckedChange={(checked) => {
+                                                  if (checked) {
+                                                    setEditingMainServices([...editingMainServices, service]);
+                                                  } else {
+                                                    setEditingMainServices(editingMainServices.filter(s => s !== service));
+                                                  }
+                                                }}
+                                              />
+                                              <span className="text-sm text-foreground">{service}</span>
+                                            </label>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
+                                          {editingRequest.mainServices.length > 0
+                                            ? editingRequest.mainServices.join(", ")
+                                            : "None selected"}
+                                        </p>
+                                      )}
                                     </div>
                                     <div>
-                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
                                         Additional Services
                                       </p>
-                                      <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                        {editingRequest.additionalServices.length > 0
-                                          ? editingRequest.additionalServices.join(", ")
-                                          : "None selected"}
-                                      </p>
-                                    </div>
-                                    {editingRequest.notes && (
-                                      <div>
-                                        <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                          Notes
-                                        </p>
+                                      {editingRequest.status === "Pending" ? (
+                                        <div className="space-y-2">
+                                          {ADDITIONAL_SERVICES.map((service) => (
+                                            <label key={service} className="flex items-center gap-2 cursor-pointer">
+                                              <Checkbox
+                                                checked={editingAdditionalServices.includes(service)}
+                                                onCheckedChange={(checked) => {
+                                                  if (checked) {
+                                                    setEditingAdditionalServices([...editingAdditionalServices, service]);
+                                                  } else {
+                                                    setEditingAdditionalServices(editingAdditionalServices.filter(s => s !== service));
+                                                  }
+                                                }}
+                                              />
+                                              <span className="text-sm text-foreground">{service}</span>
+                                            </label>
+                                          ))}
+                                        </div>
+                                      ) : (
                                         <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                          {editingRequest.notes}
+                                          {editingRequest.additionalServices.length > 0
+                                            ? editingRequest.additionalServices.join(", ")
+                                            : "None selected"}
                                         </p>
+                                      )}
+                                    </div>
+                                    {editingRequest.status === "Pending" ? (
+                                      <div>
+                                        <label htmlFor="notes" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                          Notes
+                                        </label>
+                                        <Textarea
+                                          id="notes"
+                                          value={editingNotes}
+                                          onChange={(e) => setEditingNotes(e.target.value)}
+                                          placeholder="Add any notes for this request"
+                                          className="bg-card/50 border-border/30 text-foreground min-h-20"
+                                        />
                                       </div>
+                                    ) : (
+                                      editingRequest.notes && (
+                                        <div>
+                                          <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                            Notes
+                                          </p>
+                                          <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
+                                            {editingRequest.notes}
+                                          </p>
+                                        </div>
+                                      )
                                     )}
                                   </div>
                                 </div>
+
+                                {/* Due Dates - Only for Pending */}
+                                {editingRequest.status === "Pending" && (
+                                <div className="border-b border-border/20 pb-6">
+                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                                    Due Date & Time
+                                  </h4>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label htmlFor="due-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Due Date
+                                      </label>
+                                      <Input
+                                        id="due-date"
+                                        type="date"
+                                        value={editingDates.dueDate}
+                                        onChange={(e) => setEditingDates({ ...editingDates, dueDate: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label htmlFor="due-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Due Time
+                                      </label>
+                                      <Input
+                                        id="due-time"
+                                        type="time"
+                                        value={editingDates.dueTime}
+                                        onChange={(e) => setEditingDates({ ...editingDates, dueTime: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                                )}
 
                                 {/* Status & Price */}
                                 <div className="border-b border-border/20 pb-6">
@@ -2029,9 +2559,40 @@ export default function Dashboard() {
                                   </div>
                                 </div>
 
+                                {/* Completion Date - For All Statuses */}
+                                <div className="border-b border-border/20 pb-6">
+                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                                    Completion Date & Time
+                                  </h4>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label htmlFor="completion-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Completion Date
+                                      </label>
+                                      <Input
+                                        id="completion-date"
+                                        type="date"
+                                        value={editingDates.completionDate}
+                                        onChange={(e) => setEditingDates({ ...editingDates, completionDate: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label htmlFor="completion-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Completion Time
+                                      </label>
+                                      <Input
+                                        id="completion-time"
+                                        type="time"
+                                        value={editingDates.completionTime}
+                                        onChange={(e) => setEditingDates({ ...editingDates, completionTime: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
 
-
-                                {/* Save Button */}
+                                {/* Save Buttons */}
                                 <div className="border-t border-border/20 pt-6 flex gap-4">
                                   <Button
                                     type="button"
@@ -2040,35 +2601,79 @@ export default function Dashboard() {
                                     disabled={isSavingDates}
                                     className="flex-1 border-border/30 hover:bg-card text-foreground"
                                   >
-                                    Cancel
+                                    Close
                                   </Button>
-                                  <Button
-                                    type="button"
-                                    onClick={async () => {
-                                      setIsSavingDates(true);
-                                      try {
-                                        await updateRequestStatus(editingRequest.id, editingStatus as ServiceRequest["status"]);
-                                        await updateRequestPrice(editingRequest.id, editingPrice);
-                                        toast({
-                                          title: "Updated",
-                                          description: "Request has been updated successfully.",
-                                        });
-                                        setEditingRequest(null);
-                                      } catch (error: any) {
-                                        toast({
-                                          title: "Error",
-                                          description: error?.message || "Failed to update request.",
-                                          variant: "destructive",
-                                        });
-                                      } finally {
-                                        setIsSavingDates(false);
-                                      }
-                                    }}
-                                    disabled={isSavingDates}
-                                    className="flex-1 bg-primary hover:bg-primary text-primary-foreground"
-                                  >
-                                    {isSavingDates ? "Saving..." : "Save Changes"}
-                                  </Button>
+                                  {editingRequest.status === "Pending" && (
+                                    <Button
+                                      type="button"
+                                      onClick={async () => {
+                                        setIsSavingDates(true);
+                                        try {
+                                          await updateRequest(editingRequest.id, {
+                                            status: editingStatus as ServiceRequest["status"],
+                                            price: editingPrice,
+                                            manager: editingManager,
+                                            mainServices: editingMainServices,
+                                            additionalServices: editingAdditionalServices,
+                                            notes: editingNotes,
+                                            dueDate: editingDates.dueDate,
+                                            dueTime: editingDates.dueTime,
+                                            completionDate: editingDates.completionDate,
+                                            completionTime: editingDates.completionTime,
+                                          });
+                                          toast({
+                                            title: "Updated",
+                                            description: "Request has been updated successfully.",
+                                          });
+                                          setEditingRequest(null);
+                                        } catch (error: any) {
+                                          toast({
+                                            title: "Error",
+                                            description: error?.message || "Failed to update request.",
+                                            variant: "destructive",
+                                          });
+                                        } finally {
+                                          setIsSavingDates(false);
+                                        }
+                                      }}
+                                      disabled={isSavingDates}
+                                      className="flex-1 bg-primary hover:bg-primary text-primary-foreground"
+                                    >
+                                      {isSavingDates ? "Saving..." : "Save All Changes"}
+                                    </Button>
+                                  )}
+                                  {editingRequest.status !== "Pending" && (
+                                    <Button
+                                      type="button"
+                                      onClick={async () => {
+                                        setIsSavingDates(true);
+                                        try {
+                                          await updateRequest(editingRequest.id, {
+                                            price: editingPrice,
+                                            completionDate: editingDates.completionDate,
+                                            completionTime: editingDates.completionTime,
+                                          });
+                                          toast({
+                                            title: "Updated",
+                                            description: "Request has been updated successfully.",
+                                          });
+                                          setEditingRequest(null);
+                                        } catch (error: any) {
+                                          toast({
+                                            title: "Error",
+                                            description: error?.message || "Failed to update request.",
+                                            variant: "destructive",
+                                          });
+                                        } finally {
+                                          setIsSavingDates(false);
+                                        }
+                                      }}
+                                      disabled={isSavingDates}
+                                      className="flex-1 bg-primary hover:bg-primary text-primary-foreground"
+                                    >
+                                      {isSavingDates ? "Saving..." : "Save Changes"}
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             </DialogContent>
@@ -2212,6 +2817,37 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {/* Delete Request Dialog */}
+      <Dialog open={showDeleteRequestDialog} onOpenChange={setShowDeleteRequestDialog}>
+        <DialogContent className="bg-card border-border/30">
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase tracking-wider">
+              Delete Request {requestToDelete?.requestNumber}?
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              This action cannot be undone. The request will be permanently deleted from the system.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-4 justify-end mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteRequestDialog(false)}
+              disabled={deletingRequestId !== null}
+              className="border-border/30 hover:bg-card"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteRequest}
+              disabled={deletingRequestId !== null}
+            >
+              {deletingRequestId !== null ? "Deleting..." : "Delete Request"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Reset Password Dialog */}
       <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>

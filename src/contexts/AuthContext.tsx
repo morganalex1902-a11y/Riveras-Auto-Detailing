@@ -48,6 +48,8 @@ interface AuthContextType {
   updateRequestStatus: (id: number, status: ServiceRequest["status"]) => Promise<void>;
   updateRequestPrice: (id: number, price: number) => Promise<void>;
   updateRequestDates: (id: number, data: { dueDate?: string; dueTime?: string; startDate?: string; startTime?: string; completionDate?: string; completionTime?: string }) => Promise<void>;
+  updateRequest: (id: number, data: Partial<ServiceRequest>) => Promise<void>;
+  deleteRequest: (id: number) => Promise<void>;
   newRequestCount: number;
   resetNewRequestCount: () => void;
   deleteAllRequests: () => Promise<void>;
@@ -378,6 +380,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateRequest = async (id: number, data: Partial<ServiceRequest>) => {
+    try {
+      const updateData: any = {};
+      const stateUpdate = { ...data };
+
+      // Map ServiceRequest fields to database columns
+      if (data.status) {
+        updateData.status = data.status;
+        // Auto-set completion date and time when status is changed to Completed
+        if (data.status === "Completed") {
+          const now = new Date();
+          const completionDate = now.toISOString().split("T")[0];
+          const completionTime = now.toTimeString().slice(0, 5); // HH:MM format
+          updateData.completion_date = completionDate;
+          updateData.completion_time = completionTime;
+          stateUpdate.completionDate = completionDate;
+          stateUpdate.completionTime = completionTime;
+        }
+      }
+      if (data.price !== undefined) updateData.price = data.price;
+      if (data.manager !== undefined) updateData.manager = data.manager;
+      if (data.dueDate !== undefined) updateData.due_date = data.dueDate;
+      if (data.dueTime !== undefined) updateData.due_time = data.dueTime;
+      if (data.startDate !== undefined) updateData.start_date = data.startDate;
+      if (data.startTime !== undefined) updateData.start_time = data.startTime;
+      if (data.completionDate !== undefined) updateData.completion_date = data.completionDate;
+      if (data.completionTime !== undefined) updateData.completion_time = data.completionTime;
+      if (data.mainServices !== undefined) updateData.main_services = data.mainServices;
+      if (data.additionalServices !== undefined) updateData.additional_services = data.additionalServices;
+      if (data.notes !== undefined) updateData.notes = data.notes;
+
+      const { error } = await supabase
+        .from("service_requests")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // Update local state
+      setRequests(requests.map((r) => (r.id === id ? { ...r, ...stateUpdate } : r)));
+    } catch (error) {
+      console.error("Error updating request:", error);
+      throw error;
+    }
+  };
+
+  const deleteRequest = async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from("service_requests")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // Update local state
+      setRequests(requests.filter((r) => r.id !== id));
+    } catch (error) {
+      console.error("Error deleting request:", error);
+      throw error;
+    }
+  };
+
   const resetNewRequestCount = () => {
     setNewRequestCount(0);
   };
@@ -417,12 +482,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (!user?.dealership_id) throw new Error("User dealership not found");
 
+      // Add one day to endDate to include the entire end date
+      const endDateObj = new Date(endDate);
+      endDateObj.setDate(endDateObj.getDate() + 1);
+      const adjustedEndDate = endDateObj.toISOString().split("T")[0];
+
       const { data, error } = await supabase
         .from("service_requests")
         .select("*")
         .eq("dealership_id", user.dealership_id)
         .gte("date_requested", startDate)
-        .lte("date_requested", endDate)
+        .lt("date_requested", adjustedEndDate)
         .order("date_requested", { ascending: false });
 
       if (error) throw error;
@@ -472,6 +542,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateRequestStatus,
         updateRequestPrice,
         updateRequestDates,
+        updateRequest,
+        deleteRequest,
         newRequestCount,
         resetNewRequestCount,
         deleteAllRequests,
