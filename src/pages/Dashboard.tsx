@@ -2276,9 +2276,8 @@ export default function Dashboard() {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleOpenRequestDetails(request)}
-                                disabled={request.status !== "Pending"}
-                                title={request.status !== "Pending" ? "Can only edit pending requests" : "Edit request"}
-                                className="h-7 px-2 text-primary hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Edit request details"
+                                className="h-7 px-2 text-primary hover:bg-card"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </Button>
@@ -2292,7 +2291,7 @@ export default function Dashboard() {
                                 <DialogDescription className="text-muted-foreground">
                                   {editingRequest.status === "Pending"
                                     ? "Update all details for this pending request"
-                                    : "View request details (editing only available for pending requests)"}
+                                    : "Edit completion date and pricing for this request"}
                                 </DialogDescription>
                               </DialogHeader>
                               <div className="space-y-6">
@@ -2514,9 +2513,40 @@ export default function Dashboard() {
                                   </div>
                                 </div>
 
+                                {/* Completion Date - For All Statuses */}
+                                <div className="border-b border-border/20 pb-6">
+                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                                    Completion Date & Time
+                                  </h4>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label htmlFor="completion-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Completion Date
+                                      </label>
+                                      <Input
+                                        id="completion-date"
+                                        type="date"
+                                        value={editingDates.completionDate}
+                                        onChange={(e) => setEditingDates({ ...editingDates, completionDate: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label htmlFor="completion-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Completion Time
+                                      </label>
+                                      <Input
+                                        id="completion-time"
+                                        type="time"
+                                        value={editingDates.completionTime}
+                                        onChange={(e) => setEditingDates({ ...editingDates, completionTime: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
 
-
-                                {/* Save Button */}
+                                {/* Save Buttons */}
                                 <div className="border-t border-border/20 pt-6 flex gap-4">
                                   <Button
                                     type="button"
@@ -2542,6 +2572,40 @@ export default function Dashboard() {
                                             notes: editingNotes,
                                             dueDate: editingDates.dueDate,
                                             dueTime: editingDates.dueTime,
+                                            completionDate: editingDates.completionDate,
+                                            completionTime: editingDates.completionTime,
+                                          });
+                                          toast({
+                                            title: "Updated",
+                                            description: "Request has been updated successfully.",
+                                          });
+                                          setEditingRequest(null);
+                                        } catch (error: any) {
+                                          toast({
+                                            title: "Error",
+                                            description: error?.message || "Failed to update request.",
+                                            variant: "destructive",
+                                          });
+                                        } finally {
+                                          setIsSavingDates(false);
+                                        }
+                                      }}
+                                      disabled={isSavingDates}
+                                      className="flex-1 bg-primary hover:bg-primary text-primary-foreground"
+                                    >
+                                      {isSavingDates ? "Saving..." : "Save All Changes"}
+                                    </Button>
+                                  )}
+                                  {editingRequest.status !== "Pending" && (
+                                    <Button
+                                      type="button"
+                                      onClick={async () => {
+                                        setIsSavingDates(true);
+                                        try {
+                                          await updateRequest(editingRequest.id, {
+                                            price: editingPrice,
+                                            completionDate: editingDates.completionDate,
+                                            completionTime: editingDates.completionTime,
                                           });
                                           toast({
                                             title: "Updated",
