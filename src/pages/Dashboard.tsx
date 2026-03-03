@@ -534,6 +534,7 @@ export default function Dashboard() {
       "Main Services",
       "Additional Services",
       "Status",
+      "Completion Date",
       "Price",
     ];
 
@@ -553,6 +554,7 @@ export default function Dashboard() {
       r.mainServices.join("; "),
       r.additionalServices.join("; "),
       r.status,
+      r.completionDate || "-",
       `$${r.price.toFixed(2)}`,
     ]);
 
@@ -680,6 +682,7 @@ export default function Dashboard() {
         "Main Services",
         "Additional Services",
         "Status",
+        "Completion Date",
         "Price",
       ];
 
@@ -694,6 +697,7 @@ export default function Dashboard() {
         r.mainServices.join("; "),
         r.additionalServices.join("; "),
         r.status,
+        r.completionDate || "-",
         `$${r.price.toFixed(2)}`,
       ]);
 
