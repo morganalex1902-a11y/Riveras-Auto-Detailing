@@ -151,7 +151,6 @@ export default function Dashboard() {
     completionDate: "",
     completionTime: "",
   });
-  const [editingManager, setEditingManager] = useState("");
   const [editingMainServices, setEditingMainServices] = useState<string[]>([]);
   const [editingAdditionalServices, setEditingAdditionalServices] = useState<string[]>([]);
   const [editingNotes, setEditingNotes] = useState("");
@@ -478,7 +477,6 @@ export default function Dashboard() {
     });
     setEditingPrice(request.price);
     setEditingStatus(request.status);
-    setEditingManager(request.manager || "");
     setEditingMainServices(request.mainServices || []);
     setEditingAdditionalServices(request.additionalServices || []);
     setEditingNotes(request.notes || "");
@@ -2430,80 +2428,31 @@ export default function Dashboard() {
                                     Manager & Services
                                   </h4>
                                   <div className="space-y-4">
-                                    {editingRequest.status === "Pending" && (
-                                      <div>
-                                        <label htmlFor="manager" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                          Assigned Manager
-                                        </label>
-                                        <Input
-                                          id="manager"
-                                          type="text"
-                                          value={editingManager}
-                                          onChange={(e) => setEditingManager(e.target.value)}
-                                          placeholder="Enter manager name"
-                                          className="bg-card/50 border-border/30 text-foreground"
-                                        />
-                                      </div>
-                                    )}
                                     <div>
-                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                      <label htmlFor="main-services" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
                                         Main Services
-                                      </p>
-                                      {editingRequest.status === "Pending" ? (
-                                        <div className="space-y-2">
-                                          {MAIN_SERVICES.map((service) => (
-                                            <label key={service} className="flex items-center gap-2 cursor-pointer">
-                                              <Checkbox
-                                                checked={editingMainServices.includes(service)}
-                                                onCheckedChange={(checked) => {
-                                                  if (checked) {
-                                                    setEditingMainServices([...editingMainServices, service]);
-                                                  } else {
-                                                    setEditingMainServices(editingMainServices.filter(s => s !== service));
-                                                  }
-                                                }}
-                                              />
-                                              <span className="text-sm text-foreground">{service}</span>
-                                            </label>
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                          {editingRequest.mainServices.length > 0
-                                            ? editingRequest.mainServices.join(", ")
-                                            : "None selected"}
-                                        </p>
-                                      )}
+                                      </label>
+                                      <Input
+                                        id="main-services"
+                                        type="text"
+                                        value={editingMainServices.join(", ")}
+                                        onChange={(e) => setEditingMainServices(e.target.value.split(",").map(s => s.trim()).filter(s => s))}
+                                        placeholder="Enter services separated by commas"
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
                                     </div>
                                     <div>
-                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                      <label htmlFor="additional-services" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
                                         Additional Services
-                                      </p>
-                                      {editingRequest.status === "Pending" ? (
-                                        <div className="space-y-2">
-                                          {ADDITIONAL_SERVICES.map((service) => (
-                                            <label key={service} className="flex items-center gap-2 cursor-pointer">
-                                              <Checkbox
-                                                checked={editingAdditionalServices.includes(service)}
-                                                onCheckedChange={(checked) => {
-                                                  if (checked) {
-                                                    setEditingAdditionalServices([...editingAdditionalServices, service]);
-                                                  } else {
-                                                    setEditingAdditionalServices(editingAdditionalServices.filter(s => s !== service));
-                                                  }
-                                                }}
-                                              />
-                                              <span className="text-sm text-foreground">{service}</span>
-                                            </label>
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                          {editingRequest.additionalServices.length > 0
-                                            ? editingRequest.additionalServices.join(", ")
-                                            : "None selected"}
-                                        </p>
-                                      )}
+                                      </label>
+                                      <Input
+                                        id="additional-services"
+                                        type="text"
+                                        value={editingAdditionalServices.join(", ")}
+                                        onChange={(e) => setEditingAdditionalServices(e.target.value.split(",").map(s => s.trim()).filter(s => s))}
+                                        placeholder="Enter services separated by commas"
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
                                     </div>
                                     {editingRequest.status === "Pending" ? (
                                       <div>
@@ -2597,7 +2546,6 @@ export default function Dashboard() {
                                           await updateRequest(editingRequest.id, {
                                             status: editingStatus as ServiceRequest["status"],
                                             price: editingPrice,
-                                            manager: editingManager,
                                             mainServices: editingMainServices,
                                             additionalServices: editingAdditionalServices,
                                             notes: editingNotes,
