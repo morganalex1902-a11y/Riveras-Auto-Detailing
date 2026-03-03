@@ -1781,6 +1781,9 @@ export default function Dashboard() {
                       Status
                     </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                      Completion Date
+                    </TableHead>
+                    <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                       Price
                     </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
@@ -1791,7 +1794,7 @@ export default function Dashboard() {
                 <TableBody>
                   {filteredRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
                         No requests found
                       </TableCell>
                     </TableRow>
@@ -1874,6 +1877,11 @@ export default function Dashboard() {
                               {request.status}
                             </span>
                           )}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {request.status === "Completed" && request.completionDate
+                            ? request.completionDate
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           {user?.role === "admin" && editingId === request.id ? (

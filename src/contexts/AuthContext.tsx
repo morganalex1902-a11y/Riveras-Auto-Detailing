@@ -382,9 +382,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateRequest = async (id: number, data: Partial<ServiceRequest>) => {
     try {
       const updateData: any = {};
+      const stateUpdate = { ...data };
 
       // Map ServiceRequest fields to database columns
-      if (data.status) updateData.status = data.status;
+      if (data.status) {
+        updateData.status = data.status;
+        // Auto-set completion date and time when status is changed to Completed
+        if (data.status === "Completed") {
+          const now = new Date();
+          const completionDate = now.toISOString().split("T")[0];
+          const completionTime = now.toTimeString().slice(0, 5); // HH:MM format
+          updateData.completion_date = completionDate;
+          updateData.completion_time = completionTime;
+          stateUpdate.completionDate = completionDate;
+          stateUpdate.completionTime = completionTime;
+        }
+      }
       if (data.price !== undefined) updateData.price = data.price;
       if (data.manager !== undefined) updateData.manager = data.manager;
       if (data.dueDate !== undefined) updateData.due_date = data.dueDate;
@@ -405,7 +418,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
 
       // Update local state
-      setRequests(requests.map((r) => (r.id === id ? { ...r, ...data } : r)));
+      setRequests(requests.map((r) => (r.id === id ? { ...r, ...stateUpdate } : r)));
     } catch (error) {
       console.error("Error updating request:", error);
       throw error;
