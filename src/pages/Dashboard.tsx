@@ -483,12 +483,12 @@ export default function Dashboard() {
     setEditingAdditionalServices(request.additionalServices || []);
     setEditingNotes(request.notes || "");
     setEditingVehicle({
-      year: request.year,
-      make: request.make,
-      model: request.model,
-      color: request.color,
+      year: request.year || new Date().getFullYear(),
+      make: request.make || "",
+      model: request.model || "",
+      color: request.color || "",
     });
-    setEditingStockVin(request.stockVin);
+    setEditingStockVin(request.stockVin || "");
   };
 
   const handleDeleteRequest = async () => {
