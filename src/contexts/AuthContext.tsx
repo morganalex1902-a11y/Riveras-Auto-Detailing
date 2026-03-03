@@ -13,6 +13,7 @@ export interface ServiceRequest {
   id: number;
   requestNumber: string;
   requestedBy: string;
+  requesterRole?: string;
   manager?: string;
   stockVin: string;
   poNumber?: string;
@@ -114,6 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: req.id,
         requestNumber: req.request_number,
         requestedBy: req.requested_by,
+        requesterRole: req.requester_role,
         manager: req.manager,
         stockVin: req.stock_vin,
         poNumber: req.po_number,
@@ -253,6 +255,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           request_number: nextRequestNumber,
           dealership_id: user.dealership_id,
           requested_by: requestData.requestedBy,
+          requester_role: requestData.requesterRole || user.role,
           manager: requestData.manager,
           stock_vin: requestData.stockVin,
           po_number: requestData.poNumber,

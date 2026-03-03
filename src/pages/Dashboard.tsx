@@ -825,6 +825,7 @@ export default function Dashboard() {
       await addRequest({
         requestNumber: generateRequestNumber(),
         requestedBy: user?.email || "unknown@dealership.com",
+        requesterRole: user?.role,
         manager: data.manager || undefined,
         stockVin: data.stockVin,
         poNumber: data.poNumber || undefined,
@@ -2209,8 +2210,15 @@ export default function Dashboard() {
                         <TableCell className="font-display text-sm text-primary">
                           {request.requestNumber}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {request.requestedBy}
+                        <TableCell className="text-xs">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-foreground font-medium">{request.requestedBy}</span>
+                            {request.requesterRole && (
+                              <span className="text-muted-foreground capitalize text-xs">
+                                {request.requesterRole.replace(/_/g, ' ')}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {request.dateRequested || "-"}
