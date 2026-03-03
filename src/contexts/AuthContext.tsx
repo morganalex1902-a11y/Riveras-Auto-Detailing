@@ -410,6 +410,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.mainServices !== undefined) updateData.main_services = data.mainServices;
       if (data.additionalServices !== undefined) updateData.additional_services = data.additionalServices;
       if (data.notes !== undefined) updateData.notes = data.notes;
+      if (data.year !== undefined) updateData.year = data.year;
+      if (data.make !== undefined) updateData.make = data.make;
+      if (data.model !== undefined) updateData.model = data.model;
+      if (data.color !== undefined) updateData.color = data.color;
+      if (data.stockVin !== undefined) updateData.stock_vin = data.stockVin;
 
       const { error } = await supabase
         .from("service_requests")
