@@ -155,6 +155,13 @@ export default function Dashboard() {
   const [editingMainServices, setEditingMainServices] = useState<string[]>([]);
   const [editingAdditionalServices, setEditingAdditionalServices] = useState<string[]>([]);
   const [editingNotes, setEditingNotes] = useState("");
+  const [editingVehicle, setEditingVehicle] = useState<{
+    year: number;
+    make: string;
+    model: string;
+    color: string;
+  }>({ year: new Date().getFullYear(), make: "", model: "", color: "" });
+  const [editingStockVin, setEditingStockVin] = useState("");
   const [isSavingDates, setIsSavingDates] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<ServiceRequest | null>(null);
   const [showDeleteRequestDialog, setShowDeleteRequestDialog] = useState(false);
@@ -475,6 +482,13 @@ export default function Dashboard() {
     setEditingMainServices(request.mainServices || []);
     setEditingAdditionalServices(request.additionalServices || []);
     setEditingNotes(request.notes || "");
+    setEditingVehicle({
+      year: request.year,
+      make: request.make,
+      model: request.model,
+      color: request.color,
+    });
+    setEditingStockVin(request.stockVin);
   };
 
   const handleDeleteRequest = async () => {
@@ -2348,10 +2362,16 @@ export default function Dashboard() {
                                   </h4>
                                   <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                      <label htmlFor="stock-vin" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
                                         Stock/VIN
-                                      </p>
-                                      <p className="text-sm text-foreground">{editingRequest.stockVin}</p>
+                                      </label>
+                                      <Input
+                                        id="stock-vin"
+                                        type="text"
+                                        value={editingStockVin}
+                                        onChange={(e) => setEditingStockVin(e.target.value)}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
                                     </div>
                                     <div>
                                       <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
@@ -2360,12 +2380,52 @@ export default function Dashboard() {
                                       <p className="text-sm text-foreground">{editingRequest.poNumber || "-"}</p>
                                     </div>
                                     <div>
-                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                        Vehicle
-                                      </p>
-                                      <p className="text-sm text-foreground">
-                                        {editingRequest.year} {editingRequest.make} {editingRequest.model} ({editingRequest.color})
-                                      </p>
+                                      <label htmlFor="vehicle-year" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        Vehicle Year
+                                      </label>
+                                      <Input
+                                        id="vehicle-year"
+                                        type="number"
+                                        value={editingVehicle.year}
+                                        onChange={(e) => setEditingVehicle({ ...editingVehicle, year: parseInt(e.target.value) || new Date().getFullYear() })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label htmlFor="vehicle-make" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        Make
+                                      </label>
+                                      <Input
+                                        id="vehicle-make"
+                                        type="text"
+                                        value={editingVehicle.make}
+                                        onChange={(e) => setEditingVehicle({ ...editingVehicle, make: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label htmlFor="vehicle-model" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        Model
+                                      </label>
+                                      <Input
+                                        id="vehicle-model"
+                                        type="text"
+                                        value={editingVehicle.model}
+                                        onChange={(e) => setEditingVehicle({ ...editingVehicle, model: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label htmlFor="vehicle-color" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                        Color
+                                      </label>
+                                      <Input
+                                        id="vehicle-color"
+                                        type="text"
+                                        value={editingVehicle.color}
+                                        onChange={(e) => setEditingVehicle({ ...editingVehicle, color: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
                                     </div>
                                     <div>
                                       <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
@@ -2559,38 +2619,6 @@ export default function Dashboard() {
                                   </div>
                                 </div>
 
-                                {/* Completion Date - For All Statuses */}
-                                <div className="border-b border-border/20 pb-6">
-                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                                    Completion Date & Time
-                                  </h4>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <label htmlFor="completion-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Completion Date
-                                      </label>
-                                      <Input
-                                        id="completion-date"
-                                        type="date"
-                                        value={editingDates.completionDate}
-                                        onChange={(e) => setEditingDates({ ...editingDates, completionDate: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label htmlFor="completion-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Completion Time
-                                      </label>
-                                      <Input
-                                        id="completion-time"
-                                        type="time"
-                                        value={editingDates.completionTime}
-                                        onChange={(e) => setEditingDates({ ...editingDates, completionTime: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
 
                                 {/* Save Buttons */}
                                 <div className="border-t border-border/20 pt-6 flex gap-4">
@@ -2609,6 +2637,9 @@ export default function Dashboard() {
                                       onClick={async () => {
                                         setIsSavingDates(true);
                                         try {
+                                          const completionDate = editingStatus === "Completed" ? new Date().toISOString().split('T')[0] : editingDates.completionDate;
+                                          const completionTime = editingStatus === "Completed" ? new Date().toTimeString().split(' ')[0] : editingDates.completionTime;
+
                                           await updateRequest(editingRequest.id, {
                                             status: editingStatus as ServiceRequest["status"],
                                             price: editingPrice,
@@ -2618,8 +2649,13 @@ export default function Dashboard() {
                                             notes: editingNotes,
                                             dueDate: editingDates.dueDate,
                                             dueTime: editingDates.dueTime,
-                                            completionDate: editingDates.completionDate,
-                                            completionTime: editingDates.completionTime,
+                                            year: editingVehicle.year,
+                                            make: editingVehicle.make,
+                                            model: editingVehicle.model,
+                                            color: editingVehicle.color,
+                                            stockVin: editingStockVin,
+                                            completionDate: completionDate,
+                                            completionTime: completionTime,
                                           });
                                           toast({
                                             title: "Updated",
@@ -2648,10 +2684,19 @@ export default function Dashboard() {
                                       onClick={async () => {
                                         setIsSavingDates(true);
                                         try {
+                                          const completionDate = editingStatus === "Completed" ? new Date().toISOString().split('T')[0] : editingDates.completionDate;
+                                          const completionTime = editingStatus === "Completed" ? new Date().toTimeString().split(' ')[0] : editingDates.completionTime;
+
                                           await updateRequest(editingRequest.id, {
                                             price: editingPrice,
-                                            completionDate: editingDates.completionDate,
-                                            completionTime: editingDates.completionTime,
+                                            year: editingVehicle.year,
+                                            make: editingVehicle.make,
+                                            model: editingVehicle.model,
+                                            color: editingVehicle.color,
+                                            stockVin: editingStockVin,
+                                            status: editingStatus as ServiceRequest["status"],
+                                            completionDate: completionDate,
+                                            completionTime: completionTime,
                                           });
                                           toast({
                                             title: "Updated",
