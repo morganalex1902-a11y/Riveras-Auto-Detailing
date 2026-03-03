@@ -346,9 +346,9 @@ export default function Dashboard() {
     }
   };
 
-  // Load users when switching to accounts tab
+  // Load users and activity when switching tabs
   useEffect(() => {
-    if (activeTab === "accounts" && (user?.role === "admin" || user?.role === "manager")) {
+    if (activeTab === "accounts" && user?.role === "admin") {
       fetchTeamUsers();
     }
     if (activeTab === "activity" && user?.role === "admin") {
@@ -875,7 +875,7 @@ export default function Dashboard() {
                 {showForm ? "Close" : "New Request"}
               </Button>
             )}
-            {activeTab === "accounts" && (
+            {user?.role === "admin" && activeTab === "accounts" && (
               <Button
                 onClick={() => setShowAccountForm(!showAccountForm)}
                 className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs h-auto py-2 px-4"
@@ -886,8 +886,21 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Admin/Manager Tab Navigation */}
-          {(user?.role === "admin" || user?.role === "manager") && (
+          {/* Manager Account Creation (Managers Only) */}
+          {user?.role === "manager" && (
+            <div className="flex gap-4 mb-6">
+              <Button
+                onClick={() => setShowAccountForm(!showAccountForm)}
+                className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs h-auto py-2 px-4"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {showAccountForm ? "Close" : "Create Account"}
+              </Button>
+            </div>
+          )}
+
+          {/* Admin Tab Navigation */}
+          {user?.role === "admin" && (
             <div className="flex gap-4 mb-6 flex-wrap">
               <button
                 onClick={() => setActiveTab("requests")}
@@ -911,19 +924,17 @@ export default function Dashboard() {
                 <Users className="w-4 h-4" />
                 Account Management
               </button>
-              {user?.role === "admin" && (
-                <button
-                  onClick={() => setActiveTab("activity")}
-                  className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
-                    activeTab === "activity"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card border border-border/30 text-foreground hover:border-primary/50"
-                  }`}
-                >
-                  <AlertCircle className="w-4 h-4" />
-                  Activity Log
-                </button>
-              )}
+              <button
+                onClick={() => setActiveTab("activity")}
+                className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
+                  activeTab === "activity"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+                }`}
+              >
+                <AlertCircle className="w-4 h-4" />
+                Activity Log
+              </button>
             </div>
           )}
 
@@ -1227,8 +1238,192 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* Account Management Form - Admin/Manager */}
-        {(user?.role === "admin" || user?.role === "manager") && activeTab === "accounts" && (
+        {/* Manager Account Creation Form - Manager Only */}
+        {user?.role === "manager" && (
+          <AnimatePresence>
+            {showAccountForm && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.4 }}
+                className="mb-12 overflow-hidden"
+              >
+                <div className="glass-card p-8 md:p-10">
+                  <h3 className="font-display text-2xl uppercase tracking-wider mb-8">
+                    Create <span className="text-primary">New Account</span>
+                  </h3>
+
+                  <form onSubmit={handleAccountSubmit(onAccountSubmit)} className="space-y-6">
+                    {/* Account Info */}
+                    <div>
+                      <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                        Account Information
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="mgr-name" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Full Name <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            id="mgr-name"
+                            placeholder="John Doe"
+                            {...registerAccount("name", { required: true })}
+                            disabled={creatingAccount}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="mgr-email" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Email <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            id="mgr-email"
+                            type="email"
+                            placeholder="john@dealership.com"
+                            {...registerAccount("email", { required: true })}
+                            disabled={creatingAccount}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="mgr-password" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Password
+                          </label>
+                          <div className="relative">
+                            <Input
+                              id="mgr-password"
+                              type={showPassword ? "text" : "password"}
+                              placeholder="Leave empty to auto-generate"
+                              {...registerAccount("password")}
+                              disabled={creatingAccount}
+                              className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50 pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label htmlFor="mgr-role" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Role <span className="text-destructive">*</span>
+                          </label>
+                          <select
+                            {...registerAccount("role")}
+                            disabled={creatingAccount}
+                            className="w-full bg-background/50 border border-border/50 text-foreground px-3 py-2 rounded-sm text-sm"
+                          >
+                            <option value="sales_rep">Sales Rep</option>
+                            <option value="manager">Manager</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Security Question */}
+                    <div className="border-t border-border/20 pt-6">
+                      <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                        Account Recovery
+                      </h4>
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="mgr-question" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Security Question <span className="text-destructive">*</span>
+                          </label>
+                          <select
+                            {...registerAccount("securityQuestion", { required: true })}
+                            disabled={creatingAccount}
+                            className="w-full bg-background/50 border border-border/50 text-foreground px-3 py-2 rounded-sm text-sm"
+                          >
+                            {SECURITY_QUESTIONS.map((q) => (
+                              <option key={q} value={q}>
+                                {q}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="mgr-answer" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Answer <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            id="mgr-answer"
+                            placeholder="Your answer"
+                            {...registerAccount("securityAnswer", { required: true })}
+                            disabled={creatingAccount}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Form Actions */}
+                    <div className="border-t border-border/20 pt-6 flex gap-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowAccountForm(false);
+                          resetAccountForm();
+                        }}
+                        disabled={creatingAccount}
+                        className="flex-1 border-border/30 hover:bg-card text-foreground font-display uppercase tracking-widest text-xs"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={creatingAccount}
+                        className="flex-1 bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+                      >
+                        {creatingAccount ? "Creating Account..." : "Create Account"}
+                      </Button>
+                    </div>
+                  </form>
+
+                  {generatedPassword && (
+                    <div className="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-sm">
+                      <p className="text-xs font-display uppercase tracking-wider text-primary mb-2">
+                        Generated Password
+                      </p>
+                      <div className="flex gap-2">
+                        <code className="flex-1 bg-background/50 p-2 rounded text-sm text-foreground font-mono">
+                          {generatedPassword}
+                        </code>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(generatedPassword);
+                            toast({
+                              title: "Copied",
+                              description: "Password copied to clipboard",
+                            });
+                          }}
+                          className="border-border/30 hover:bg-card"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
+
+        {/* Account Management Form - Admin Only */}
+        {user?.role === "admin" && activeTab === "accounts" && (
           <AnimatePresence>
             {showAccountForm && (
               <motion.div
@@ -1321,7 +1516,7 @@ export default function Dashboard() {
                           >
                             <option value="sales_rep">Sales Rep</option>
                             <option value="manager">Manager</option>
-                            <option value="admin">Admin</option>
+                            {user?.role === "admin" && <option value="admin">Admin</option>}
                           </select>
                         </div>
                       </div>
@@ -1432,8 +1627,8 @@ export default function Dashboard() {
           </AnimatePresence>
         )}
 
-        {/* Account Management Info */}
-        {(user?.role === "admin" || user?.role === "manager") && activeTab === "accounts" && !showAccountForm && (
+        {/* Account Management Info - Admin Only */}
+        {user?.role === "admin" && activeTab === "accounts" && !showAccountForm && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
