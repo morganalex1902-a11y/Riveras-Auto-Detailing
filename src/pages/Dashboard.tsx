@@ -125,7 +125,7 @@ export default function Dashboard() {
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
   const { toast } = useToast();
 
   // Request management state
@@ -151,6 +151,10 @@ export default function Dashboard() {
     completionDate: "",
     completionTime: "",
   });
+  const [editingManager, setEditingManager] = useState("");
+  const [editingMainServices, setEditingMainServices] = useState<string[]>([]);
+  const [editingAdditionalServices, setEditingAdditionalServices] = useState<string[]>([]);
+  const [editingNotes, setEditingNotes] = useState("");
   const [isSavingDates, setIsSavingDates] = useState(false);
 
   // Admin account management state
@@ -401,6 +405,10 @@ export default function Dashboard() {
     });
     setEditingPrice(request.price);
     setEditingStatus(request.status);
+    setEditingManager(request.manager || "");
+    setEditingMainServices(request.mainServices || []);
+    setEditingAdditionalServices(request.additionalServices || []);
+    setEditingNotes(request.notes || "");
   };
 
   const handleSaveDates = async () => {
@@ -1900,7 +1908,9 @@ export default function Dashboard() {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleOpenRequestDetails(request)}
-                                className="h-7 px-2 text-primary hover:bg-card"
+                                disabled={request.status !== "Pending"}
+                                title={request.status !== "Pending" ? "Can only edit pending requests" : "Edit request"}
+                                className="h-7 px-2 text-primary hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </Button>
@@ -1912,7 +1922,9 @@ export default function Dashboard() {
                                   Manage Request {editingRequest.requestNumber}
                                 </DialogTitle>
                                 <DialogDescription className="text-muted-foreground">
-                                  Update pricing, dates, and status for this service request
+                                  {editingRequest.status === "Pending"
+                                    ? "Update all details for this pending request"
+                                    : "View request details (editing only available for pending requests)"}
                                 </DialogDescription>
                               </DialogHeader>
                               <div className="space-y-6">
@@ -1951,44 +1963,149 @@ export default function Dashboard() {
                                   </div>
                                 </div>
 
-                                {/* Services */}
+                                {/* Manager & Services */}
                                 <div className="border-b border-border/20 pb-6">
                                   <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                                    Services
+                                    Manager & Services
                                   </h4>
-                                  <div className="space-y-3">
+                                  <div className="space-y-4">
+                                    {editingRequest.status === "Pending" && (
+                                      <div>
+                                        <label htmlFor="manager" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                          Assigned Manager
+                                        </label>
+                                        <Input
+                                          id="manager"
+                                          type="text"
+                                          value={editingManager}
+                                          onChange={(e) => setEditingManager(e.target.value)}
+                                          placeholder="Enter manager name"
+                                          className="bg-card/50 border-border/30 text-foreground"
+                                        />
+                                      </div>
+                                    )}
                                     <div>
-                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
                                         Main Services
                                       </p>
-                                      <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                        {editingRequest.mainServices.length > 0
-                                          ? editingRequest.mainServices.join(", ")
-                                          : "None selected"}
-                                      </p>
+                                      {editingRequest.status === "Pending" ? (
+                                        <div className="space-y-2">
+                                          {MAIN_SERVICES.map((service) => (
+                                            <label key={service} className="flex items-center gap-2 cursor-pointer">
+                                              <Checkbox
+                                                checked={editingMainServices.includes(service)}
+                                                onCheckedChange={(checked) => {
+                                                  if (checked) {
+                                                    setEditingMainServices([...editingMainServices, service]);
+                                                  } else {
+                                                    setEditingMainServices(editingMainServices.filter(s => s !== service));
+                                                  }
+                                                }}
+                                              />
+                                              <span className="text-sm text-foreground">{service}</span>
+                                            </label>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
+                                          {editingRequest.mainServices.length > 0
+                                            ? editingRequest.mainServices.join(", ")
+                                            : "None selected"}
+                                        </p>
+                                      )}
                                     </div>
                                     <div>
-                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                      <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
                                         Additional Services
                                       </p>
-                                      <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                        {editingRequest.additionalServices.length > 0
-                                          ? editingRequest.additionalServices.join(", ")
-                                          : "None selected"}
-                                      </p>
-                                    </div>
-                                    {editingRequest.notes && (
-                                      <div>
-                                        <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                          Notes
-                                        </p>
+                                      {editingRequest.status === "Pending" ? (
+                                        <div className="space-y-2">
+                                          {ADDITIONAL_SERVICES.map((service) => (
+                                            <label key={service} className="flex items-center gap-2 cursor-pointer">
+                                              <Checkbox
+                                                checked={editingAdditionalServices.includes(service)}
+                                                onCheckedChange={(checked) => {
+                                                  if (checked) {
+                                                    setEditingAdditionalServices([...editingAdditionalServices, service]);
+                                                  } else {
+                                                    setEditingAdditionalServices(editingAdditionalServices.filter(s => s !== service));
+                                                  }
+                                                }}
+                                              />
+                                              <span className="text-sm text-foreground">{service}</span>
+                                            </label>
+                                          ))}
+                                        </div>
+                                      ) : (
                                         <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
-                                          {editingRequest.notes}
+                                          {editingRequest.additionalServices.length > 0
+                                            ? editingRequest.additionalServices.join(", ")
+                                            : "None selected"}
                                         </p>
+                                      )}
+                                    </div>
+                                    {editingRequest.status === "Pending" ? (
+                                      <div>
+                                        <label htmlFor="notes" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                          Notes
+                                        </label>
+                                        <Textarea
+                                          id="notes"
+                                          value={editingNotes}
+                                          onChange={(e) => setEditingNotes(e.target.value)}
+                                          placeholder="Add any notes for this request"
+                                          className="bg-card/50 border-border/30 text-foreground min-h-20"
+                                        />
                                       </div>
+                                    ) : (
+                                      editingRequest.notes && (
+                                        <div>
+                                          <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
+                                            Notes
+                                          </p>
+                                          <p className="text-sm text-foreground bg-background/50 p-3 rounded-sm border border-border/30">
+                                            {editingRequest.notes}
+                                          </p>
+                                        </div>
+                                      )
                                     )}
                                   </div>
                                 </div>
+
+                                {/* Due Dates - Only for Pending */}
+                                {editingRequest.status === "Pending" && (
+                                <div className="border-b border-border/20 pb-6">
+                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                                    Due Date & Time
+                                  </h4>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label htmlFor="due-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Due Date
+                                      </label>
+                                      <Input
+                                        id="due-date"
+                                        type="date"
+                                        value={editingDates.dueDate}
+                                        onChange={(e) => setEditingDates({ ...editingDates, dueDate: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label htmlFor="due-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                                        Due Time
+                                      </label>
+                                      <Input
+                                        id="due-time"
+                                        type="time"
+                                        value={editingDates.dueTime}
+                                        onChange={(e) => setEditingDates({ ...editingDates, dueTime: e.target.value })}
+                                        className="bg-card/50 border-border/30 text-foreground"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                                )}
 
                                 {/* Status & Price */}
                                 <div className="border-b border-border/20 pb-6">
@@ -2040,35 +2157,45 @@ export default function Dashboard() {
                                     disabled={isSavingDates}
                                     className="flex-1 border-border/30 hover:bg-card text-foreground"
                                   >
-                                    Cancel
+                                    Close
                                   </Button>
-                                  <Button
-                                    type="button"
-                                    onClick={async () => {
-                                      setIsSavingDates(true);
-                                      try {
-                                        await updateRequestStatus(editingRequest.id, editingStatus as ServiceRequest["status"]);
-                                        await updateRequestPrice(editingRequest.id, editingPrice);
-                                        toast({
-                                          title: "Updated",
-                                          description: "Request has been updated successfully.",
-                                        });
-                                        setEditingRequest(null);
-                                      } catch (error: any) {
-                                        toast({
-                                          title: "Error",
-                                          description: error?.message || "Failed to update request.",
-                                          variant: "destructive",
-                                        });
-                                      } finally {
-                                        setIsSavingDates(false);
-                                      }
-                                    }}
-                                    disabled={isSavingDates}
-                                    className="flex-1 bg-primary hover:bg-primary text-primary-foreground"
-                                  >
-                                    {isSavingDates ? "Saving..." : "Save Changes"}
-                                  </Button>
+                                  {editingRequest.status === "Pending" && (
+                                    <Button
+                                      type="button"
+                                      onClick={async () => {
+                                        setIsSavingDates(true);
+                                        try {
+                                          await updateRequest(editingRequest.id, {
+                                            status: editingStatus as ServiceRequest["status"],
+                                            price: editingPrice,
+                                            manager: editingManager,
+                                            mainServices: editingMainServices,
+                                            additionalServices: editingAdditionalServices,
+                                            notes: editingNotes,
+                                            dueDate: editingDates.dueDate,
+                                            dueTime: editingDates.dueTime,
+                                          });
+                                          toast({
+                                            title: "Updated",
+                                            description: "Request has been updated successfully.",
+                                          });
+                                          setEditingRequest(null);
+                                        } catch (error: any) {
+                                          toast({
+                                            title: "Error",
+                                            description: error?.message || "Failed to update request.",
+                                            variant: "destructive",
+                                          });
+                                        } finally {
+                                          setIsSavingDates(false);
+                                        }
+                                      }}
+                                      disabled={isSavingDates}
+                                      className="flex-1 bg-primary hover:bg-primary text-primary-foreground"
+                                    >
+                                      {isSavingDates ? "Saving..." : "Save Changes"}
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             </DialogContent>

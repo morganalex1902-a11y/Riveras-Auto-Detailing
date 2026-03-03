@@ -48,6 +48,7 @@ interface AuthContextType {
   updateRequestStatus: (id: number, status: ServiceRequest["status"]) => Promise<void>;
   updateRequestPrice: (id: number, price: number) => Promise<void>;
   updateRequestDates: (id: number, data: { dueDate?: string; dueTime?: string; startDate?: string; startTime?: string; completionDate?: string; completionTime?: string }) => Promise<void>;
+  updateRequest: (id: number, data: Partial<ServiceRequest>) => Promise<void>;
   newRequestCount: number;
   resetNewRequestCount: () => void;
   deleteAllRequests: () => Promise<void>;
@@ -378,6 +379,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateRequest = async (id: number, data: Partial<ServiceRequest>) => {
+    try {
+      const updateData: any = {};
+
+      // Map ServiceRequest fields to database columns
+      if (data.status) updateData.status = data.status;
+      if (data.price !== undefined) updateData.price = data.price;
+      if (data.manager !== undefined) updateData.manager = data.manager;
+      if (data.dueDate !== undefined) updateData.due_date = data.dueDate;
+      if (data.dueTime !== undefined) updateData.due_time = data.dueTime;
+      if (data.startDate !== undefined) updateData.start_date = data.startDate;
+      if (data.startTime !== undefined) updateData.start_time = data.startTime;
+      if (data.completionDate !== undefined) updateData.completion_date = data.completionDate;
+      if (data.completionTime !== undefined) updateData.completion_time = data.completionTime;
+      if (data.mainServices !== undefined) updateData.main_services = data.mainServices;
+      if (data.additionalServices !== undefined) updateData.additional_services = data.additionalServices;
+      if (data.notes !== undefined) updateData.notes = data.notes;
+
+      const { error } = await supabase
+        .from("service_requests")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // Update local state
+      setRequests(requests.map((r) => (r.id === id ? { ...r, ...data } : r)));
+    } catch (error) {
+      console.error("Error updating request:", error);
+      throw error;
+    }
+  };
+
   const resetNewRequestCount = () => {
     setNewRequestCount(0);
   };
@@ -472,6 +506,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateRequestStatus,
         updateRequestPrice,
         updateRequestDates,
+        updateRequest,
         newRequestCount,
         resetNewRequestCount,
         deleteAllRequests,
