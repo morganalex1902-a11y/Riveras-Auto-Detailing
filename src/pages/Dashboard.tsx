@@ -157,14 +157,16 @@ export default function Dashboard() {
   const [editingNotes, setEditingNotes] = useState("");
   const [isSavingDates, setIsSavingDates] = useState(false);
 
-  // Admin account management state
-  const [activeTab, setActiveTab] = useState<"requests" | "accounts">("requests");
+  // Admin/Manager account management state
+  const [activeTab, setActiveTab] = useState<"requests" | "accounts" | "activity">("requests");
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [creatingAccount, setCreatingAccount] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [teamUsers, setTeamUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [accountActivity, setAccountActivity] = useState<any[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -223,6 +225,9 @@ export default function Dashboard() {
 
     setDeletingUserId(userToDelete.id);
     try {
+      // Log the activity before deletion
+      await logAccountActivity('delete', userToDelete.id, userToDelete.email, userToDelete.name);
+
       const { error } = await supabase
         .from('users')
         .delete()
@@ -270,6 +275,9 @@ export default function Dashboard() {
 
       if (error) throw error;
 
+      // Log the activity
+      await logAccountActivity('password_reset', userToResetPassword.id, userToResetPassword.email, userToResetPassword.name);
+
       setNewPassword(tempPassword);
       toast({
         title: "Password Reset",
@@ -286,10 +294,65 @@ export default function Dashboard() {
     }
   };
 
+  // Log account activity
+  const logAccountActivity = async (actionType: 'create' | 'delete' | 'password_reset', targetUserId: string, targetUserEmail: string, targetUserName: string) => {
+    if (!user?.dealership_id || !user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('account_activity')
+        .insert({
+          dealership_id: user.dealership_id,
+          actor_id: user.id,
+          action_type: actionType,
+          target_user_id: targetUserId,
+          target_user_email: targetUserEmail,
+          target_user_name: targetUserName,
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error logging account activity:', error);
+    }
+  };
+
+  // Fetch account activity
+  const fetchAccountActivity = async () => {
+    if (!user?.dealership_id) return;
+
+    setLoadingActivity(true);
+    try {
+      const { data, error } = await supabase
+        .from('account_activity')
+        .select(`
+          *,
+          actor:actor_id(name, email),
+          target_user:target_user_id(name, email)
+        `)
+        .eq('dealership_id', user.dealership_id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAccountActivity(data || []);
+    } catch (error) {
+      console.error('Error fetching account activity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load account activity",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
   // Load users when switching to accounts tab
   useEffect(() => {
-    if (activeTab === "accounts" && user?.role === "admin") {
+    if (activeTab === "accounts" && (user?.role === "admin" || user?.role === "manager")) {
       fetchTeamUsers();
+    }
+    if (activeTab === "activity" && user?.role === "admin") {
+      fetchAccountActivity();
     }
   }, [activeTab, user]);
 
@@ -691,6 +754,9 @@ export default function Dashboard() {
         throw new Error(insertError.message || "Failed to create account");
       }
 
+      // Log the activity
+      await logAccountActivity('create', newUser.id, data.email, data.name);
+
       toast({
         title: "Account Created",
         description: `New account created for ${data.email}.`,
@@ -698,6 +764,7 @@ export default function Dashboard() {
 
       setGeneratedPassword(password);
       resetAccountForm();
+      fetchTeamUsers(); // Refresh team users list
     } catch (error: any) {
       toast({
         title: "Error",
@@ -819,9 +886,9 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Admin Tab Navigation */}
-          {user?.role === "admin" && (
-            <div className="flex gap-4 mb-6">
+          {/* Admin/Manager Tab Navigation */}
+          {(user?.role === "admin" || user?.role === "manager") && (
+            <div className="flex gap-4 mb-6 flex-wrap">
               <button
                 onClick={() => setActiveTab("requests")}
                 className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
@@ -844,6 +911,19 @@ export default function Dashboard() {
                 <Users className="w-4 h-4" />
                 Account Management
               </button>
+              {user?.role === "admin" && (
+                <button
+                  onClick={() => setActiveTab("activity")}
+                  className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
+                    activeTab === "activity"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+                  }`}
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  Activity Log
+                </button>
+              )}
             </div>
           )}
 
@@ -1147,8 +1227,8 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* Account Management Form - Admin Only */}
-        {user?.role === "admin" && activeTab === "accounts" && (
+        {/* Account Management Form - Admin/Manager */}
+        {(user?.role === "admin" || user?.role === "manager") && activeTab === "accounts" && (
           <AnimatePresence>
             {showAccountForm && (
               <motion.div
@@ -1353,7 +1433,7 @@ export default function Dashboard() {
         )}
 
         {/* Account Management Info */}
-        {user?.role === "admin" && activeTab === "accounts" && !showAccountForm && (
+        {(user?.role === "admin" || user?.role === "manager") && activeTab === "accounts" && !showAccountForm && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1441,6 +1521,91 @@ export default function Dashboard() {
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Account Activity Log - Admin Only */}
+        {user?.role === "admin" && activeTab === "activity" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="glass-card overflow-hidden">
+              <div className="p-6 border-b border-border/20">
+                <h3 className="font-display text-xl uppercase tracking-wider">
+                  Account <span className="text-primary">Activity Log</span>
+                </h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Track all account creation, deletion, and password reset activities
+                </p>
+              </div>
+
+              {loadingActivity ? (
+                <div className="p-12 text-center text-muted-foreground">
+                  Loading activity log...
+                </div>
+              ) : accountActivity.length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground">
+                  No account activities recorded yet
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="border-b border-border/30">
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                          Date & Time
+                        </TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                          Action
+                        </TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                          Target Account
+                        </TableHead>
+                        <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                          Performed By
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {accountActivity.map((activity: any) => (
+                        <TableRow key={activity.id} className="border-b border-border/20 hover:bg-card/50 transition-colors">
+                          <TableCell className="text-xs text-muted-foreground">
+                            {new Date(activity.created_at).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`text-xs font-display uppercase tracking-wider px-3 py-1 rounded-sm inline-block ${
+                              activity.action_type === 'create'
+                                ? 'bg-primary/20 text-primary'
+                                : activity.action_type === 'delete'
+                                  ? 'bg-destructive/20 text-destructive'
+                                  : 'bg-blue-500/20 text-blue-500'
+                            }`}>
+                              {activity.action_type === 'create' && 'Account Created'}
+                              {activity.action_type === 'delete' && 'Account Deleted'}
+                              {activity.action_type === 'password_reset' && 'Password Reset'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs text-foreground">
+                            <div>
+                              <p className="font-medium">{activity.target_user_name || activity.target_user?.name || '-'}</p>
+                              <p className="text-muted-foreground">{activity.target_user_email || activity.target_user?.email || '-'}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-foreground">
+                            <div>
+                              <p className="font-medium">{activity.actor?.name || 'System'}</p>
+                              <p className="text-muted-foreground">{activity.actor?.email || '-'}</p>
                             </div>
                           </TableCell>
                         </TableRow>
