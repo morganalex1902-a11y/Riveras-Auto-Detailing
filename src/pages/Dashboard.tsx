@@ -2416,18 +2416,6 @@ export default function Dashboard() {
                                       />
                                     </div>
                                     <div>
-                                      <label htmlFor="vehicle-color" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                        Color
-                                      </label>
-                                      <Input
-                                        id="vehicle-color"
-                                        type="text"
-                                        value={editingVehicle.color}
-                                        onChange={(e) => setEditingVehicle({ ...editingVehicle, color: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                    <div>
                                       <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
                                         Requested By
                                       </p>
@@ -2545,40 +2533,6 @@ export default function Dashboard() {
                                   </div>
                                 </div>
 
-                                {/* Due Dates - Only for Pending */}
-                                {editingRequest.status === "Pending" && (
-                                <div className="border-b border-border/20 pb-6">
-                                  <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                                    Due Date & Time
-                                  </h4>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <label htmlFor="due-date" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Due Date
-                                      </label>
-                                      <Input
-                                        id="due-date"
-                                        type="date"
-                                        value={editingDates.dueDate}
-                                        onChange={(e) => setEditingDates({ ...editingDates, dueDate: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label htmlFor="due-time" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                                        Due Time
-                                      </label>
-                                      <Input
-                                        id="due-time"
-                                        type="time"
-                                        value={editingDates.dueTime}
-                                        onChange={(e) => setEditingDates({ ...editingDates, dueTime: e.target.value })}
-                                        className="bg-card/50 border-border/30 text-foreground"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                                )}
 
                                 {/* Status & Price */}
                                 <div className="border-b border-border/20 pb-6">
@@ -2647,8 +2601,6 @@ export default function Dashboard() {
                                             mainServices: editingMainServices,
                                             additionalServices: editingAdditionalServices,
                                             notes: editingNotes,
-                                            dueDate: editingDates.dueDate,
-                                            dueTime: editingDates.dueTime,
                                             year: editingVehicle.year,
                                             make: editingVehicle.make,
                                             model: editingVehicle.model,
@@ -2695,8 +2647,6 @@ export default function Dashboard() {
                                             color: editingVehicle.color,
                                             stockVin: editingStockVin,
                                             status: editingStatus as ServiceRequest["status"],
-                                            completionDate: completionDate,
-                                            completionTime: completionTime,
                                           });
                                           toast({
                                             title: "Updated",
