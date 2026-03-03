@@ -49,6 +49,7 @@ interface AuthContextType {
   updateRequestPrice: (id: number, price: number) => Promise<void>;
   updateRequestDates: (id: number, data: { dueDate?: string; dueTime?: string; startDate?: string; startTime?: string; completionDate?: string; completionTime?: string }) => Promise<void>;
   updateRequest: (id: number, data: Partial<ServiceRequest>) => Promise<void>;
+  deleteRequest: (id: number) => Promise<void>;
   newRequestCount: number;
   resetNewRequestCount: () => void;
   deleteAllRequests: () => Promise<void>;
@@ -425,6 +426,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteRequest = async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from("service_requests")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      // Update local state
+      setRequests(requests.filter((r) => r.id !== id));
+    } catch (error) {
+      console.error("Error deleting request:", error);
+      throw error;
+    }
+  };
+
   const resetNewRequestCount = () => {
     setNewRequestCount(0);
   };
@@ -520,6 +538,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateRequestPrice,
         updateRequestDates,
         updateRequest,
+        deleteRequest,
         newRequestCount,
         resetNewRequestCount,
         deleteAllRequests,

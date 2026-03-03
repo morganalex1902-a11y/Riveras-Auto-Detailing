@@ -125,7 +125,7 @@ export default function Dashboard() {
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
   const { toast } = useToast();
 
   // Request management state
@@ -156,6 +156,9 @@ export default function Dashboard() {
   const [editingAdditionalServices, setEditingAdditionalServices] = useState<string[]>([]);
   const [editingNotes, setEditingNotes] = useState("");
   const [isSavingDates, setIsSavingDates] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<ServiceRequest | null>(null);
+  const [showDeleteRequestDialog, setShowDeleteRequestDialog] = useState(false);
+  const [deletingRequestId, setDeletingRequestId] = useState<number | null>(null);
 
   // Admin/Manager account management state
   const [activeTab, setActiveTab] = useState<"requests" | "accounts" | "activity">("requests");
@@ -472,6 +475,29 @@ export default function Dashboard() {
     setEditingMainServices(request.mainServices || []);
     setEditingAdditionalServices(request.additionalServices || []);
     setEditingNotes(request.notes || "");
+  };
+
+  const handleDeleteRequest = async () => {
+    if (!requestToDelete) return;
+
+    setDeletingRequestId(requestToDelete.id);
+    try {
+      await deleteRequest(requestToDelete.id);
+      toast({
+        title: "Deleted",
+        description: `Request ${requestToDelete.requestNumber} has been deleted.`,
+      });
+      setShowDeleteRequestDialog(false);
+      setRequestToDelete(null);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to delete request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingRequestId(null);
+    }
   };
 
   const handleSaveDates = async () => {
@@ -2272,15 +2298,31 @@ export default function Dashboard() {
                           {user?.role === "admin" && (
                             <Dialog open={editingRequest?.id === request.id} onOpenChange={(open) => !open && setEditingRequest(null)}>
                             <DialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleOpenRequestDetails(request)}
-                                title="Edit request details"
-                                className="h-7 px-2 text-primary hover:bg-card"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleOpenRequestDetails(request)}
+                                  title="Edit request details"
+                                  className="h-7 px-2 text-primary hover:bg-card"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </Button>
+                                {request.status === "Pending" && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setRequestToDelete(request);
+                                      setShowDeleteRequestDialog(true);
+                                    }}
+                                    title="Delete pending request"
+                                    className="h-7 px-2 text-destructive hover:bg-destructive/10"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </DialogTrigger>
                             {editingRequest?.id === request.id && (
                             <DialogContent className="bg-card border-border/30 max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -2771,6 +2813,37 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {/* Delete Request Dialog */}
+      <Dialog open={showDeleteRequestDialog} onOpenChange={setShowDeleteRequestDialog}>
+        <DialogContent className="bg-card border-border/30">
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase tracking-wider">
+              Delete Request {requestToDelete?.requestNumber}?
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              This action cannot be undone. The request will be permanently deleted from the system.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-4 justify-end mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteRequestDialog(false)}
+              disabled={deletingRequestId !== null}
+              className="border-border/30 hover:bg-card"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteRequest}
+              disabled={deletingRequestId !== null}
+            >
+              {deletingRequestId !== null ? "Deleting..." : "Delete Request"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Reset Password Dialog */}
       <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
