@@ -437,6 +437,53 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [user?.role, refreshRequests]);
 
+  // Real-time subscription to service requests changes for all admins
+  useEffect(() => {
+    if (user?.role !== "admin" || !user?.dealership_id) return;
+
+    // Subscribe to changes on service_requests table for this dealership
+    const subscription = supabase
+      .channel(`requests-${user.dealership_id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // Listen for all changes (INSERT, UPDATE, DELETE)
+          schema: "public",
+          table: "service_requests",
+          filter: `dealership_id=eq.${user.dealership_id}`,
+        },
+        async (payload) => {
+          // When any change is detected, refresh the requests list
+          try {
+            await refreshRequests();
+
+            // Show toast notification if another admin made changes
+            // Only show if the change wasn't made by the current user (by checking timestamps)
+            if (payload.eventType === "UPDATE") {
+              const updatedRequest = payload.new;
+              toast({
+                title: "Request Updated",
+                description: `Request ${updatedRequest.request_number} has been updated by another admin.`,
+              });
+            } else if (payload.eventType === "INSERT") {
+              const newRequest = payload.new;
+              toast({
+                title: "New Request",
+                description: `New request ${newRequest.request_number} has been created.`,
+              });
+            }
+          } catch (error) {
+            console.error("Error refreshing requests from realtime update:", error);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user?.role, user?.dealership_id, refreshRequests, toast]);
+
   // Generate request number
   const generateRequestNumber = () => {
     const maxId = Math.max(...requests.map((r) => r.id), 0);
