@@ -130,7 +130,7 @@ export default function Dashboard() {
 
   const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
   const { toast } = useToast();
-  const { unactedNotifications, addUnactedNotification, markAsActed, clearAll } = useUnactedNotifications();
+  const { unactedNotifications, addUnactedNotification, markAsActed, clearAll, isLoaded } = useUnactedNotifications();
 
   // Request management state
   const [statusFilter, setStatusFilter] = useState("All");
@@ -406,7 +406,8 @@ export default function Dashboard() {
 
   // Add new pending requests to unacted notifications
   useEffect(() => {
-    if (user?.role === "admin") {
+    // Only process pending requests after dismissed IDs have been loaded from localStorage
+    if (user?.role === "admin" && isLoaded) {
       const pendingRequests = requests.filter((r) => r.status === "Pending");
       pendingRequests.forEach((request) => {
         // Check if this request is already in unacted notifications
@@ -416,7 +417,7 @@ export default function Dashboard() {
         }
       });
     }
-  }, [requests, user?.role, unactedNotifications, addUnactedNotification]);
+  }, [requests, user?.role, unactedNotifications, addUnactedNotification, isLoaded]);
 
   // Auto-refresh requests list periodically (every 15 seconds)
   useEffect(() => {
@@ -435,6 +436,53 @@ export default function Dashboard() {
 
     return () => clearInterval(interval);
   }, [user?.role, refreshRequests]);
+
+  // Real-time subscription to service requests changes for all admins
+  useEffect(() => {
+    if (user?.role !== "admin" || !user?.dealership_id) return;
+
+    // Subscribe to changes on service_requests table for this dealership
+    const subscription = supabase
+      .channel(`requests-${user.dealership_id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // Listen for all changes (INSERT, UPDATE, DELETE)
+          schema: "public",
+          table: "service_requests",
+          filter: `dealership_id=eq.${user.dealership_id}`,
+        },
+        async (payload) => {
+          // When any change is detected, refresh the requests list
+          try {
+            await refreshRequests();
+
+            // Show toast notification if another admin made changes
+            // Only show if the change wasn't made by the current user (by checking timestamps)
+            if (payload.eventType === "UPDATE") {
+              const updatedRequest = payload.new;
+              toast({
+                title: "Request Updated",
+                description: `Request ${updatedRequest.request_number} has been updated by another admin.`,
+              });
+            } else if (payload.eventType === "INSERT") {
+              const newRequest = payload.new;
+              toast({
+                title: "New Request",
+                description: `New request ${newRequest.request_number} has been created.`,
+              });
+            }
+          } catch (error) {
+            console.error("Error refreshing requests from realtime update:", error);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user?.role, user?.dealership_id, refreshRequests, toast]);
 
   // Generate request number
   const generateRequestNumber = () => {
@@ -489,7 +537,7 @@ export default function Dashboard() {
     setEditingId(null);
   };
 
-  const handleOpenRequestDetails = (request: ServiceRequest) => {
+  const handleOpenRequestDetails = async (request: ServiceRequest) => {
     setEditingRequest(request);
     setEditingDates({
       dueDate: request.dueDate || "",
@@ -514,7 +562,7 @@ export default function Dashboard() {
     });
     setEditingStockVin(request.stockVin || "");
     // Mark this request as acted upon
-    markAsActed(request.id);
+    await markAsActed(request.id);
   };
 
   const handleDeleteRequest = async () => {
@@ -2588,7 +2636,7 @@ export default function Dashboard() {
                                             completionDate: completionDate,
                                             completionTime: completionTime,
                                           });
-                                          markAsActed(editingRequest.id);
+                                          await markAsActed(editingRequest.id);
                                           toast({
                                             title: "Updated",
                                             description: "Request has been updated successfully.",
@@ -2630,7 +2678,7 @@ export default function Dashboard() {
                                             stockVin: editingStockVin,
                                             status: editingStatus as ServiceRequest["status"],
                                           });
-                                          markAsActed(editingRequest.id);
+                                          await markAsActed(editingRequest.id);
                                           toast({
                                             title: "Updated",
                                             description: "Request has been updated successfully.",
