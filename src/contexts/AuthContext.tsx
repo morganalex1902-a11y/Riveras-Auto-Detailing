@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { formatErrorMessage } from "@/lib/utils";
 
 export interface User {
   email: string;
@@ -143,7 +144,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setRequests(formattedRequests);
     } catch (error) {
-      console.error("Error fetching requests:", error);
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error fetching requests:", errorMessage);
     }
   };
 
@@ -284,8 +286,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Notify admins
       setNewRequestCount((prev) => prev + 1);
     } catch (error) {
-      console.error("Error adding request:", error);
-      throw error;
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error adding request:", errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -323,8 +326,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return r;
       }));
     } catch (error) {
-      console.error("Error updating request status:", error);
-      throw error;
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error updating request status:", errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -340,8 +344,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Update local state
       setRequests(requests.map((r) => (r.id === id ? { ...r, price } : r)));
     } catch (error) {
-      console.error("Error updating request price:", error);
-      throw error;
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error updating request price:", errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -378,8 +383,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return r;
       }));
     } catch (error) {
-      console.error("Error updating request dates:", error);
-      throw error;
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error updating request dates:", errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -387,6 +393,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const updateData: any = {};
       const stateUpdate = { ...data };
+
+      // Helper function to handle empty strings for date fields (convert to null)
+      const sanitizeDateValue = (value: any) => {
+        return value === "" ? null : value;
+      };
 
       // Map ServiceRequest fields to database columns
       if (data.status) {
@@ -404,12 +415,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       if (data.price !== undefined) updateData.price = data.price;
       if (data.manager !== undefined) updateData.manager = data.manager;
-      if (data.dueDate !== undefined) updateData.due_date = data.dueDate;
-      if (data.dueTime !== undefined) updateData.due_time = data.dueTime;
-      if (data.startDate !== undefined) updateData.start_date = data.startDate;
-      if (data.startTime !== undefined) updateData.start_time = data.startTime;
-      if (data.completionDate !== undefined) updateData.completion_date = data.completionDate;
-      if (data.completionTime !== undefined) updateData.completion_time = data.completionTime;
+      if (data.dueDate !== undefined) updateData.due_date = sanitizeDateValue(data.dueDate);
+      if (data.dueTime !== undefined) updateData.due_time = sanitizeDateValue(data.dueTime);
+      if (data.startDate !== undefined) updateData.start_date = sanitizeDateValue(data.startDate);
+      if (data.startTime !== undefined) updateData.start_time = sanitizeDateValue(data.startTime);
+      if (data.completionDate !== undefined) updateData.completion_date = sanitizeDateValue(data.completionDate);
+      if (data.completionTime !== undefined) updateData.completion_time = sanitizeDateValue(data.completionTime);
       if (data.mainServices !== undefined) updateData.main_services = data.mainServices;
       if (data.additionalServices !== undefined) updateData.additional_services = data.additionalServices;
       if (data.notes !== undefined) updateData.notes = data.notes;
@@ -429,8 +440,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Update local state
       setRequests(requests.map((r) => (r.id === id ? { ...r, ...stateUpdate } : r)));
     } catch (error) {
-      console.error("Error updating request:", error);
-      throw error;
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error updating request:", errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -446,8 +458,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Update local state
       setRequests(requests.filter((r) => r.id !== id));
     } catch (error) {
-      console.error("Error deleting request:", error);
-      throw error;
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error deleting request:", errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -470,8 +483,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setRequests([]);
       setNewRequestCount(0);
     } catch (error) {
-      console.error("Error deleting all requests:", error);
-      throw error;
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error deleting all requests:", errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -481,8 +495,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await fetchRequests(user.dealership_id, user.role, user.email);
       }
     } catch (error) {
-      console.error("Error refreshing requests:", error);
-      throw error;
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error refreshing requests:", errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -533,8 +548,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return formattedRequests;
     } catch (error) {
-      console.error("Error fetching requests by date range:", error);
-      throw error;
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error fetching requests by date range:", errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
