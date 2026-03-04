@@ -394,6 +394,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updateData: any = {};
       const stateUpdate = { ...data };
 
+      // Helper function to handle empty strings for date fields (convert to null)
+      const sanitizeDateValue = (value: any) => {
+        return value === "" ? null : value;
+      };
+
       // Map ServiceRequest fields to database columns
       if (data.status) {
         updateData.status = data.status;
@@ -410,12 +415,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       if (data.price !== undefined) updateData.price = data.price;
       if (data.manager !== undefined) updateData.manager = data.manager;
-      if (data.dueDate !== undefined) updateData.due_date = data.dueDate;
-      if (data.dueTime !== undefined) updateData.due_time = data.dueTime;
-      if (data.startDate !== undefined) updateData.start_date = data.startDate;
-      if (data.startTime !== undefined) updateData.start_time = data.startTime;
-      if (data.completionDate !== undefined) updateData.completion_date = data.completionDate;
-      if (data.completionTime !== undefined) updateData.completion_time = data.completionTime;
+      if (data.dueDate !== undefined) updateData.due_date = sanitizeDateValue(data.dueDate);
+      if (data.dueTime !== undefined) updateData.due_time = sanitizeDateValue(data.dueTime);
+      if (data.startDate !== undefined) updateData.start_date = sanitizeDateValue(data.startDate);
+      if (data.startTime !== undefined) updateData.start_time = sanitizeDateValue(data.startTime);
+      if (data.completionDate !== undefined) updateData.completion_date = sanitizeDateValue(data.completionDate);
+      if (data.completionTime !== undefined) updateData.completion_time = sanitizeDateValue(data.completionTime);
       if (data.mainServices !== undefined) updateData.main_services = data.mainServices;
       if (data.additionalServices !== undefined) updateData.additional_services = data.additionalServices;
       if (data.notes !== undefined) updateData.notes = data.notes;
