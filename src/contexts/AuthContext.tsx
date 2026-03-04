@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { formatErrorMessage } from "@/lib/utils";
 
@@ -489,7 +489,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const refreshRequests = async () => {
+  const refreshRequests = useCallback(async () => {
     try {
       if (user?.dealership_id) {
         await fetchRequests(user.dealership_id, user.role, user.email);
@@ -499,7 +499,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error refreshing requests:", errorMessage);
       throw new Error(errorMessage);
     }
-  };
+  }, [user?.dealership_id, user?.role, user?.email]);
 
   const getRequestsByDateRange = async (startDate: string, endDate: string): Promise<ServiceRequest[]> => {
     try {
