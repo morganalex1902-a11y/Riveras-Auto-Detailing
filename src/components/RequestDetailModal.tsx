@@ -25,7 +25,7 @@ interface RequestDetailModalProps {
   onDelete: (id: number) => Promise<void>;
 }
 
-const STATUSES = ["Pending", "In Progress", "Completed"];
+const STATUSES = ["Pending", "Completed"];
 
 export function RequestDetailModal({
   isOpen,

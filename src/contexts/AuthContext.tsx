@@ -33,7 +33,7 @@ export interface ServiceRequest {
   mainServices: string[];
   additionalServices: string[];
   notes: string;
-  status: "Pending" | "In Progress" | "Completed";
+  status: "Pending" | "Completed";
   price: number;
   service?: string;
   vin?: string;
