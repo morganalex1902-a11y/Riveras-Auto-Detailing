@@ -418,19 +418,23 @@ export default function Dashboard() {
     }
   }, [requests, user, unactedNotifications, addUnactedNotification]);
 
-  // Auto-refresh requests list weekly (every 7 days)
+  // Auto-refresh requests list periodically (every 15 seconds)
   useEffect(() => {
-    const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    // Only start polling for admins to check for new requests
+    if (user?.role !== "admin") return;
 
-    const interval = setInterval(() => {
-      // Trigger a refresh by re-fetching requests from the auth context
-      if (user?.dealership_id) {
-        window.location.reload();
+    const POLL_INTERVAL_MS = 15 * 1000; // 15 seconds
+
+    const interval = setInterval(async () => {
+      try {
+        await refreshRequests();
+      } catch (error) {
+        console.error("Error refreshing requests:", error);
       }
-    }, WEEK_IN_MS);
+    }, POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, refreshRequests]);
 
   // Generate request number
   const generateRequestNumber = () => {
