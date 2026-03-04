@@ -370,7 +370,7 @@ export default function Dashboard() {
     if (activeTab === "activity" && user?.role === "admin") {
       fetchAccountActivity();
     }
-  }, [activeTab, user]);
+  }, [activeTab, user?.role]);
 
   const mainServices = watch("mainServices");
   const additionalServices = watch("additionalServices");
@@ -389,7 +389,7 @@ export default function Dashboard() {
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, [user, toast]);
+  }, [user?.role, toast]);
 
   // Show notification toast when admin has new requests
   useEffect(() => {
@@ -402,7 +402,7 @@ export default function Dashboard() {
         });
       }
     }
-  }, [newRequestCount, user, requests, toast]);
+  }, [newRequestCount, user?.role, requests, toast]);
 
   // Add new pending requests to unacted notifications
   useEffect(() => {
@@ -416,7 +416,7 @@ export default function Dashboard() {
         }
       });
     }
-  }, [requests, user, unactedNotifications, addUnactedNotification]);
+  }, [requests, user?.role, unactedNotifications, addUnactedNotification]);
 
   // Auto-refresh requests list periodically (every 15 seconds)
   useEffect(() => {
@@ -434,7 +434,7 @@ export default function Dashboard() {
     }, POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [user, refreshRequests]);
+  }, [user?.role, refreshRequests]);
 
   // Generate request number
   const generateRequestNumber = () => {
