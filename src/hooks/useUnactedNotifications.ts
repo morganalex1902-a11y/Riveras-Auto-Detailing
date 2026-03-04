@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ServiceRequest } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 interface UnactedNotification extends ServiceRequest {
   notificationId: string;
@@ -10,34 +12,35 @@ export function useUnactedNotifications() {
   const [unactedNotifications, setUnactedNotifications] = useState<UnactedNotification[]>([]);
   const [dismissedRequestIds, setDismissedRequestIds] = useState<Set<number>>(new Set());
   const [isLoaded, setIsLoaded] = useState(false);
+  const { user } = useAuth();
 
-  // Load unacted notifications from localStorage
+  // Load dismissed requests from Supabase
   useEffect(() => {
-    const stored = localStorage.getItem("unacted-notifications");
-    const dismissedIds = localStorage.getItem("dismissed-request-ids");
-    if (stored) {
+    const loadDismissedRequests = async () => {
       try {
-        setUnactedNotifications(JSON.parse(stored));
-      } catch (error) {
-        console.error("Failed to parse unacted notifications:", error);
-        setUnactedNotifications([]);
-      }
-    }
-    if (dismissedIds) {
-      try {
-        setDismissedRequestIds(new Set(JSON.parse(dismissedIds)));
-      } catch (error) {
-        console.error("Failed to parse dismissed request IDs:", error);
-      }
-    }
-    setIsLoaded(true);
-  }, []);
+        if (!user?.id) {
+          setIsLoaded(true);
+          return;
+        }
 
-  // Save unacted notifications to localStorage
-  const saveNotifications = useCallback((notifications: UnactedNotification[]) => {
-    localStorage.setItem("unacted-notifications", JSON.stringify(notifications));
-    setUnactedNotifications(notifications);
-  }, []);
+        const { data, error } = await supabase
+          .from("dismissed_requests")
+          .select("request_id")
+          .eq("user_id", user.id);
+
+        if (error) throw error;
+
+        const dismissedIds = new Set((data || []).map((d: any) => d.request_id));
+        setDismissedRequestIds(dismissedIds);
+      } catch (error) {
+        console.error("Failed to load dismissed requests from database:", error);
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+
+    loadDismissedRequests();
+  }, [user?.id]);
 
   // Add a new unacted notification
   const addUnactedNotification = useCallback((request: ServiceRequest) => {
@@ -52,41 +55,67 @@ export function useUnactedNotifications() {
         notificationDate: new Date().toISOString(),
       };
 
-      const updated = [...prev, newNotification];
-      saveNotifications(updated);
-      return updated;
+      return [...prev, newNotification];
     });
-  }, [saveNotifications, dismissedRequestIds]);
+  }, [dismissedRequestIds]);
 
   // Remove a notification when acted upon (request opened)
-  const markAsActed = useCallback((requestId: number) => {
-    setUnactedNotifications((prev) => {
-      const updated = prev.filter((n) => n.id !== requestId);
-      saveNotifications(updated);
+  const markAsActed = useCallback(async (requestId: number) => {
+    try {
+      if (!user?.id) return;
 
-      // Also add to dismissed IDs so it won't be re-added
+      // Save to database
+      await supabase
+        .from("dismissed_requests")
+        .insert({
+          user_id: user.id,
+          request_id: requestId,
+        })
+        .select()
+        .maybeSingle();
+
+      // Update local state
+      setUnactedNotifications((prev) => prev.filter((n) => n.id !== requestId));
+
+      // Add to dismissed IDs so it won't be re-added
       const newDismissedIds = new Set(dismissedRequestIds);
       newDismissedIds.add(requestId);
-      localStorage.setItem("dismissed-request-ids", JSON.stringify(Array.from(newDismissedIds)));
       setDismissedRequestIds(newDismissedIds);
-
-      return updated;
-    });
-  }, [saveNotifications, dismissedRequestIds]);
+    } catch (error) {
+      console.error("Failed to mark request as acted:", error);
+    }
+  }, [user?.id, dismissedRequestIds]);
 
   // Clear all unacted notifications
-  const clearAll = useCallback(() => {
-    // Mark all current notification request IDs as dismissed
-    const newDismissedIds = new Set(dismissedRequestIds);
-    unactedNotifications.forEach((notification) => {
-      newDismissedIds.add(notification.id);
-    });
+  const clearAll = useCallback(async () => {
+    try {
+      if (!user?.id) return;
 
-    localStorage.setItem("unacted-notifications", JSON.stringify([]));
-    localStorage.setItem("dismissed-request-ids", JSON.stringify(Array.from(newDismissedIds)));
-    setUnactedNotifications([]);
-    setDismissedRequestIds(newDismissedIds);
-  }, [unactedNotifications, dismissedRequestIds]);
+      // Prepare request IDs to dismiss
+      const requestIdsToDissmiss = unactedNotifications
+        .filter((n) => !dismissedRequestIds.has(n.id))
+        .map((n) => ({ user_id: user.id, request_id: n.id }));
+
+      // Save all to database
+      if (requestIdsToDissmiss.length > 0) {
+        await supabase
+          .from("dismissed_requests")
+          .insert(requestIdsToDissmiss)
+          .select();
+      }
+
+      // Update local state
+      const newDismissedIds = new Set(dismissedRequestIds);
+      unactedNotifications.forEach((notification) => {
+        newDismissedIds.add(notification.id);
+      });
+
+      setUnactedNotifications([]);
+      setDismissedRequestIds(newDismissedIds);
+    } catch (error) {
+      console.error("Failed to clear all notifications:", error);
+    }
+  }, [user?.id, unactedNotifications, dismissedRequestIds]);
 
   return {
     unactedNotifications,

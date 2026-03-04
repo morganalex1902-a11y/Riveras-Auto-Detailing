@@ -490,7 +490,7 @@ export default function Dashboard() {
     setEditingId(null);
   };
 
-  const handleOpenRequestDetails = (request: ServiceRequest) => {
+  const handleOpenRequestDetails = async (request: ServiceRequest) => {
     setEditingRequest(request);
     setEditingDates({
       dueDate: request.dueDate || "",
@@ -515,7 +515,7 @@ export default function Dashboard() {
     });
     setEditingStockVin(request.stockVin || "");
     // Mark this request as acted upon
-    markAsActed(request.id);
+    await markAsActed(request.id);
   };
 
   const handleDeleteRequest = async () => {
@@ -2589,7 +2589,7 @@ export default function Dashboard() {
                                             completionDate: completionDate,
                                             completionTime: completionTime,
                                           });
-                                          markAsActed(editingRequest.id);
+                                          await markAsActed(editingRequest.id);
                                           toast({
                                             title: "Updated",
                                             description: "Request has been updated successfully.",
@@ -2631,7 +2631,7 @@ export default function Dashboard() {
                                             stockVin: editingStockVin,
                                             status: editingStatus as ServiceRequest["status"],
                                           });
-                                          markAsActed(editingRequest.id);
+                                          await markAsActed(editingRequest.id);
                                           toast({
                                             title: "Updated",
                                             description: "Request has been updated successfully.",

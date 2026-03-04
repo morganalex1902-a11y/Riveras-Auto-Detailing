@@ -17,8 +17,8 @@ interface NewRequestsNotificationProps {
   newRequests: ServiceRequest[];
   unactedNotifications: UnactedNotification[];
   onDismiss: () => void;
-  onRequestSelect: (request: ServiceRequest) => void;
-  onClearAll: () => void;
+  onRequestSelect: (request: ServiceRequest) => Promise<void>;
+  onClearAll: () => Promise<void>;
 }
 
 export function NewRequestsNotification({
@@ -30,6 +30,7 @@ export function NewRequestsNotification({
   onClearAll,
 }: NewRequestsNotificationProps) {
   const [showListModal, setShowListModal] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   if (unactedNotifications.length === 0) return null;
 
@@ -101,8 +102,8 @@ export function NewRequestsNotification({
               >
                 <Card
                   className="p-4 cursor-pointer hover:bg-accent hover:border-primary transition-all group"
-                  onClick={() => {
-                    onRequestSelect(notification);
+                  onClick={async () => {
+                    await onRequestSelect(notification);
                     setShowListModal(false);
                   }}
                 >
@@ -132,15 +133,21 @@ export function NewRequestsNotification({
           <div className="flex gap-2 justify-between pt-4 border-t">
             <Button
               variant="destructive"
-              onClick={() => {
-                onClearAll();
-                setShowListModal(false);
+              onClick={async () => {
+                setIsClearing(true);
+                try {
+                  await onClearAll();
+                  setShowListModal(false);
+                } finally {
+                  setIsClearing(false);
+                }
               }}
+              disabled={isClearing}
               className="text-xs"
             >
-              Clear All Notifications
+              {isClearing ? "Clearing..." : "Clear All Notifications"}
             </Button>
-            <Button variant="outline" onClick={() => setShowListModal(false)}>
+            <Button variant="outline" onClick={() => setShowListModal(false)} disabled={isClearing}>
               Close
             </Button>
           </div>
