@@ -153,6 +153,8 @@ export default function Dashboard() {
   });
   const [editingMainServices, setEditingMainServices] = useState<string[]>([]);
   const [editingAdditionalServices, setEditingAdditionalServices] = useState<string[]>([]);
+  const [mainServicesInput, setMainServicesInput] = useState("");
+  const [additionalServicesInput, setAdditionalServicesInput] = useState("");
   const [editingNotes, setEditingNotes] = useState("");
   const [editingVehicle, setEditingVehicle] = useState<{
     year: number;
@@ -479,6 +481,8 @@ export default function Dashboard() {
     setEditingStatus(request.status);
     setEditingMainServices(request.mainServices || []);
     setEditingAdditionalServices(request.additionalServices || []);
+    setMainServicesInput((request.mainServices || []).join(", "));
+    setAdditionalServicesInput((request.additionalServices || []).join(", "));
     setEditingNotes(request.notes || "");
     setEditingVehicle({
       year: request.year || new Date().getFullYear(),
@@ -2443,8 +2447,9 @@ export default function Dashboard() {
                                       <Input
                                         id="main-services"
                                         type="text"
-                                        value={editingMainServices.join(", ")}
-                                        onChange={(e) => setEditingMainServices(e.target.value.split(",").map(s => s.trim()).filter(s => s))}
+                                        value={mainServicesInput}
+                                        onChange={(e) => setMainServicesInput(e.target.value)}
+                                        onBlur={(e) => setEditingMainServices(e.target.value.split(",").map(s => s.trim()).filter(s => s))}
                                         placeholder="Enter services separated by commas"
                                         className="bg-card/50 border-border/30 text-foreground"
                                       />
@@ -2456,8 +2461,9 @@ export default function Dashboard() {
                                       <Input
                                         id="additional-services"
                                         type="text"
-                                        value={editingAdditionalServices.join(", ")}
-                                        onChange={(e) => setEditingAdditionalServices(e.target.value.split(",").map(s => s.trim()).filter(s => s))}
+                                        value={additionalServicesInput}
+                                        onChange={(e) => setAdditionalServicesInput(e.target.value)}
+                                        onBlur={(e) => setEditingAdditionalServices(e.target.value.split(",").map(s => s.trim()).filter(s => s))}
                                         placeholder="Enter services separated by commas"
                                         className="bg-card/50 border-border/30 text-foreground"
                                       />
