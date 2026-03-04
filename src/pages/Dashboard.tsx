@@ -130,7 +130,7 @@ export default function Dashboard() {
 
   const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
   const { toast } = useToast();
-  const { unactedNotifications, addUnactedNotification, markAsActed, clearAll } = useUnactedNotifications();
+  const { unactedNotifications, addUnactedNotification, markAsActed, clearAll, isLoaded } = useUnactedNotifications();
 
   // Request management state
   const [statusFilter, setStatusFilter] = useState("All");
@@ -406,7 +406,8 @@ export default function Dashboard() {
 
   // Add new pending requests to unacted notifications
   useEffect(() => {
-    if (user?.role === "admin") {
+    // Only process pending requests after dismissed IDs have been loaded from localStorage
+    if (user?.role === "admin" && isLoaded) {
       const pendingRequests = requests.filter((r) => r.status === "Pending");
       pendingRequests.forEach((request) => {
         // Check if this request is already in unacted notifications
@@ -416,7 +417,7 @@ export default function Dashboard() {
         }
       });
     }
-  }, [requests, user?.role, unactedNotifications, addUnactedNotification]);
+  }, [requests, user?.role, unactedNotifications, addUnactedNotification, isLoaded]);
 
   // Auto-refresh requests list periodically (every 15 seconds)
   useEffect(() => {

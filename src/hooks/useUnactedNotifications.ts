@@ -9,6 +9,7 @@ interface UnactedNotification extends ServiceRequest {
 export function useUnactedNotifications() {
   const [unactedNotifications, setUnactedNotifications] = useState<UnactedNotification[]>([]);
   const [dismissedRequestIds, setDismissedRequestIds] = useState<Set<number>>(new Set());
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load unacted notifications from localStorage
   useEffect(() => {
@@ -29,6 +30,7 @@ export function useUnactedNotifications() {
         console.error("Failed to parse dismissed request IDs:", error);
       }
     }
+    setIsLoaded(true);
   }, []);
 
   // Save unacted notifications to localStorage
@@ -91,5 +93,6 @@ export function useUnactedNotifications() {
     addUnactedNotification,
     markAsActed,
     clearAll,
+    isLoaded,
   };
 }
