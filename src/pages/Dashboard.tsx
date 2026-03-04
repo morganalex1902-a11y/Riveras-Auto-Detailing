@@ -33,6 +33,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useUnactedNotifications } from "@/hooks/useUnactedNotifications";
 import { NewRequestsNotification } from "@/components/NewRequestsNotification";
 import { RequestDetailModal } from "@/components/RequestDetailModal";
 
@@ -129,6 +130,7 @@ export default function Dashboard() {
 
   const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
   const { toast } = useToast();
+  const { unactedNotifications, addUnactedNotification, markAsActed, clearAll } = useUnactedNotifications();
 
   // Request management state
   const [statusFilter, setStatusFilter] = useState("All");
@@ -402,6 +404,20 @@ export default function Dashboard() {
     }
   }, [newRequestCount, user, requests, toast]);
 
+  // Add new pending requests to unacted notifications
+  useEffect(() => {
+    if (user?.role === "admin") {
+      const pendingRequests = requests.filter((r) => r.status === "Pending");
+      pendingRequests.forEach((request) => {
+        // Check if this request is already in unacted notifications
+        const alreadyNotified = unactedNotifications.some((n) => n.id === request.id);
+        if (!alreadyNotified) {
+          addUnactedNotification(request);
+        }
+      });
+    }
+  }, [requests, user, unactedNotifications, addUnactedNotification]);
+
   // Auto-refresh requests list weekly (every 7 days)
   useEffect(() => {
     const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
@@ -493,6 +509,8 @@ export default function Dashboard() {
       color: request.color || "",
     });
     setEditingStockVin(request.stockVin || "");
+    // Mark this request as acted upon
+    markAsActed(request.id);
   };
 
   const handleDeleteRequest = async () => {
@@ -905,8 +923,10 @@ export default function Dashboard() {
                   <NewRequestsNotification
                     newRequestCount={newRequestCount}
                     newRequests={requests.filter((r) => r.status === "Pending")}
+                    unactedNotifications={unactedNotifications}
                     onDismiss={resetNewRequestCount}
-                    onRequestSelect={setSelectedRequestForDetail}
+                    onRequestSelect={handleOpenRequestDetails}
+                    onClearAll={clearAll}
                   />
                 )}
               </div>
@@ -2564,6 +2584,7 @@ export default function Dashboard() {
                                             completionDate: completionDate,
                                             completionTime: completionTime,
                                           });
+                                          markAsActed(editingRequest.id);
                                           toast({
                                             title: "Updated",
                                             description: "Request has been updated successfully.",
@@ -2605,6 +2626,7 @@ export default function Dashboard() {
                                             stockVin: editingStockVin,
                                             status: editingStatus as ServiceRequest["status"],
                                           });
+                                          markAsActed(editingRequest.id);
                                           toast({
                                             title: "Updated",
                                             description: "Request has been updated successfully.",
