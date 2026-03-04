@@ -47,14 +47,15 @@ export function NewRequestsNotification({
   return (
     <>
       {/* Floating Notification Button - Eye Catching Red Badge */}
-      <motion.button
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setShowListModal(true)}
-        className="relative inline-flex items-center justify-center group"
-      >
+      <div className="relative inline-flex items-center justify-center group pt-3 pr-3">
+        <motion.button
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowListModal(true)}
+          className="relative inline-flex items-center justify-center"
+        >
         {/* Pulsing background */}
         <motion.div
           animate={{ scale: [1, 1.2, 1] }}
@@ -76,11 +77,12 @@ export function NewRequestsNotification({
           {unactedNotifications.length}
         </motion.div>
 
-        {/* Tooltip */}
-        <div className="absolute bottom-full mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          {unactedNotifications.length} unacted request{unactedNotifications.length > 1 ? "s" : ""}
-        </div>
-      </motion.button>
+          {/* Tooltip */}
+          <div className="absolute bottom-full mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            {unactedNotifications.length} unacted request{unactedNotifications.length > 1 ? "s" : ""}
+          </div>
+        </motion.button>
+      </div>
 
       {/* Unacted Notifications Modal */}
       <Dialog open={showListModal} onOpenChange={setShowListModal}>
