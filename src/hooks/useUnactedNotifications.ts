@@ -58,8 +58,9 @@ export function useUnactedNotifications() {
 
   // Clear all unacted notifications
   const clearAll = useCallback(() => {
-    saveNotifications([]);
-  }, [saveNotifications]);
+    localStorage.setItem("unacted-notifications", JSON.stringify([]));
+    setUnactedNotifications([]);
+  }, []);
 
   return {
     unactedNotifications,
