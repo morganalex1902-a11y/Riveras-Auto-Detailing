@@ -33,6 +33,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { NewRequestsNotification } from "@/components/NewRequestsNotification";
+import { RequestDetailModal } from "@/components/RequestDetailModal";
 
 const formatDateInput = (value: string): string => {
   const cleaned = value.replace(/\D/g, "");
@@ -186,6 +188,7 @@ export default function Dashboard() {
   const [resettingPasswordId, setResettingPasswordId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedRequestForDetail, setSelectedRequestForDetail] = useState<ServiceRequest | null>(null);
   const [isDeletingAllRequests, setIsDeletingAllRequests] = useState(false);
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [showDateRangeDialog, setShowDateRangeDialog] = useState(false);
@@ -895,18 +898,17 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex-1">
               <div className="w-12 h-[2px] bg-primary mb-6" />
-              <div className="flex items-center gap-4 mb-2">
+              <div className="flex items-center gap-6 mb-2">
                 <h1 className="text-5xl md:text-6xl font-display uppercase tracking-wider">
                   Dashboard
                 </h1>
-                {user?.role === "admin" && newRequestCount > 0 && (
-                  <button
-                    onClick={resetNewRequestCount}
-                    className="relative inline-flex items-center justify-center w-8 h-8 bg-destructive text-white text-xs font-bold rounded-full hover:bg-destructive/80 transition-colors"
-                    title={`${newRequestCount} new request${newRequestCount > 1 ? "s" : ""}`}
-                  >
-                    {newRequestCount}
-                  </button>
+                {user?.role === "admin" && (
+                  <NewRequestsNotification
+                    newRequestCount={newRequestCount}
+                    newRequests={requests.filter((r) => r.status === "Pending")}
+                    onDismiss={resetNewRequestCount}
+                    onRequestSelect={setSelectedRequestForDetail}
+                  />
                 )}
               </div>
               <p className="text-muted-foreground uppercase tracking-widest text-sm">
@@ -2927,6 +2929,15 @@ export default function Dashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Request Detail Modal */}
+      <RequestDetailModal
+        isOpen={selectedRequestForDetail !== null}
+        request={selectedRequestForDetail}
+        onClose={() => setSelectedRequestForDetail(null)}
+        onUpdate={updateRequest}
+        onDelete={deleteRequest}
+      />
     </main>
   );
 }
