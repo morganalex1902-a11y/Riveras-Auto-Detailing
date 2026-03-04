@@ -2449,7 +2449,11 @@ export default function Dashboard() {
                                         type="text"
                                         value={mainServicesInput}
                                         onChange={(e) => setMainServicesInput(e.target.value)}
-                                        onBlur={(e) => setEditingMainServices(e.target.value.split(",").map(s => s.trim()).filter(s => s))}
+                                        onBlur={(e) => {
+                                          const services = e.target.value.split(",").map(s => s.trim()).filter(s => s);
+                                          setEditingMainServices(services);
+                                          setMainServicesInput(services.join(", "));
+                                        }}
                                         placeholder="Enter services separated by commas"
                                         className="bg-card/50 border-border/30 text-foreground"
                                       />
@@ -2463,7 +2467,11 @@ export default function Dashboard() {
                                         type="text"
                                         value={additionalServicesInput}
                                         onChange={(e) => setAdditionalServicesInput(e.target.value)}
-                                        onBlur={(e) => setEditingAdditionalServices(e.target.value.split(",").map(s => s.trim()).filter(s => s))}
+                                        onBlur={(e) => {
+                                          const services = e.target.value.split(",").map(s => s.trim()).filter(s => s);
+                                          setEditingAdditionalServices(services);
+                                          setAdditionalServicesInput(services.join(", "));
+                                        }}
                                         placeholder="Enter services separated by commas"
                                         className="bg-card/50 border-border/30 text-foreground"
                                       />
@@ -2603,6 +2611,8 @@ export default function Dashboard() {
 
                                           await updateRequest(editingRequest.id, {
                                             price: editingPrice,
+                                            mainServices: editingMainServices,
+                                            additionalServices: editingAdditionalServices,
                                             year: editingVehicle.year,
                                             make: editingVehicle.make,
                                             model: editingVehicle.model,
