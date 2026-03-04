@@ -7,22 +7,41 @@ import { Badge } from "@/components/ui/badge";
 import { Bell, X, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
+interface UnactedNotification extends ServiceRequest {
+  notificationId: string;
+  notificationDate: string;
+}
+
 interface NewRequestsNotificationProps {
   newRequestCount: number;
   newRequests: ServiceRequest[];
+  unactedNotifications: UnactedNotification[];
   onDismiss: () => void;
   onRequestSelect: (request: ServiceRequest) => void;
+  onClearAll: () => void;
 }
 
 export function NewRequestsNotification({
   newRequestCount,
   newRequests,
+  unactedNotifications,
   onDismiss,
   onRequestSelect,
+  onClearAll,
 }: NewRequestsNotificationProps) {
   const [showListModal, setShowListModal] = useState(false);
 
-  if (newRequestCount === 0) return null;
+  if (unactedNotifications.length === 0) return null;
+
+  // Sort unacted notifications by date (oldest first)
+  const sortedNotifications = [...unactedNotifications].sort(
+    (a, b) => new Date(a.notificationDate).getTime() - new Date(b.notificationDate).getTime()
+  );
+
+  // Get the date of the first notification to display at the top
+  const notificationDate = sortedNotifications.length > 0
+    ? new Date(sortedNotifications[0].notificationDate).toLocaleDateString()
+    : new Date().toLocaleDateString();
 
   return (
     <>
@@ -53,71 +72,74 @@ export function NewRequestsNotification({
           transition={{ duration: 0.5, repeat: Infinity }}
           className="absolute -top-2 -right-2 bg-white text-destructive rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold shadow-lg border-2 border-destructive"
         >
-          {newRequestCount}
+          {unactedNotifications.length}
         </motion.div>
 
         {/* Tooltip */}
         <div className="absolute bottom-full mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          {newRequestCount} new request{newRequestCount > 1 ? "s" : ""}
+          {unactedNotifications.length} unacted request{unactedNotifications.length > 1 ? "s" : ""}
         </div>
       </motion.button>
 
-      {/* New Requests List Modal */}
+      {/* Unacted Notifications Modal */}
       <Dialog open={showListModal} onOpenChange={setShowListModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl">New Requests</DialogTitle>
+            <DialogTitle className="text-2xl">Pending Notifications</DialogTitle>
             <DialogDescription>
-              You have {newRequestCount} new service request{newRequestCount > 1 ? "s" : ""}
+              {unactedNotifications.length} unacted request{unactedNotifications.length > 1 ? "s" : ""} from {notificationDate}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {newRequests.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">No new requests</p>
-            ) : (
-              newRequests.map((request) => (
-                <motion.div
-                  key={request.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  whileHover={{ x: 4 }}
+            {sortedNotifications.map((notification) => (
+              <motion.div
+                key={notification.notificationId}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                whileHover={{ x: 4 }}
+              >
+                <Card
+                  className="p-4 cursor-pointer hover:bg-accent hover:border-primary transition-all group"
+                  onClick={() => {
+                    onRequestSelect(notification);
+                    setShowListModal(false);
+                  }}
                 >
-                  <Card
-                    className="p-4 cursor-pointer hover:bg-accent hover:border-primary transition-all group"
-                    onClick={() => {
-                      onRequestSelect(request);
-                      setShowListModal(false);
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-lg">{request.requestNumber}</h3>
-                          <Badge variant="destructive" className="animate-pulse">
-                            New
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          <span className="font-medium">{request.year} {request.make} {request.model}</span>
-                          {request.color && <span> • {request.color}</span>}
-                        </p>
-                        <p className="text-sm">
-                          Requested by: <span className="font-medium">{request.requestedBy}</span>
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(request.dateRequested).toLocaleDateString()}
-                        </p>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold text-lg">{notification.requestNumber}</h3>
+                        <Badge variant="destructive" className="animate-pulse">
+                          Pending
+                        </Badge>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors mt-1" />
+                      <p className="text-sm text-muted-foreground mb-2">
+                        <span className="font-medium">{notification.year} {notification.make} {notification.model}</span>
+                        {notification.color && <span> • {notification.color}</span>}
+                      </p>
+                      <p className="text-sm">
+                        Requested by: <span className="font-medium">{notification.requestedBy}</span>
+                      </p>
                     </div>
-                  </Card>
-                </motion.div>
-              ))
-            )}
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors mt-1" />
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
           </div>
 
-          <div className="flex gap-2 justify-end pt-4 border-t">
+          <div className="flex gap-2 justify-between pt-4 border-t">
+            <Button
+              variant="destructive"
+              onClick={() => {
+                onClearAll();
+                setShowListModal(false);
+              }}
+              className="text-xs"
+            >
+              Clear All Notifications
+            </Button>
             <Button variant="outline" onClick={() => setShowListModal(false)}>
               Close
             </Button>

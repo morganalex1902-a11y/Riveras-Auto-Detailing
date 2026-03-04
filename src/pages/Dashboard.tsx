@@ -33,6 +33,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useUnactedNotifications } from "@/hooks/useUnactedNotifications";
 import { NewRequestsNotification } from "@/components/NewRequestsNotification";
 import { RequestDetailModal } from "@/components/RequestDetailModal";
 
@@ -109,7 +110,7 @@ const ADDITIONAL_SERVICES = [
   "Excessive Dog Hair",
 ];
 
-const STATUSES = ["Pending", "In Progress", "Completed"];
+const STATUSES = ["Pending", "Completed"];
 
 export default function Dashboard() {
   const { register, handleSubmit, control, setValue, watch, reset } = useForm<RequestFormData>({
@@ -129,6 +130,7 @@ export default function Dashboard() {
 
   const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
   const { toast } = useToast();
+  const { unactedNotifications, addUnactedNotification, markAsActed, clearAll } = useUnactedNotifications();
 
   // Request management state
   const [statusFilter, setStatusFilter] = useState("All");
@@ -402,19 +404,37 @@ export default function Dashboard() {
     }
   }, [newRequestCount, user, requests, toast]);
 
-  // Auto-refresh requests list weekly (every 7 days)
+  // Add new pending requests to unacted notifications
   useEffect(() => {
-    const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    if (user?.role === "admin") {
+      const pendingRequests = requests.filter((r) => r.status === "Pending");
+      pendingRequests.forEach((request) => {
+        // Check if this request is already in unacted notifications
+        const alreadyNotified = unactedNotifications.some((n) => n.id === request.id);
+        if (!alreadyNotified) {
+          addUnactedNotification(request);
+        }
+      });
+    }
+  }, [requests, user, unactedNotifications, addUnactedNotification]);
 
-    const interval = setInterval(() => {
-      // Trigger a refresh by re-fetching requests from the auth context
-      if (user?.dealership_id) {
-        window.location.reload();
+  // Auto-refresh requests list periodically (every 15 seconds)
+  useEffect(() => {
+    // Only start polling for admins to check for new requests
+    if (user?.role !== "admin") return;
+
+    const POLL_INTERVAL_MS = 15 * 1000; // 15 seconds
+
+    const interval = setInterval(async () => {
+      try {
+        await refreshRequests();
+      } catch (error) {
+        console.error("Error refreshing requests:", error);
       }
-    }, WEEK_IN_MS);
+    }, POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, refreshRequests]);
 
   // Generate request number
   const generateRequestNumber = () => {
@@ -448,16 +468,15 @@ export default function Dashboard() {
   const stats = useMemo(() => {
     const total = userRequests.length;
     const pending = userRequests.filter((r) => r.status === "Pending").length;
-    const inProgress = userRequests.filter((r) => r.status === "In Progress").length;
     const completed = userRequests.filter((r) => r.status === "Completed").length;
     const amountDue = userRequests
-      .filter((r) => r.status === "Pending" || r.status === "In Progress")
+      .filter((r) => r.status === "Pending")
       .reduce((sum, r) => sum + r.price, 0);
     const amountPaid = userRequests
       .filter((r) => r.status === "Completed")
       .reduce((sum, r) => sum + r.price, 0);
 
-    return { total, pending, inProgress, completed, amountDue, amountPaid };
+    return { total, pending, completed, amountDue, amountPaid };
   }, [userRequests]);
 
   const handleSavePrice = (id: number, newPrice: number) => {
@@ -494,6 +513,8 @@ export default function Dashboard() {
       color: request.color || "",
     });
     setEditingStockVin(request.stockVin || "");
+    // Mark this request as acted upon
+    markAsActed(request.id);
   };
 
   const handleDeleteRequest = async () => {
@@ -557,9 +578,9 @@ export default function Dashboard() {
       "Price",
     ];
 
-    // Filter to only include In Progress and Completed requests
+    // Filter to only include Completed requests
     const completedRequests = filteredRequests.filter(
-      (r) => r.status === "In Progress" || r.status === "Completed"
+      (r) => r.status === "Completed"
     );
 
     const rows = completedRequests.map((r) => [
@@ -906,8 +927,10 @@ export default function Dashboard() {
                   <NewRequestsNotification
                     newRequestCount={newRequestCount}
                     newRequests={requests.filter((r) => r.status === "Pending")}
+                    unactedNotifications={unactedNotifications}
                     onDismiss={resetNewRequestCount}
-                    onRequestSelect={setSelectedRequestForDetail}
+                    onRequestSelect={handleOpenRequestDetails}
+                    onClearAll={clearAll}
                   />
                 )}
               </div>
@@ -1901,20 +1924,6 @@ export default function Dashboard() {
             <div className="w-8 h-[1px] bg-primary" />
           </div>
 
-          {/* In Progress */}
-          <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
-                  In Progress
-                </p>
-                <p className="text-4xl font-display text-foreground">{stats.inProgress}</p>
-              </div>
-              <AlertCircle className="w-10 h-10 text-primary/20" />
-            </div>
-            <div className="w-8 h-[1px] bg-primary" />
-          </div>
-
           {/* Completed */}
           <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
             <div className="flex items-start justify-between mb-4">
@@ -2285,9 +2294,7 @@ export default function Dashboard() {
                               className={`text-xs font-display uppercase tracking-wider px-3 py-1 rounded-sm inline-block ${
                                 request.status === "Completed"
                                   ? "bg-primary/20 text-primary"
-                                  : request.status === "In Progress"
-                                    ? "bg-card/50 text-primary border border-primary/30"
-                                    : "bg-card/50 text-muted-foreground border border-border/30"
+                                  : "bg-card/50 text-muted-foreground border border-border/30"
                               }`}
                             >
                               {request.status}
@@ -2581,6 +2588,7 @@ export default function Dashboard() {
                                             completionDate: completionDate,
                                             completionTime: completionTime,
                                           });
+                                          markAsActed(editingRequest.id);
                                           toast({
                                             title: "Updated",
                                             description: "Request has been updated successfully.",
@@ -2622,6 +2630,7 @@ export default function Dashboard() {
                                             stockVin: editingStockVin,
                                             status: editingStatus as ServiceRequest["status"],
                                           });
+                                          markAsActed(editingRequest.id);
                                           toast({
                                             title: "Updated",
                                             description: "Request has been updated successfully.",
@@ -2703,9 +2712,7 @@ export default function Dashboard() {
                       className={`text-xs font-display uppercase tracking-wider px-3 py-1 rounded-sm inline-block ${
                         request.status === "Completed"
                           ? "bg-primary/20 text-primary"
-                          : request.status === "In Progress"
-                            ? "bg-card/50 text-primary border border-primary/30"
-                            : "bg-card/50 text-muted-foreground border border-border/30"
+                          : "bg-card/50 text-muted-foreground border border-border/30"
                       }`}
                     >
                       {request.status}
