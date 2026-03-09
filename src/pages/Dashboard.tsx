@@ -36,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUnactedNotifications } from "@/hooks/useUnactedNotifications";
 import { NewRequestsNotification } from "@/components/NewRequestsNotification";
 import { RequestDetailModal } from "@/components/RequestDetailModal";
+import { SearchFilters } from "@/components/SearchFilters";
 
 const formatDateInput = (value: string): string => {
   const cleaned = value.replace(/\D/g, "");
@@ -134,6 +135,18 @@ export default function Dashboard() {
 
   // Request management state
   const [statusFilter, setStatusFilter] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
+    requestNumber: "",
+    requestedBy: "",
+    vehicle: "",
+    stockVin: "",
+    services: "",
+    dateFrom: "",
+    dateTo: "",
+    priceFrom: "",
+    priceTo: "",
+  });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingPrice, setEditingPrice] = useState<number>(0);
   const [editingStatus, setEditingStatus] = useState<string>("");
@@ -505,12 +518,81 @@ export default function Dashboard() {
     return requests.filter((r) => r.requestedBy === user?.email);
   }, [requests, user]);
 
-  // Filter by status
+  // Filter by status and search/filter criteria
   const filteredRequests = useMemo(() => {
-    return statusFilter === "All"
+    let result = statusFilter === "All"
       ? userRequests
       : userRequests.filter((r) => r.status === statusFilter);
-  }, [userRequests, statusFilter]);
+
+    // Apply search term - searches across multiple fields
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter((r) =>
+        r.requestNumber.toLowerCase().includes(term) ||
+        r.requestedBy.toLowerCase().includes(term) ||
+        `${r.year} ${r.make} ${r.model}`.toLowerCase().includes(term) ||
+        r.stockVin.toLowerCase().includes(term) ||
+        (r.mainServices?.join(" ").toLowerCase() || "").includes(term) ||
+        (r.additionalServices?.join(" ").toLowerCase() || "").includes(term)
+      );
+    }
+
+    // Apply field-specific filters
+    if (filters.requestNumber.trim()) {
+      result = result.filter((r) =>
+        r.requestNumber.toLowerCase().includes(filters.requestNumber.toLowerCase())
+      );
+    }
+
+    if (filters.requestedBy.trim()) {
+      result = result.filter((r) =>
+        r.requestedBy.toLowerCase().includes(filters.requestedBy.toLowerCase())
+      );
+    }
+
+    if (filters.vehicle.trim()) {
+      result = result.filter((r) =>
+        `${r.year} ${r.make} ${r.model}`.toLowerCase().includes(filters.vehicle.toLowerCase())
+      );
+    }
+
+    if (filters.stockVin.trim()) {
+      result = result.filter((r) =>
+        r.stockVin.toLowerCase().includes(filters.stockVin.toLowerCase())
+      );
+    }
+
+    if (filters.services.trim()) {
+      result = result.filter((r) =>
+        (r.mainServices?.some(s => s.toLowerCase().includes(filters.services.toLowerCase())) || false) ||
+        (r.additionalServices?.some(s => s.toLowerCase().includes(filters.services.toLowerCase())) || false)
+      );
+    }
+
+    if (filters.dateFrom) {
+      result = result.filter((r) => r.dateRequested >= filters.dateFrom);
+    }
+
+    if (filters.dateTo) {
+      result = result.filter((r) => r.dateRequested <= filters.dateTo);
+    }
+
+    if (filters.priceFrom) {
+      const minPrice = parseFloat(filters.priceFrom);
+      if (!isNaN(minPrice)) {
+        result = result.filter((r) => r.price >= minPrice);
+      }
+    }
+
+    if (filters.priceTo) {
+      const maxPrice = parseFloat(filters.priceTo);
+      if (!isNaN(maxPrice)) {
+        result = result.filter((r) => r.price <= maxPrice);
+      }
+    }
+
+    return result;
+  }, [userRequests, statusFilter, searchTerm, filters]);
 
   // Calculate stats based on user's visible requests
   const stats = useMemo(() => {
@@ -2020,7 +2102,24 @@ export default function Dashboard() {
         </motion.div>
         )}
 
-        {/* Filters and Actions */}
+        {/* Search and Filters */}
+        {user?.role === "admin" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mb-8"
+        >
+          <SearchFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            filters={filters}
+            onFiltersChange={setFilters}
+          />
+        </motion.div>
+        )}
+
+        {/* Additional Filters and Actions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
