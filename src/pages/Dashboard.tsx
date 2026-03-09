@@ -136,17 +136,6 @@ export default function Dashboard() {
   // Request management state
   const [statusFilter, setStatusFilter] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState({
-    requestNumber: "",
-    requestedBy: "",
-    vehicle: "",
-    stockVin: "",
-    services: "",
-    dateFrom: "",
-    dateTo: "",
-    priceFrom: "",
-    priceTo: "",
-  });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingPrice, setEditingPrice] = useState<number>(0);
   const [editingStatus, setEditingStatus] = useState<string>("");
@@ -518,81 +507,44 @@ export default function Dashboard() {
     return requests.filter((r) => r.requestedBy === user?.email);
   }, [requests, user]);
 
-  // Filter by status and search/filter criteria
+  // Filter by status and search across all columns
   const filteredRequests = useMemo(() => {
     let result = statusFilter === "All"
       ? userRequests
       : userRequests.filter((r) => r.status === statusFilter);
 
-    // Apply search term - searches across multiple fields
+    // Apply unified search term - searches across ALL columns
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      result = result.filter((r) =>
-        r.requestNumber.toLowerCase().includes(term) ||
-        r.requestedBy.toLowerCase().includes(term) ||
-        `${r.year} ${r.make} ${r.model}`.toLowerCase().includes(term) ||
-        r.stockVin.toLowerCase().includes(term) ||
-        (r.mainServices?.join(" ").toLowerCase() || "").includes(term) ||
-        (r.additionalServices?.join(" ").toLowerCase() || "").includes(term)
-      );
-    }
+      result = result.filter((r) => {
+        const searchableFields = [
+          r.requestNumber.toLowerCase(),
+          r.requestedBy.toLowerCase(),
+          r.requesterRole?.toLowerCase() || "",
+          `${r.year} ${r.make} ${r.model}`.toLowerCase(),
+          r.stockVin.toLowerCase(),
+          r.status.toLowerCase(),
+          r.dateRequested?.toLowerCase() || "",
+          r.completionDate?.toLowerCase() || "",
+          r.completionTime?.toLowerCase() || "",
+          r.price.toString(),
+          (r.mainServices?.join(" ").toLowerCase() || ""),
+          (r.additionalServices?.join(" ").toLowerCase() || ""),
+          r.notes?.toLowerCase() || "",
+          r.manager?.toLowerCase() || "",
+          r.poNumber?.toLowerCase() || "",
+          r.vehicleDescription?.toLowerCase() || "",
+          r.color?.toLowerCase() || "",
+          r.dueDate?.toLowerCase() || "",
+          r.startDate?.toLowerCase() || "",
+        ];
 
-    // Apply field-specific filters
-    if (filters.requestNumber.trim()) {
-      result = result.filter((r) =>
-        r.requestNumber.toLowerCase().includes(filters.requestNumber.toLowerCase())
-      );
-    }
-
-    if (filters.requestedBy.trim()) {
-      result = result.filter((r) =>
-        r.requestedBy.toLowerCase().includes(filters.requestedBy.toLowerCase())
-      );
-    }
-
-    if (filters.vehicle.trim()) {
-      result = result.filter((r) =>
-        `${r.year} ${r.make} ${r.model}`.toLowerCase().includes(filters.vehicle.toLowerCase())
-      );
-    }
-
-    if (filters.stockVin.trim()) {
-      result = result.filter((r) =>
-        r.stockVin.toLowerCase().includes(filters.stockVin.toLowerCase())
-      );
-    }
-
-    if (filters.services.trim()) {
-      result = result.filter((r) =>
-        (r.mainServices?.some(s => s.toLowerCase().includes(filters.services.toLowerCase())) || false) ||
-        (r.additionalServices?.some(s => s.toLowerCase().includes(filters.services.toLowerCase())) || false)
-      );
-    }
-
-    if (filters.dateFrom) {
-      result = result.filter((r) => r.dateRequested >= filters.dateFrom);
-    }
-
-    if (filters.dateTo) {
-      result = result.filter((r) => r.dateRequested <= filters.dateTo);
-    }
-
-    if (filters.priceFrom) {
-      const minPrice = parseFloat(filters.priceFrom);
-      if (!isNaN(minPrice)) {
-        result = result.filter((r) => r.price >= minPrice);
-      }
-    }
-
-    if (filters.priceTo) {
-      const maxPrice = parseFloat(filters.priceTo);
-      if (!isNaN(maxPrice)) {
-        result = result.filter((r) => r.price <= maxPrice);
-      }
+        return searchableFields.some(field => field.includes(term));
+      });
     }
 
     return result;
-  }, [userRequests, statusFilter, searchTerm, filters]);
+  }, [userRequests, statusFilter, searchTerm]);
 
   // Calculate stats based on user's visible requests
   const stats = useMemo(() => {
@@ -2102,7 +2054,7 @@ export default function Dashboard() {
         </motion.div>
         )}
 
-        {/* Search and Filters */}
+        {/* Search Bar */}
         {user?.role === "admin" && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -2113,8 +2065,6 @@ export default function Dashboard() {
           <SearchFilters
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
-            filters={filters}
-            onFiltersChange={setFilters}
           />
         </motion.div>
         )}
