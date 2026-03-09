@@ -37,6 +37,7 @@ import { useUnactedNotifications } from "@/hooks/useUnactedNotifications";
 import { NewRequestsNotification } from "@/components/NewRequestsNotification";
 import { RequestDetailModal } from "@/components/RequestDetailModal";
 import { SearchFilters } from "@/components/SearchFilters";
+import { HighlightText } from "@/components/HighlightText";
 
 const formatDateInput = (value: string): string => {
   const cleaned = value.replace(/\D/g, "");
@@ -2320,38 +2321,38 @@ export default function Dashboard() {
                         className="border-b border-border/20 hover:bg-card/50 transition-colors"
                       >
                         <TableCell className="font-display text-sm text-primary">
-                          {request.requestNumber}
+                          <HighlightText text={request.requestNumber} searchTerm={searchTerm} />
                         </TableCell>
                         <TableCell className="text-xs">
                           <div className="flex flex-col gap-1">
-                            <span className="text-foreground font-medium">{request.requestedBy}</span>
+                            <span className="text-foreground font-medium"><HighlightText text={request.requestedBy} searchTerm={searchTerm} /></span>
                             {request.requesterRole && (
                               <span className="text-muted-foreground capitalize text-xs">
-                                {request.requesterRole.replace(/_/g, ' ')}
+                                <HighlightText text={request.requesterRole.replace(/_/g, ' ')} searchTerm={searchTerm} />
                               </span>
                             )}
                           </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {request.dateRequested || "-"}
+                          <HighlightText text={request.dateRequested || "-"} searchTerm={searchTerm} />
                         </TableCell>
                         <TableCell className="text-xs text-foreground">
-                          {request.year} {request.make} {request.model}
+                          <HighlightText text={`${request.year} ${request.make} ${request.model}`} searchTerm={searchTerm} />
                         </TableCell>
                         <TableCell className="text-xs text-foreground">
-                          {request.stockVin}
+                          <HighlightText text={request.stockVin} searchTerm={searchTerm} />
                         </TableCell>
                         <TableCell className="text-xs text-foreground">
                           <div className="max-w-xs">
                             {request.mainServices.length > 0 && (
                               <p className="text-primary font-medium">
-                                {request.mainServices.slice(0, 2).join(", ")}
+                                <HighlightText text={request.mainServices.slice(0, 2).join(", ")} searchTerm={searchTerm} />
                                 {request.mainServices.length > 2 && ` +${request.mainServices.length - 2}`}
                               </p>
                             )}
                             {request.additionalServices.length > 0 && (
                               <p className="text-muted-foreground text-xs">
-                                {request.additionalServices.slice(0, 2).join(", ")}
+                                <HighlightText text={request.additionalServices.slice(0, 2).join(", ")} searchTerm={searchTerm} />
                                 {request.additionalServices.length > 2 && ` +${request.additionalServices.length - 2}`}
                               </p>
                             )}
@@ -2394,14 +2395,14 @@ export default function Dashboard() {
                                   : "bg-card/50 text-muted-foreground border border-border/30"
                               }`}
                             >
-                              {request.status}
+                              <HighlightText text={request.status} searchTerm={searchTerm} />
                             </span>
                           )}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {request.status === "Completed" && request.completionDate
+                          <HighlightText text={request.status === "Completed" && request.completionDate
                             ? request.completionDate
-                            : "-"}
+                            : "-"} searchTerm={searchTerm} />
                         </TableCell>
                         <TableCell>
                           {user?.role === "admin" && editingId === request.id ? (
@@ -2424,7 +2425,7 @@ export default function Dashboard() {
                             </div>
                           ) : (
                             <span className="font-display text-sm text-primary">
-                              ${request.price.toFixed(2)}
+                              $<HighlightText text={request.price.toFixed(2)} searchTerm={searchTerm} />
                             </span>
                           )}
                         </TableCell>
