@@ -2021,7 +2021,8 @@ export default function Dashboard() {
             <div className="w-8 h-[1px] bg-primary" />
           </div>
 
-          {/* Amount Due */}
+          {/* Amount Due - Only visible to specific admins */}
+          {["davisbryan595@gmail.com", "eliasrivera1884@gmail.com"].includes(user?.email || "") && (
           <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -2036,8 +2037,10 @@ export default function Dashboard() {
             </div>
             <div className="w-8 h-[1px] bg-primary" />
           </div>
+          )}
 
-          {/* Amount Paid */}
+          {/* Amount Paid - Only visible to specific admins */}
+          {["davisbryan595@gmail.com", "eliasrivera1884@gmail.com"].includes(user?.email || "") && (
           <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -2052,6 +2055,7 @@ export default function Dashboard() {
             </div>
             <div className="w-8 h-[1px] bg-primary" />
           </div>
+          )}
         </motion.div>
         )}
 
