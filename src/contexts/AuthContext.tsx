@@ -8,6 +8,7 @@ export interface User {
   role: "sales_rep" | "admin" | "manager";
   dealership_id?: string;
   id?: string;
+  can_view_financial_cards?: boolean;
 }
 
 export interface ServiceRequest {
@@ -191,6 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: userList.role,
         dealership_id: userList.dealership_id,
         id: userList.id,
+        can_view_financial_cards: userList.can_view_financial_cards,
       });
       setIsLoggedIn(true);
 
@@ -207,6 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: userList.role,
           dealership_id: userList.dealership_id,
           id: userList.id,
+          can_view_financial_cards: userList.can_view_financial_cards,
         }
       }));
     } catch (error: any) {

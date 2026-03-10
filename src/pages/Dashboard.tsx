@@ -2021,7 +2021,8 @@ export default function Dashboard() {
             <div className="w-8 h-[1px] bg-primary" />
           </div>
 
-          {/* Amount Due */}
+          {/* Amount Due - Only visible to admins with permission */}
+          {user?.can_view_financial_cards && (
           <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -2036,8 +2037,10 @@ export default function Dashboard() {
             </div>
             <div className="w-8 h-[1px] bg-primary" />
           </div>
+          )}
 
-          {/* Amount Paid */}
+          {/* Amount Paid - Only visible to admins with permission */}
+          {user?.can_view_financial_cards && (
           <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -2052,6 +2055,7 @@ export default function Dashboard() {
             </div>
             <div className="w-8 h-[1px] bg-primary" />
           </div>
+          )}
         </motion.div>
         )}
 
