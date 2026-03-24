@@ -53,9 +53,11 @@ const formatTimeInput = (value: string): string => {
 };
 
 interface RequestFormData {
+  department: "sales" | "service";
   manager: string;
   stockVin: string;
   poNumber: string;
+  roNumber: string;
   vehicleDescription: string;
   year: number;
   make: string;
@@ -117,9 +119,11 @@ const STATUSES = ["Pending", "Completed"];
 export default function Dashboard() {
   const { register, handleSubmit, control, setValue, watch, reset } = useForm<RequestFormData>({
     defaultValues: {
+      department: "sales",
       manager: "",
       stockVin: "",
       poNumber: "",
+      roNumber: "",
       vehicleDescription: "",
       year: new Date().getFullYear(),
       make: "",
@@ -136,6 +140,7 @@ export default function Dashboard() {
 
   // Request management state
   const [statusFilter, setStatusFilter] = useState("All");
+  const [departmentFilter, setDepartmentFilter] = useState<"all" | "sales" | "service">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingPrice, setEditingPrice] = useState<number>(0);
@@ -508,11 +513,16 @@ export default function Dashboard() {
     return requests.filter((r) => r.requestedBy === user?.email);
   }, [requests, user]);
 
-  // Filter by status and search across all columns
+  // Filter by status, department and search across all columns
   const filteredRequests = useMemo(() => {
     let result = statusFilter === "All"
       ? userRequests
       : userRequests.filter((r) => r.status === statusFilter);
+
+    // Apply department filter
+    if (departmentFilter !== "all") {
+      result = result.filter((r) => r.requestType === departmentFilter);
+    }
 
     // Apply unified search term - searches across ALL columns
     if (searchTerm.trim()) {
@@ -538,6 +548,7 @@ export default function Dashboard() {
           r.color?.toLowerCase() || "",
           r.dueDate?.toLowerCase() || "",
           r.startDate?.toLowerCase() || "",
+          r.roNumber?.toLowerCase() || "",
         ];
 
         return searchableFields.some(field => field.includes(term));
@@ -545,7 +556,7 @@ export default function Dashboard() {
     }
 
     return result;
-  }, [userRequests, statusFilter, searchTerm]);
+  }, [userRequests, statusFilter, departmentFilter, searchTerm]);
 
   // Calculate stats based on user's visible requests
   const stats = useMemo(() => {
@@ -646,40 +657,83 @@ export default function Dashboard() {
   };
 
   const handleExport = () => {
-    const headers = [
-      "Request #",
-      "Requested By",
-      "Manager",
-      "Vehicle",
-      "Stock/VIN",
-      "PO#",
-      "Date Requested",
-      "Main Services",
-      "Additional Services",
-      "Status",
-      "Completion Date",
-      "Price",
-    ];
+    // Determine headers based on department filter
+    let headers: string[];
+    let rows: any[];
+    let filename: string;
 
     // Filter to only include Completed requests
     const completedRequests = filteredRequests.filter(
       (r) => r.status === "Completed"
     );
 
-    const rows = completedRequests.map((r) => [
-      r.requestNumber,
-      r.requestedBy,
-      r.manager || "-",
-      `${r.year} ${r.make} ${r.model}`,
-      r.stockVin,
-      r.poNumber || "-",
-      r.dateRequested || "-",
-      r.mainServices.join("; "),
-      r.additionalServices.join("; "),
-      r.status,
-      r.completionDate || "-",
-      `$${r.price.toFixed(2)}`,
-    ]);
+    if (departmentFilter === "service" || (departmentFilter === "all" && completedRequests.some(r => r.requestType === "service"))) {
+      // Export service requests
+      headers = [
+        "Request #",
+        "RO #",
+        "Requested By",
+        "Manager",
+        "Vehicle",
+        "Stock/VIN",
+        "Date Requested",
+        "Main Services",
+        "Additional Services",
+        "Status",
+        "Completion Date",
+        "Price",
+      ];
+
+      const serviceRequests = completedRequests.filter(r => r.requestType === "service");
+      rows = serviceRequests.map((r) => [
+        r.requestNumber,
+        r.roNumber || "-",
+        r.requestedBy,
+        r.manager || "-",
+        `${r.year} ${r.make} ${r.model}`,
+        r.stockVin,
+        r.dateRequested || "-",
+        r.mainServices.join("; "),
+        r.additionalServices.join("; "),
+        r.status,
+        r.completionDate || "-",
+        `$${r.price.toFixed(2)}`,
+      ]);
+      filename = `service-requests-${new Date().toISOString().split("T")[0]}.csv`;
+    } else {
+      // Export sales requests (default)
+      headers = [
+        "Request #",
+        "Requested By",
+        "Manager",
+        "Vehicle",
+        "Stock/VIN",
+        "PO#",
+        "Date Requested",
+        "Main Services",
+        "Additional Services",
+        "Status",
+        "Completion Date",
+        "Price",
+      ];
+
+      const salesRequests = completedRequests.filter(r => r.requestType === "sales");
+      rows = salesRequests.map((r) => [
+        r.requestNumber,
+        r.requestedBy,
+        r.manager || "-",
+        `${r.year} ${r.make} ${r.model}`,
+        r.stockVin,
+        r.poNumber || "-",
+        r.dateRequested || "-",
+        r.mainServices.join("; "),
+        r.additionalServices.join("; "),
+        r.status,
+        r.completionDate || "-",
+        `$${r.price.toFixed(2)}`,
+      ]);
+      filename = `sales-requests-${new Date().toISOString().split("T")[0]}.csv`;
+    }
 
     const csv = [
       headers.join(","),
@@ -690,7 +744,7 @@ export default function Dashboard() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `weekly-services-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = filename;
     a.click();
   };
 
@@ -792,37 +846,84 @@ export default function Dashboard() {
     setIsExportingByDate(true);
     try {
       const { start, end } = getDateRangeFromOption(dateRangeOption);
-      const dateRangeRequests = await getRequestsByDateRange(start, end);
+      let dateRangeRequests = await getRequestsByDateRange(start, end);
 
-      const headers = [
-        "Request #",
-        "Requested By",
-        "Manager",
-        "Vehicle",
-        "Stock/VIN",
-        "PO#",
-        "Date Requested",
-        "Main Services",
-        "Additional Services",
-        "Status",
-        "Completion Date",
-        "Price",
-      ];
+      // Apply department filter
+      if (departmentFilter === "sales") {
+        dateRangeRequests = dateRangeRequests.filter(r => r.requestType === "sales");
+      } else if (departmentFilter === "service") {
+        dateRangeRequests = dateRangeRequests.filter(r => r.requestType === "service");
+      }
 
-      const rows = dateRangeRequests.map((r) => [
-        r.requestNumber,
-        r.requestedBy,
-        r.manager || "-",
-        `${r.year} ${r.make} ${r.model}`,
-        r.stockVin,
-        r.poNumber || "-",
-        r.dateRequested || "-",
-        r.mainServices.join("; "),
-        r.additionalServices.join("; "),
-        r.status,
-        r.completionDate || "-",
-        `$${r.price.toFixed(2)}`,
-      ]);
+      let headers: string[];
+      let rows: any[];
+      let filePrefix: string;
+
+      if (departmentFilter === "service") {
+        // Service requests export
+        headers = [
+          "Request #",
+          "RO #",
+          "Requested By",
+          "Manager",
+          "Vehicle",
+          "Stock/VIN",
+          "Date Requested",
+          "Main Services",
+          "Additional Services",
+          "Status",
+          "Completion Date",
+          "Price",
+        ];
+
+        rows = dateRangeRequests.map((r) => [
+          r.requestNumber,
+          r.roNumber || "-",
+          r.requestedBy,
+          r.manager || "-",
+          `${r.year} ${r.make} ${r.model}`,
+          r.stockVin,
+          r.dateRequested || "-",
+          r.mainServices.join("; "),
+          r.additionalServices.join("; "),
+          r.status,
+          r.completionDate || "-",
+          `$${r.price.toFixed(2)}`,
+        ]);
+        filePrefix = "service-requests";
+      } else {
+        // Sales requests export (default)
+        headers = [
+          "Request #",
+          "Requested By",
+          "Manager",
+          "Vehicle",
+          "Stock/VIN",
+          "PO#",
+          "Date Requested",
+          "Main Services",
+          "Additional Services",
+          "Status",
+          "Completion Date",
+          "Price",
+        ];
+
+        rows = dateRangeRequests.map((r) => [
+          r.requestNumber,
+          r.requestedBy,
+          r.manager || "-",
+          `${r.year} ${r.make} ${r.model}`,
+          r.stockVin,
+          r.poNumber || "-",
+          r.dateRequested || "-",
+          r.mainServices.join("; "),
+          r.additionalServices.join("; "),
+          r.status,
+          r.completionDate || "-",
+          `$${r.price.toFixed(2)}`,
+        ]);
+        filePrefix = "sales-requests";
+      }
 
       const csv = [
         headers.join(","),
@@ -836,11 +937,11 @@ export default function Dashboard() {
 
       // Create filename with date range
       const { start: startDate, end: endDate } = getDateRangeFromOption(dateRangeOption);
-      let fileName = `services-${startDate}-to-${endDate}.csv`;
-      if (dateRangeOption === "thisWeek") fileName = `services-this-week-${new Date().toISOString().split("T")[0]}.csv`;
-      if (dateRangeOption === "lastWeek") fileName = `services-last-week-${new Date().toISOString().split("T")[0]}.csv`;
-      if (dateRangeOption === "thisMonth") fileName = `services-this-month-${new Date().toISOString().split("T")[0]}.csv`;
-      if (dateRangeOption === "lastMonth") fileName = `services-last-month-${new Date().toISOString().split("T")[0]}.csv`;
+      let fileName = `${filePrefix}-${startDate}-to-${endDate}.csv`;
+      if (dateRangeOption === "thisWeek") fileName = `${filePrefix}-this-week-${new Date().toISOString().split("T")[0]}.csv`;
+      if (dateRangeOption === "lastWeek") fileName = `${filePrefix}-last-week-${new Date().toISOString().split("T")[0]}.csv`;
+      if (dateRangeOption === "thisMonth") fileName = `${filePrefix}-this-month-${new Date().toISOString().split("T")[0]}.csv`;
+      if (dateRangeOption === "lastMonth") fileName = `${filePrefix}-last-month-${new Date().toISOString().split("T")[0]}.csv`;
 
       a.download = fileName;
       a.click();
@@ -929,6 +1030,13 @@ export default function Dashboard() {
     }
   };
 
+  const generateRONumber = () => {
+    // Generate RO# based on existing service requests
+    const serviceRequests = requests.filter(r => r.requestType === "service");
+    const nextNumber = serviceRequests.length + 1;
+    return `RO-${String(nextNumber).padStart(4, "0")}`;
+  };
+
   const onFormSubmit = async (data: RequestFormData) => {
     setSubmittingForm(true);
 
@@ -952,6 +1060,8 @@ export default function Dashboard() {
         price: data.price || 0,
         service: data.mainServices[0] || "Custom Service",
         vin: data.stockVin,
+        requestType: data.department,
+        roNumber: data.department === "service" ? (data.roNumber || generateRONumber()) : undefined,
       });
 
       reset();
@@ -959,7 +1069,7 @@ export default function Dashboard() {
 
       toast({
         title: "Request Submitted",
-        description: "Your service request has been successfully created.",
+        description: `Your ${data.department} request has been successfully created.`,
       });
     } catch (error: any) {
       toast({
@@ -1112,6 +1222,22 @@ export default function Dashboard() {
                 </h3>
 
                 <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-8">
+                  {/* Department Selection */}
+                  <div>
+                    <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                      Service Department
+                    </h4>
+                    <Select value={watch("department")} onValueChange={(value) => setValue("department", value as "sales" | "service")}>
+                      <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border/30">
+                        <SelectItem value="sales">Sales Department</SelectItem>
+                        <SelectItem value="service">Service Department</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   {/* Request Header Info */}
                   <div>
                     <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
@@ -1129,6 +1255,21 @@ export default function Dashboard() {
                           className="bg-background/50 border-border/50 text-foreground"
                         />
                       </div>
+                      {watch("department") === "service" && (
+                        <div>
+                          <label htmlFor="roNumber" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            RO # (Auto-Generated)
+                          </label>
+                          <Input
+                            id="roNumber"
+                            type="text"
+                            disabled
+                            value={watch("roNumber") || generateRONumber()}
+                            {...register("roNumber")}
+                            className="bg-background/50 border-border/50 text-foreground"
+                          />
+                        </div>
+                      )}
                       <div>
                         <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
                           Sales/Service Advisor (Auto-Filled)
@@ -1261,81 +1402,220 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Main Services */}
-                  <div className="border-t border-border/20 pt-6">
-                    <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                      Main Services (Multi-Select)
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {MAIN_SERVICES.map((service) => (
-                        <div key={service} className="flex items-center space-x-3">
-                          <Controller
-                            name="mainServices"
-                            control={control}
-                            render={({ field }) => (
-                              <Checkbox
-                                id={`main-${service}`}
-                                checked={field.value.includes(service)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    field.onChange([...field.value, service]);
-                                  } else {
-                                    field.onChange(
-                                      field.value.filter((s) => s !== service)
-                                    );
-                                  }
-                                }}
-                              />
-                            )}
-                          />
-                          <label
-                            htmlFor={`main-${service}`}
-                            className="text-sm text-foreground cursor-pointer font-medium"
-                          >
-                            {service}
-                          </label>
+                  {/* Services Section - Different based on Department */}
+                  {watch("department") === "service" ? (
+                    <>
+                      {/* Service Department - Main Services */}
+                      <div className="border-t border-border/20 pt-6">
+                        <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                          Service Type (Select One)
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-3">
+                            <Controller
+                              name="mainServices"
+                              control={control}
+                              render={({ field }) => (
+                                <Checkbox
+                                  id="service-1"
+                                  checked={field.value.includes("Complementary Service Wash")}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange(["Complementary Service Wash"]);
+                                    } else {
+                                      field.onChange([]);
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <label htmlFor="service-1" className="text-sm text-foreground cursor-pointer font-medium">
+                              1 - Complementary Service Wash
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <Controller
+                              name="mainServices"
+                              control={control}
+                              render={({ field }) => (
+                                <Checkbox
+                                  id="service-2"
+                                  checked={field.value.includes("Service Full Detail")}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange(["Service Full Detail"]);
+                                    } else {
+                                      field.onChange([]);
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <label htmlFor="service-2" className="text-sm text-foreground cursor-pointer font-medium">
+                              2 - Service Full Detail
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <Controller
+                              name="mainServices"
+                              control={control}
+                              render={({ field }) => (
+                                <Checkbox
+                                  id="service-3"
+                                  checked={field.value.includes("Other")}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange(["Other"]);
+                                    } else {
+                                      field.onChange([]);
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <label htmlFor="service-3" className="text-sm text-foreground cursor-pointer font-medium">
+                              3 - Other
+                            </label>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
 
-                  {/* Additional Services */}
-                  <div className="border-t border-border/20 pt-6">
-                    <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                      Additional Services (Multi-Select)
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {ADDITIONAL_SERVICES.map((service) => (
-                        <div key={service} className="flex items-center space-x-3">
-                          <Controller
-                            name="additionalServices"
-                            control={control}
-                            render={({ field }) => (
-                              <Checkbox
-                                id={`additional-${service}`}
-                                checked={field.value.includes(service)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    field.onChange([...field.value, service]);
-                                  } else {
-                                    field.onChange(
-                                      field.value.filter((s) => s !== service)
-                                    );
-                                  }
-                                }}
-                              />
-                            )}
-                          />
-                          <label
-                            htmlFor={`additional-${service}`}
-                            className="text-sm text-foreground cursor-pointer font-medium"
-                          >
-                            {service}
-                          </label>
+                      {/* Service Department - Additional Options */}
+                      <div className="border-t border-border/20 pt-6">
+                        <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                          Service Options (Multi-Select)
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-3">
+                            <Controller
+                              name="additionalServices"
+                              control={control}
+                              render={({ field }) => (
+                                <Checkbox
+                                  id="option-wash"
+                                  checked={field.value.includes("Wait wash")}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange([...field.value, "Wait wash"]);
+                                    } else {
+                                      field.onChange(
+                                        field.value.filter((s) => s !== "Wait wash")
+                                      );
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <label htmlFor="option-wash" className="text-sm text-foreground cursor-pointer font-medium">
+                              Wait wash
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <Controller
+                              name="additionalServices"
+                              control={control}
+                              render={({ field }) => (
+                                <Checkbox
+                                  id="option-drop"
+                                  checked={field.value.includes("Drop wash")}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange([...field.value, "Drop wash"]);
+                                    } else {
+                                      field.onChange(
+                                        field.value.filter((s) => s !== "Drop wash")
+                                      );
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <label htmlFor="option-drop" className="text-sm text-foreground cursor-pointer font-medium">
+                              Drop wash
+                            </label>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Sales Department - Main Services */}
+                      <div className="border-t border-border/20 pt-6">
+                        <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                          Main Services (Multi-Select)
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {MAIN_SERVICES.map((service) => (
+                            <div key={service} className="flex items-center space-x-3">
+                              <Controller
+                                name="mainServices"
+                                control={control}
+                                render={({ field }) => (
+                                  <Checkbox
+                                    id={`main-${service}`}
+                                    checked={field.value.includes(service)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        field.onChange([...field.value, service]);
+                                      } else {
+                                        field.onChange(
+                                          field.value.filter((s) => s !== service)
+                                        );
+                                      }
+                                    }}
+                                  />
+                                )}
+                              />
+                              <label
+                                htmlFor={`main-${service}`}
+                                className="text-sm text-foreground cursor-pointer font-medium"
+                              >
+                                {service}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Sales Department - Additional Services */}
+                      <div className="border-t border-border/20 pt-6">
+                        <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                          Additional Services (Multi-Select)
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {ADDITIONAL_SERVICES.map((service) => (
+                            <div key={service} className="flex items-center space-x-3">
+                              <Controller
+                                name="additionalServices"
+                                control={control}
+                                render={({ field }) => (
+                                  <Checkbox
+                                    id={`additional-${service}`}
+                                    checked={field.value.includes(service)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        field.onChange([...field.value, service]);
+                                      } else {
+                                        field.onChange(
+                                          field.value.filter((s) => s !== service)
+                                        );
+                                      }
+                                    }}
+                                  />
+                                )}
+                              />
+                              <label
+                                htmlFor={`additional-${service}`}
+                                className="text-sm text-foreground cursor-pointer font-medium"
+                              >
+                                {service}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Notes & Price */}
                   <div className="border-t border-border/20 pt-6 space-y-6">
@@ -2074,6 +2354,49 @@ export default function Dashboard() {
         </motion.div>
         )}
 
+        {/* Department Filter */}
+        {user?.role === "admin" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+          className="mb-6"
+        >
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setDepartmentFilter("all")}
+              className={`px-4 py-2 text-xs font-display uppercase tracking-wider transition-all ${
+                departmentFilter === "all"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+              }`}
+            >
+              All Requests
+            </button>
+            <button
+              onClick={() => setDepartmentFilter("sales")}
+              className={`px-4 py-2 text-xs font-display uppercase tracking-wider transition-all ${
+                departmentFilter === "sales"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+              }`}
+            >
+              Sales Requests
+            </button>
+            <button
+              onClick={() => setDepartmentFilter("service")}
+              className={`px-4 py-2 text-xs font-display uppercase tracking-wider transition-all ${
+                departmentFilter === "service"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+              }`}
+            >
+              Service Requests
+            </button>
+          </div>
+        </motion.div>
+        )}
+
         {/* Additional Filters and Actions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -2282,6 +2605,11 @@ export default function Dashboard() {
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                       Request #
                     </TableHead>
+                    {departmentFilter === "service" || departmentFilter === "all" ? (
+                      <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
+                        RO #
+                      </TableHead>
+                    ) : null}
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                       Requested By
                     </TableHead>
@@ -2314,7 +2642,7 @@ export default function Dashboard() {
                 <TableBody>
                   {filteredRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={departmentFilter === "all" ? 12 : 11} className="text-center py-12 text-muted-foreground">
                         No requests found
                       </TableCell>
                     </TableRow>
@@ -2327,6 +2655,11 @@ export default function Dashboard() {
                         <TableCell className="font-display text-sm text-primary">
                           <HighlightText text={request.requestNumber} searchTerm={searchTerm} />
                         </TableCell>
+                        {departmentFilter === "service" || departmentFilter === "all" ? (
+                          <TableCell className="font-display text-sm text-primary">
+                            {request.roNumber ? <HighlightText text={request.roNumber} searchTerm={searchTerm} /> : "-"}
+                          </TableCell>
+                        ) : null}
                         <TableCell className="text-xs">
                           <div className="flex flex-col gap-1">
                             <span className="text-foreground font-medium"><HighlightText text={request.requestedBy} searchTerm={searchTerm} /></span>
