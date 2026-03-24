@@ -53,9 +53,11 @@ const formatTimeInput = (value: string): string => {
 };
 
 interface RequestFormData {
+  department: "sales" | "service";
   manager: string;
   stockVin: string;
   poNumber: string;
+  roNumber: string;
   vehicleDescription: string;
   year: number;
   make: string;
@@ -117,9 +119,11 @@ const STATUSES = ["Pending", "Completed"];
 export default function Dashboard() {
   const { register, handleSubmit, control, setValue, watch, reset } = useForm<RequestFormData>({
     defaultValues: {
+      department: "sales",
       manager: "",
       stockVin: "",
       poNumber: "",
+      roNumber: "",
       vehicleDescription: "",
       year: new Date().getFullYear(),
       make: "",
@@ -1026,6 +1030,13 @@ export default function Dashboard() {
     }
   };
 
+  const generateRONumber = () => {
+    // Generate RO# based on existing service requests
+    const serviceRequests = requests.filter(r => r.requestType === "service");
+    const nextNumber = serviceRequests.length + 1;
+    return `RO-${String(nextNumber).padStart(4, "0")}`;
+  };
+
   const onFormSubmit = async (data: RequestFormData) => {
     setSubmittingForm(true);
 
@@ -1049,6 +1060,8 @@ export default function Dashboard() {
         price: data.price || 0,
         service: data.mainServices[0] || "Custom Service",
         vin: data.stockVin,
+        requestType: data.department,
+        roNumber: data.department === "service" ? (data.roNumber || generateRONumber()) : undefined,
       });
 
       reset();
@@ -1056,7 +1069,7 @@ export default function Dashboard() {
 
       toast({
         title: "Request Submitted",
-        description: "Your service request has been successfully created.",
+        description: `Your ${data.department} request has been successfully created.`,
       });
     } catch (error: any) {
       toast({
@@ -1209,6 +1222,22 @@ export default function Dashboard() {
                 </h3>
 
                 <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-8">
+                  {/* Department Selection */}
+                  <div>
+                    <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                      Service Department
+                    </h4>
+                    <Select value={watch("department")} onValueChange={(value) => setValue("department", value as "sales" | "service")}>
+                      <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border/30">
+                        <SelectItem value="sales">Sales Department</SelectItem>
+                        <SelectItem value="service">Service Department</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   {/* Request Header Info */}
                   <div>
                     <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
@@ -1226,6 +1255,21 @@ export default function Dashboard() {
                           className="bg-background/50 border-border/50 text-foreground"
                         />
                       </div>
+                      {watch("department") === "service" && (
+                        <div>
+                          <label htmlFor="roNumber" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            RO # (Auto-Generated)
+                          </label>
+                          <Input
+                            id="roNumber"
+                            type="text"
+                            disabled
+                            value={watch("roNumber") || generateRONumber()}
+                            {...register("roNumber")}
+                            className="bg-background/50 border-border/50 text-foreground"
+                          />
+                        </div>
+                      )}
                       <div>
                         <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
                           Sales/Service Advisor (Auto-Filled)
@@ -1358,81 +1402,220 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Main Services */}
-                  <div className="border-t border-border/20 pt-6">
-                    <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                      Main Services (Multi-Select)
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {MAIN_SERVICES.map((service) => (
-                        <div key={service} className="flex items-center space-x-3">
-                          <Controller
-                            name="mainServices"
-                            control={control}
-                            render={({ field }) => (
-                              <Checkbox
-                                id={`main-${service}`}
-                                checked={field.value.includes(service)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    field.onChange([...field.value, service]);
-                                  } else {
-                                    field.onChange(
-                                      field.value.filter((s) => s !== service)
-                                    );
-                                  }
-                                }}
-                              />
-                            )}
-                          />
-                          <label
-                            htmlFor={`main-${service}`}
-                            className="text-sm text-foreground cursor-pointer font-medium"
-                          >
-                            {service}
-                          </label>
+                  {/* Services Section - Different based on Department */}
+                  {watch("department") === "service" ? (
+                    <>
+                      {/* Service Department - Main Services */}
+                      <div className="border-t border-border/20 pt-6">
+                        <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                          Service Type (Select One)
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-3">
+                            <Controller
+                              name="mainServices"
+                              control={control}
+                              render={({ field }) => (
+                                <Checkbox
+                                  id="service-1"
+                                  checked={field.value.includes("Complementary Service Wash")}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange(["Complementary Service Wash"]);
+                                    } else {
+                                      field.onChange([]);
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <label htmlFor="service-1" className="text-sm text-foreground cursor-pointer font-medium">
+                              1 - Complementary Service Wash
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <Controller
+                              name="mainServices"
+                              control={control}
+                              render={({ field }) => (
+                                <Checkbox
+                                  id="service-2"
+                                  checked={field.value.includes("Service Full Detail")}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange(["Service Full Detail"]);
+                                    } else {
+                                      field.onChange([]);
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <label htmlFor="service-2" className="text-sm text-foreground cursor-pointer font-medium">
+                              2 - Service Full Detail
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <Controller
+                              name="mainServices"
+                              control={control}
+                              render={({ field }) => (
+                                <Checkbox
+                                  id="service-3"
+                                  checked={field.value.includes("Other")}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange(["Other"]);
+                                    } else {
+                                      field.onChange([]);
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <label htmlFor="service-3" className="text-sm text-foreground cursor-pointer font-medium">
+                              3 - Other
+                            </label>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
 
-                  {/* Additional Services */}
-                  <div className="border-t border-border/20 pt-6">
-                    <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                      Additional Services (Multi-Select)
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {ADDITIONAL_SERVICES.map((service) => (
-                        <div key={service} className="flex items-center space-x-3">
-                          <Controller
-                            name="additionalServices"
-                            control={control}
-                            render={({ field }) => (
-                              <Checkbox
-                                id={`additional-${service}`}
-                                checked={field.value.includes(service)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    field.onChange([...field.value, service]);
-                                  } else {
-                                    field.onChange(
-                                      field.value.filter((s) => s !== service)
-                                    );
-                                  }
-                                }}
-                              />
-                            )}
-                          />
-                          <label
-                            htmlFor={`additional-${service}`}
-                            className="text-sm text-foreground cursor-pointer font-medium"
-                          >
-                            {service}
-                          </label>
+                      {/* Service Department - Additional Options */}
+                      <div className="border-t border-border/20 pt-6">
+                        <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                          Service Options (Multi-Select)
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-3">
+                            <Controller
+                              name="additionalServices"
+                              control={control}
+                              render={({ field }) => (
+                                <Checkbox
+                                  id="option-wash"
+                                  checked={field.value.includes("Wait wash")}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange([...field.value, "Wait wash"]);
+                                    } else {
+                                      field.onChange(
+                                        field.value.filter((s) => s !== "Wait wash")
+                                      );
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <label htmlFor="option-wash" className="text-sm text-foreground cursor-pointer font-medium">
+                              Wait wash
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <Controller
+                              name="additionalServices"
+                              control={control}
+                              render={({ field }) => (
+                                <Checkbox
+                                  id="option-drop"
+                                  checked={field.value.includes("Drop wash")}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange([...field.value, "Drop wash"]);
+                                    } else {
+                                      field.onChange(
+                                        field.value.filter((s) => s !== "Drop wash")
+                                      );
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <label htmlFor="option-drop" className="text-sm text-foreground cursor-pointer font-medium">
+                              Drop wash
+                            </label>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Sales Department - Main Services */}
+                      <div className="border-t border-border/20 pt-6">
+                        <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                          Main Services (Multi-Select)
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {MAIN_SERVICES.map((service) => (
+                            <div key={service} className="flex items-center space-x-3">
+                              <Controller
+                                name="mainServices"
+                                control={control}
+                                render={({ field }) => (
+                                  <Checkbox
+                                    id={`main-${service}`}
+                                    checked={field.value.includes(service)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        field.onChange([...field.value, service]);
+                                      } else {
+                                        field.onChange(
+                                          field.value.filter((s) => s !== service)
+                                        );
+                                      }
+                                    }}
+                                  />
+                                )}
+                              />
+                              <label
+                                htmlFor={`main-${service}`}
+                                className="text-sm text-foreground cursor-pointer font-medium"
+                              >
+                                {service}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Sales Department - Additional Services */}
+                      <div className="border-t border-border/20 pt-6">
+                        <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+                          Additional Services (Multi-Select)
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {ADDITIONAL_SERVICES.map((service) => (
+                            <div key={service} className="flex items-center space-x-3">
+                              <Controller
+                                name="additionalServices"
+                                control={control}
+                                render={({ field }) => (
+                                  <Checkbox
+                                    id={`additional-${service}`}
+                                    checked={field.value.includes(service)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        field.onChange([...field.value, service]);
+                                      } else {
+                                        field.onChange(
+                                          field.value.filter((s) => s !== service)
+                                        );
+                                      }
+                                    }}
+                                  />
+                                )}
+                              />
+                              <label
+                                htmlFor={`additional-${service}`}
+                                className="text-sm text-foreground cursor-pointer font-medium"
+                              >
+                                {service}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Notes & Price */}
                   <div className="border-t border-border/20 pt-6 space-y-6">
