@@ -39,6 +39,8 @@ export interface ServiceRequest {
   service?: string;
   vin?: string;
   due?: string;
+  requestType: "sales" | "service";
+  roNumber?: string;
 }
 
 interface AuthContextType {
@@ -141,6 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         service: req.main_services?.[0],
         vin: req.stock_vin,
         due: `${req.due_date} ${req.due_time}`,
+        requestType: req.request_type || "sales",
+        roNumber: req.ro_number,
       }));
 
       setRequests(formattedRequests);
@@ -275,6 +279,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           notes: requestData.notes,
           status: requestData.status,
           price: requestData.price,
+          request_type: requestData.requestType,
+          ro_number: requestData.roNumber,
         })
         .select()
         .single();
@@ -432,6 +438,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.model !== undefined) updateData.model = data.model;
       if (data.color !== undefined) updateData.color = data.color;
       if (data.stockVin !== undefined) updateData.stock_vin = data.stockVin;
+      if (data.roNumber !== undefined) updateData.ro_number = data.roNumber;
 
       const { error } = await supabase
         .from("service_requests")

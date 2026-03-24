@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,9 @@ import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 
 interface RequestFormData {
+  department: "sales" | "service";
   serviceType: string;
+  roNumber: string;
   vin: string;
   year: number;
   make: string;
@@ -27,7 +29,7 @@ interface RequestFormData {
   notes: string;
 }
 
-const SERVICE_TYPES = [
+const SALES_SERVICE_TYPES = [
   "N/C Delivery",
   "U/C Delivery",
   "U/C Detail",
@@ -38,10 +40,20 @@ const SERVICE_TYPES = [
   "Custom Service (Other)",
 ];
 
+const SERVICE_SERVICE_TYPES = [
+  "Full Service Detail",
+  "Complimentary Service Wash",
+  "Interior Detail Only",
+  "Exterior Detail Only",
+  "Custom Service (Other)",
+];
+
 export default function Request() {
   const { register, handleSubmit, setValue, watch, reset } = useForm<RequestFormData>({
     defaultValues: {
-      serviceType: "N/C Delivery",
+      department: "sales",
+      serviceType: "",
+      roNumber: "",
       vin: "",
       year: new Date().getFullYear(),
       make: "",
@@ -51,44 +63,88 @@ export default function Request() {
     },
   });
 
-  const { user, addRequest } = useAuth();
+  const { user, addRequest, requests } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const department = watch("department");
   const serviceType = watch("serviceType");
+  const roNumber = watch("roNumber");
+
+  // Auto-generate RO number when department changes to service
+  useEffect(() => {
+    if (department === "service") {
+      const nextRoNumber = generateRONumber();
+      setValue("roNumber", nextRoNumber);
+      // Set a default service type for service requests
+      if (!serviceType) {
+        setValue("serviceType", SERVICE_SERVICE_TYPES[0]);
+      }
+    } else {
+      // Reset for sales requests
+      if (!serviceType) {
+        setValue("serviceType", SALES_SERVICE_TYPES[0]);
+      }
+    }
+  }, [department, setValue, serviceType]);
+
+  const generateRONumber = () => {
+    // Generate RO# based on current requests count for this dealership
+    const serviceRequests = requests.filter(r => r.requestType === "service");
+    const nextNumber = serviceRequests.length + 1;
+    return `RO-${String(nextNumber).padStart(4, "0")}`;
+  };
+
+  const currentServiceTypes = department === "service" ? SERVICE_SERVICE_TYPES : SALES_SERVICE_TYPES;
 
   const onSubmit = async (data: RequestFormData) => {
     setLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    addRequest({
-      requestedBy: user?.email || "unknown@dealership.com",
-      service: data.serviceType,
-      vin: data.vin,
-      year: data.year,
-      make: data.make,
-      model: data.model,
-      due: data.dueDateTime,
-      notes: data.notes,
-      status: "Pending",
-      price: 0,
-    });
+      await addRequest({
+        requestedBy: user?.email || "unknown@dealership.com",
+        requesterRole: user?.role,
+        stockVin: data.vin,
+        vehicleDescription: `${data.year} ${data.make} ${data.model}`,
+        year: data.year,
+        make: data.make,
+        model: data.model,
+        mainServices: [data.serviceType],
+        additionalServices: [],
+        notes: data.notes,
+        status: "Pending",
+        price: 0,
+        requestNumber: "",
+        dateRequested: new Date().toISOString().split("T")[0],
+        poNumber: "",
+        requestType: data.department,
+        roNumber: data.department === "service" ? data.roNumber : undefined,
+      });
 
-    setLoading(false);
-    setSuccess(true);
-    reset();
+      setLoading(false);
+      setSuccess(true);
+      reset();
 
-    toast({
-      title: "Request Submitted",
-      description: "Your service request has been successfully submitted.",
-    });
+      toast({
+        title: "Request Submitted",
+        description: `Your ${data.department} request has been successfully submitted.`,
+      });
 
-    // Redirect after success
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 2000);
+      // Redirect after success
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 2000);
+    } catch (error: any) {
+      setLoading(false);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to submit request.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -114,7 +170,7 @@ export default function Request() {
             Service Request
           </h1>
           <p className="text-muted-foreground uppercase tracking-widest text-sm">
-            Submit a new detailing request
+            Submit a new request
           </p>
           <div className="w-12 h-[2px] bg-primary mt-6" />
         </motion.div>
@@ -134,7 +190,7 @@ export default function Request() {
                   Request Submitted
                 </h3>
                 <p className="text-muted-foreground text-sm">
-                  Your service request has been submitted. Redirecting to dashboard...
+                  Your request has been submitted. Redirecting to dashboard...
                 </p>
               </div>
             </div>
@@ -150,17 +206,33 @@ export default function Request() {
           >
             <div className="glass-card p-8 md:p-10">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+                {/* Department Selection */}
+                <div>
+                  <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                    Department <span className="text-destructive">*</span>
+                  </label>
+                  <Select value={department} onValueChange={(value) => setValue("department", value as "sales" | "service")}>
+                    <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border/30">
+                      <SelectItem value="sales">Sales Department</SelectItem>
+                      <SelectItem value="service">Service Department</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Service Type */}
                 <div>
                   <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
                     Service Type <span className="text-destructive">*</span>
                   </label>
-                  <Select defaultValue={serviceType} onValueChange={(value) => setValue("serviceType", value)}>
+                  <Select value={serviceType} onValueChange={(value) => setValue("serviceType", value)}>
                     <SelectTrigger className="bg-background/50 border-border/50 text-foreground">
                       <SelectValue placeholder="Select a service" />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border/30">
-                      {SERVICE_TYPES.map((service) => (
+                      {currentServiceTypes.map((service) => (
                         <SelectItem key={service} value={service}>
                           {service}
                         </SelectItem>
@@ -168,6 +240,23 @@ export default function Request() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* RO Number - Service Department Only */}
+                {department === "service" && (
+                  <div className="border-t border-border/20 pt-8">
+                    <label htmlFor="roNumber" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                      Repair Order Number <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      id="roNumber"
+                      placeholder="Auto-generated RO number"
+                      {...register("roNumber", { required: true })}
+                      disabled
+                      className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50 opacity-75"
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">Auto-generated repair order number for this service request</p>
+                  </div>
+                )}
 
                 {/* Vehicle Info Section */}
                 <div className="border-t border-border/20 pt-8">
