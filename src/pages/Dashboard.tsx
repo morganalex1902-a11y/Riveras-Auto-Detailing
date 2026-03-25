@@ -1323,36 +1323,6 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Vehicle Stock/PO Info */}
-                  <div className="border-t border-border/20 pt-6">
-                    <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                      Stock & Order Information
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="stockVin" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                          Stock or VIN # <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                          id="stockVin"
-                          placeholder="Enter Stock or VIN number"
-                          {...register("stockVin", { required: true })}
-                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="poNumber" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                          PO# (Optional)
-                        </label>
-                        <Input
-                          id="poNumber"
-                          placeholder="Purchase Order number"
-                          {...register("poNumber")}
-                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
-                        />
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Vehicle Information */}
                   <div className="border-t border-border/20 pt-6">
@@ -1531,7 +1501,7 @@ export default function Dashboard() {
                               )}
                             />
                             <label htmlFor="option-wait" className="text-sm text-foreground cursor-pointer font-medium">
-                              ( ) Wait wash - Customer waits while service is completed
+                              Wait wash
                             </label>
                           </div>
 
@@ -1556,7 +1526,7 @@ export default function Dashboard() {
                               )}
                             />
                             <label htmlFor="option-drop" className="text-sm text-foreground cursor-pointer font-medium">
-                              ( ) Drop wash - Customer drops off vehicle and picks up later
+                              Drop wash
                             </label>
                           </div>
                         </div>
