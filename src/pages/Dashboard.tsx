@@ -1085,7 +1085,7 @@ export default function Dashboard() {
         service: data.mainServices[0] || "Custom Service",
         vin: data.stockVin,
         requestType: data.department,
-        roNumber: data.department === "service" ? (data.roNumber || generateRONumber()) : undefined,
+        roNumber: data.department === "service" ? data.roNumber : undefined,
       });
 
       reset();
@@ -1287,15 +1287,14 @@ export default function Dashboard() {
                       {watch("department") === "service" && (
                         <div>
                           <label htmlFor="roNumber" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                            RO # (Auto-Generated)
+                            RO # <span className="text-destructive">*</span>
                           </label>
                           <Input
                             id="roNumber"
                             type="text"
-                            disabled
-                            value={watch("roNumber") || generateRONumber()}
-                            {...register("roNumber")}
-                            className="bg-background/50 border-border/50 text-foreground"
+                            placeholder="Enter Repair Order number"
+                            {...register("roNumber", { required: watch("department") === "service" })}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
                           />
                         </div>
                       )}
