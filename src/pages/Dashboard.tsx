@@ -382,10 +382,16 @@ export default function Dashboard() {
   const additionalServices = watch("additionalServices");
   const department = watch("department");
 
-  // Auto-set Complementary Service Wash for service department
+  // Reset form when switching departments
   useEffect(() => {
     if (department === "service") {
-      setValue("mainServices", ["Complementary Service Wash"]);
+      // For service requests, clear and let user select
+      setValue("mainServices", []);
+      setValue("additionalServices", []);
+    } else {
+      // For sales requests, clear services
+      setValue("mainServices", []);
+      setValue("additionalServices", []);
     }
   }, [department, setValue]);
 
@@ -1049,9 +1055,9 @@ export default function Dashboard() {
     try {
       // Validate service department requirements
       if (data.department === "service") {
-        // Ensure Complementary Service Wash is selected
-        if (!data.mainServices.includes("Complementary Service Wash")) {
-          throw new Error("Complementary Service Wash must be selected");
+        // Ensure at least one service type is selected
+        if (data.mainServices.length === 0) {
+          throw new Error("Please select at least one service type");
         }
         // Ensure a wash type (Wait or Drop) is selected
         if (!data.additionalServices.includes("Wait wash") && !data.additionalServices.includes("Drop wash")) {
@@ -1415,13 +1421,13 @@ export default function Dashboard() {
                   {/* Services Section - Different based on Department */}
                   {watch("department") === "service" ? (
                     <>
-                      {/* Service Department - Main Services */}
+                      {/* Service Department - Service Types (Multi-Select) */}
                       <div className="border-t border-border/20 pt-6">
                         <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                          Service Type <span className="text-destructive">*</span>
+                          Service Types <span className="text-destructive">*</span>
                         </h4>
                         <div className="space-y-3">
-                          <div className="flex items-center space-x-3 p-3 rounded border border-border/30 bg-primary/5">
+                          <div className="flex items-center space-x-3">
                             <Controller
                               name="mainServices"
                               control={control}
@@ -1429,22 +1435,81 @@ export default function Dashboard() {
                                 <Checkbox
                                   id="service-1"
                                   checked={field.value.includes("Complementary Service Wash")}
-                                  disabled
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange([...field.value, "Complementary Service Wash"]);
+                                    } else {
+                                      field.onChange(
+                                        field.value.filter((s) => s !== "Complementary Service Wash")
+                                      );
+                                    }
+                                  }}
                                 />
                               )}
                             />
-                            <label htmlFor="service-1" className="text-sm text-foreground cursor-default font-medium">
-                              ✓ Complementary Service Wash (Standard)
+                            <label htmlFor="service-1" className="text-sm text-foreground cursor-pointer font-medium">
+                              1 - Complementary Service Wash
+                            </label>
+                          </div>
+
+                          <div className="flex items-center space-x-3">
+                            <Controller
+                              name="mainServices"
+                              control={control}
+                              render={({ field }) => (
+                                <Checkbox
+                                  id="service-2"
+                                  checked={field.value.includes("Service Full Detail")}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange([...field.value, "Service Full Detail"]);
+                                    } else {
+                                      field.onChange(
+                                        field.value.filter((s) => s !== "Service Full Detail")
+                                      );
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <label htmlFor="service-2" className="text-sm text-foreground cursor-pointer font-medium">
+                              2 - Service Full Detail
+                            </label>
+                          </div>
+
+                          <div className="flex items-center space-x-3">
+                            <Controller
+                              name="mainServices"
+                              control={control}
+                              render={({ field }) => (
+                                <Checkbox
+                                  id="service-3"
+                                  checked={field.value.includes("Other")}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange([...field.value, "Other"]);
+                                    } else {
+                                      field.onChange(
+                                        field.value.filter((s) => s !== "Other")
+                                      );
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <label htmlFor="service-3" className="text-sm text-foreground cursor-pointer font-medium">
+                              3 - Other
                             </label>
                           </div>
                         </div>
                       </div>
 
-                      {/* Service Department - Wash Type Selection */}
+                      {/* Service Department - Wash Type (Single Selection) */}
                       <div className="border-t border-border/20 pt-6">
                         <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                          Wash Type (Select One) <span className="text-destructive">*</span>
+                          Wash Type <span className="text-destructive">*</span>
                         </h4>
+                        <p className="text-xs text-muted-foreground mb-4">Choose how the customer will receive service</p>
                         <div className="space-y-3">
                           <div className="flex items-center space-x-3">
                             <Controller
@@ -1467,9 +1532,10 @@ export default function Dashboard() {
                               )}
                             />
                             <label htmlFor="option-wait" className="text-sm text-foreground cursor-pointer font-medium">
-                              ( ) Wait wash
+                              ( ) Wait wash - Customer waits while service is completed
                             </label>
                           </div>
+
                           <div className="flex items-center space-x-3">
                             <Controller
                               name="additionalServices"
@@ -1491,7 +1557,7 @@ export default function Dashboard() {
                               )}
                             />
                             <label htmlFor="option-drop" className="text-sm text-foreground cursor-pointer font-medium">
-                              ( ) Drop wash
+                              ( ) Drop wash - Customer drops off vehicle and picks up later
                             </label>
                           </div>
                         </div>
@@ -1581,11 +1647,13 @@ export default function Dashboard() {
                   <div className="border-t border-border/20 pt-6 space-y-6">
                     <div>
                       <label htmlFor="notes" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                        Special Instructions / Notes
+                        Notes
                       </label>
                       <Textarea
                         id="notes"
-                        placeholder="Any additional details or special instructions for this request..."
+                        placeholder={watch("department") === "service" && mainServices.includes("Other")
+                          ? "Please describe the custom service needed for this request..."
+                          : "Any additional details or special instructions for this request..."}
                         rows={3}
                         {...register("notes")}
                         className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
