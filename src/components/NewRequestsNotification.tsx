@@ -95,41 +95,70 @@ export function NewRequestsNotification({
           </DialogHeader>
 
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {sortedNotifications.map((notification) => (
-              <motion.div
-                key={notification.notificationId}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                whileHover={{ x: 4 }}
-              >
-                <Card
-                  className="p-4 cursor-pointer hover:bg-accent hover:border-primary transition-all group"
-                  onClick={async () => {
-                    await onRequestSelect(notification);
-                    setShowListModal(false);
-                  }}
+            {sortedNotifications.map((notification) => {
+              const isServiceRequest = notification.requestType === "service";
+
+              return (
+                <motion.div
+                  key={notification.notificationId}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  whileHover={{ x: 4 }}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg">{notification.requestNumber}</h3>
-                        <Badge variant="destructive" className="animate-pulse">
-                          Pending
-                        </Badge>
+                  <Card
+                    className={`p-4 cursor-pointer transition-all group border-2 ${
+                      isServiceRequest
+                        ? "bg-blue-950/20 border-blue-500/50 hover:bg-blue-950/30 hover:border-blue-400"
+                        : "bg-background hover:bg-accent hover:border-primary border-border"
+                    }`}
+                    onClick={async () => {
+                      await onRequestSelect(notification);
+                      setShowListModal(false);
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-lg">{notification.requestNumber}</h3>
+                          <Badge
+                            variant="destructive"
+                            className="animate-pulse"
+                          >
+                            Pending
+                          </Badge>
+                          <Badge
+                            variant={isServiceRequest ? "secondary" : "outline"}
+                            className={isServiceRequest ? "bg-blue-500 text-white font-semibold" : ""}
+                          >
+                            {isServiceRequest ? "SERVICE" : "SALES"}
+                          </Badge>
+                        </div>
+
+                        {/* RO Number for Service Requests */}
+                        {isServiceRequest && notification.roNumber && (
+                          <p className="text-xs font-mono bg-blue-500/20 text-blue-300 px-2 py-1 rounded mb-2 inline-block">
+                            RO #{notification.roNumber}
+                          </p>
+                        )}
+
+                        <p className="text-sm text-muted-foreground mb-2">
+                          <span className="font-medium">{notification.year} {notification.make} {notification.model}</span>
+                          {notification.color && <span> • {notification.color}</span>}
+                        </p>
+                        <p className="text-sm">
+                          Requested by: <span className="font-medium">{notification.requestedBy}</span>
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        <span className="font-medium">{notification.year} {notification.make} {notification.model}</span>
-                        {notification.color && <span> • {notification.color}</span>}
-                      </p>
-                      <p className="text-sm">
-                        Requested by: <span className="font-medium">{notification.requestedBy}</span>
-                      </p>
+                      <ChevronRight className={`w-5 h-5 transition-colors mt-1 ${
+                        isServiceRequest
+                          ? "text-blue-400 group-hover:text-blue-300"
+                          : "text-muted-foreground group-hover:text-primary"
+                      }`} />
                     </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors mt-1" />
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
 
           <div className="flex gap-2 justify-between pt-4 border-t">
