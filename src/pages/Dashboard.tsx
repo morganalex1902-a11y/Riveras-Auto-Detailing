@@ -1164,44 +1164,49 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Admin Tab Navigation */}
-          {user?.role === "admin" && (
-            <div className="flex gap-4 mb-6 flex-wrap">
-              <button
-                onClick={() => setActiveTab("requests")}
-                className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
-                  activeTab === "requests"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card border border-border/30 text-foreground hover:border-primary/50"
-                }`}
-              >
-                <AlertCircle className="w-4 h-4" />
-                Service Requests
-              </button>
-              <button
-                onClick={() => setActiveTab("accounts")}
-                className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
-                  activeTab === "accounts"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card border border-border/30 text-foreground hover:border-primary/50"
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                Account Management
-              </button>
-              <button
-                onClick={() => setActiveTab("activity")}
-                className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
-                  activeTab === "activity"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card border border-border/30 text-foreground hover:border-primary/50"
-                }`}
-              >
-                <AlertCircle className="w-4 h-4" />
-                Activity Log
-              </button>
-            </div>
-          )}
+          {/* Tab Navigation */}
+          <div className="flex gap-4 mb-6 flex-wrap">
+            {/* Service Requests Tab - Available to all users */}
+            <button
+              onClick={() => setActiveTab("requests")}
+              className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
+                activeTab === "requests"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+              }`}
+            >
+              <AlertCircle className="w-4 h-4" />
+              Service Requests
+            </button>
+
+            {/* Admin-only tabs */}
+            {user?.role === "admin" && (
+              <>
+                <button
+                  onClick={() => setActiveTab("accounts")}
+                  className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
+                    activeTab === "accounts"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  Account Management
+                </button>
+                <button
+                  onClick={() => setActiveTab("activity")}
+                  className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
+                    activeTab === "activity"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+                  }`}
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  Activity Log
+                </button>
+              </>
+            )}
+          </div>
 
           <div className="w-12 h-[2px] bg-primary mt-6" />
         </motion.div>
@@ -2251,8 +2256,7 @@ export default function Dashboard() {
         {/* Show Stats and Requests only on Requests Tab */}
         {activeTab === "requests" && (
           <>
-        {/* Admin View - Stats Cards */}
-        {user?.role === "admin" && (
+        {/* Stats Cards - Shown to all users */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -2337,9 +2341,8 @@ export default function Dashboard() {
           </div>
           )}
         </motion.div>
-        )}
 
-        {/* Search Bar */}
+        {/* Search Bar - Admin Only */}
         {user?.role === "admin" && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -2354,7 +2357,7 @@ export default function Dashboard() {
         </motion.div>
         )}
 
-        {/* Department Filter */}
+        {/* Department Filter - Admin Only */}
         {user?.role === "admin" && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
