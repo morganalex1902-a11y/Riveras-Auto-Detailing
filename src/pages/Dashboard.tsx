@@ -58,7 +58,6 @@ interface RequestFormData {
   stockVin: string;
   poNumber: string;
   roNumber: string;
-  vehicleDescription: string;
   year: number;
   make: string;
   model: string;
@@ -124,7 +123,6 @@ export default function Dashboard() {
       stockVin: "",
       poNumber: "",
       roNumber: "",
-      vehicleDescription: "",
       year: new Date().getFullYear(),
       make: "",
       model: "",
@@ -382,6 +380,20 @@ export default function Dashboard() {
 
   const mainServices = watch("mainServices");
   const additionalServices = watch("additionalServices");
+  const department = watch("department");
+
+  // Reset form when switching departments
+  useEffect(() => {
+    if (department === "service") {
+      // For service requests, clear and let user select
+      setValue("mainServices", []);
+      setValue("additionalServices", []);
+    } else {
+      // For sales requests, clear services
+      setValue("mainServices", []);
+      setValue("additionalServices", []);
+    }
+  }, [department, setValue]);
 
   // Listen for new request notifications
   useEffect(() => {
@@ -1041,6 +1053,18 @@ export default function Dashboard() {
     setSubmittingForm(true);
 
     try {
+      // Validate service department requirements
+      if (data.department === "service") {
+        // Ensure at least one service type is selected
+        if (data.mainServices.length === 0) {
+          throw new Error("Please select at least one service type");
+        }
+        // Ensure a wash type (Wait or Drop) is selected
+        if (!data.additionalServices.includes("Wait wash") && !data.additionalServices.includes("Drop wash")) {
+          throw new Error("Please select a wash type: Wait wash or Drop wash");
+        }
+      }
+
       await addRequest({
         requestNumber: generateRequestNumber(),
         requestedBy: user?.email || "unknown@dealership.com",
@@ -1048,7 +1072,7 @@ export default function Dashboard() {
         manager: data.manager || undefined,
         stockVin: data.stockVin,
         poNumber: data.poNumber || undefined,
-        vehicleDescription: data.vehicleDescription,
+        vehicleDescription: `${data.year} ${data.make} ${data.model}`,
         year: data.year,
         make: data.make,
         model: data.model,
@@ -1061,7 +1085,7 @@ export default function Dashboard() {
         service: data.mainServices[0] || "Custom Service",
         vin: data.stockVin,
         requestType: data.department,
-        roNumber: data.department === "service" ? (data.roNumber || generateRONumber()) : undefined,
+        roNumber: data.department === "service" ? data.roNumber : undefined,
       });
 
       reset();
@@ -1164,44 +1188,49 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Admin Tab Navigation */}
-          {user?.role === "admin" && (
-            <div className="flex gap-4 mb-6 flex-wrap">
-              <button
-                onClick={() => setActiveTab("requests")}
-                className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
-                  activeTab === "requests"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card border border-border/30 text-foreground hover:border-primary/50"
-                }`}
-              >
-                <AlertCircle className="w-4 h-4" />
-                Service Requests
-              </button>
-              <button
-                onClick={() => setActiveTab("accounts")}
-                className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
-                  activeTab === "accounts"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card border border-border/30 text-foreground hover:border-primary/50"
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                Account Management
-              </button>
-              <button
-                onClick={() => setActiveTab("activity")}
-                className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
-                  activeTab === "activity"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card border border-border/30 text-foreground hover:border-primary/50"
-                }`}
-              >
-                <AlertCircle className="w-4 h-4" />
-                Activity Log
-              </button>
-            </div>
-          )}
+          {/* Tab Navigation */}
+          <div className="flex gap-4 mb-6 flex-wrap">
+            {/* Service Requests Tab - Available to all users */}
+            <button
+              onClick={() => setActiveTab("requests")}
+              className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
+                activeTab === "requests"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+              }`}
+            >
+              <AlertCircle className="w-4 h-4" />
+              Service Requests
+            </button>
+
+            {/* Admin-only tabs */}
+            {user?.role === "admin" && (
+              <>
+                <button
+                  onClick={() => setActiveTab("accounts")}
+                  className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
+                    activeTab === "accounts"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  Account Management
+                </button>
+                <button
+                  onClick={() => setActiveTab("activity")}
+                  className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
+                    activeTab === "activity"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+                  }`}
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  Activity Log
+                </button>
+              </>
+            )}
+          </div>
 
           <div className="w-12 h-[2px] bg-primary mt-6" />
         </motion.div>
@@ -1258,15 +1287,14 @@ export default function Dashboard() {
                       {watch("department") === "service" && (
                         <div>
                           <label htmlFor="roNumber" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                            RO # (Auto-Generated)
+                            RO # <span className="text-destructive">*</span>
                           </label>
                           <Input
                             id="roNumber"
                             type="text"
-                            disabled
-                            value={watch("roNumber") || generateRONumber()}
-                            {...register("roNumber")}
-                            className="bg-background/50 border-border/50 text-foreground"
+                            placeholder="Enter Repair Order number"
+                            {...register("roNumber", { required: watch("department") === "service" })}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
                           />
                         </div>
                       )}
@@ -1329,21 +1357,8 @@ export default function Dashboard() {
                   {/* Vehicle Information */}
                   <div className="border-t border-border/20 pt-6">
                     <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                      Vehicle Description
+                      Vehicle Information
                     </h4>
-                    <div className="grid grid-cols-1 gap-4 mb-4">
-                      <div>
-                        <label htmlFor="vehicleDescription" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                          Vehicle Description <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                          id="vehicleDescription"
-                          placeholder="e.g., Customer vehicle, Trade-in, Lot vehicle, Fleet vehicle"
-                          {...register("vehicleDescription", { required: true })}
-                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
-                        />
-                      </div>
-                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                       <div>
                         <label htmlFor="year" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
@@ -1405,10 +1420,10 @@ export default function Dashboard() {
                   {/* Services Section - Different based on Department */}
                   {watch("department") === "service" ? (
                     <>
-                      {/* Service Department - Main Services */}
+                      {/* Service Department - Service Types (Multi-Select) */}
                       <div className="border-t border-border/20 pt-6">
                         <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                          Service Type (Select One)
+                          Service Types <span className="text-destructive">*</span>
                         </h4>
                         <div className="space-y-3">
                           <div className="flex items-center space-x-3">
@@ -1421,9 +1436,11 @@ export default function Dashboard() {
                                   checked={field.value.includes("Complementary Service Wash")}
                                   onCheckedChange={(checked) => {
                                     if (checked) {
-                                      field.onChange(["Complementary Service Wash"]);
+                                      field.onChange([...field.value, "Complementary Service Wash"]);
                                     } else {
-                                      field.onChange([]);
+                                      field.onChange(
+                                        field.value.filter((s) => s !== "Complementary Service Wash")
+                                      );
                                     }
                                   }}
                                 />
@@ -1433,6 +1450,7 @@ export default function Dashboard() {
                               1 - Complementary Service Wash
                             </label>
                           </div>
+
                           <div className="flex items-center space-x-3">
                             <Controller
                               name="mainServices"
@@ -1443,9 +1461,11 @@ export default function Dashboard() {
                                   checked={field.value.includes("Service Full Detail")}
                                   onCheckedChange={(checked) => {
                                     if (checked) {
-                                      field.onChange(["Service Full Detail"]);
+                                      field.onChange([...field.value, "Service Full Detail"]);
                                     } else {
-                                      field.onChange([]);
+                                      field.onChange(
+                                        field.value.filter((s) => s !== "Service Full Detail")
+                                      );
                                     }
                                   }}
                                 />
@@ -1455,6 +1475,7 @@ export default function Dashboard() {
                               2 - Service Full Detail
                             </label>
                           </div>
+
                           <div className="flex items-center space-x-3">
                             <Controller
                               name="mainServices"
@@ -1465,9 +1486,11 @@ export default function Dashboard() {
                                   checked={field.value.includes("Other")}
                                   onCheckedChange={(checked) => {
                                     if (checked) {
-                                      field.onChange(["Other"]);
+                                      field.onChange([...field.value, "Other"]);
                                     } else {
-                                      field.onChange([]);
+                                      field.onChange(
+                                        field.value.filter((s) => s !== "Other")
+                                      );
                                     }
                                   }}
                                 />
@@ -1480,58 +1503,60 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      {/* Service Department - Additional Options */}
+                      {/* Service Department - Wash Type (Single Selection) */}
                       <div className="border-t border-border/20 pt-6">
                         <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                          Service Options (Multi-Select)
+                          Wash Type <span className="text-destructive">*</span>
                         </h4>
+                        <p className="text-xs text-muted-foreground mb-4">Choose how the customer will receive service</p>
                         <div className="space-y-3">
                           <div className="flex items-center space-x-3">
                             <Controller
                               name="additionalServices"
                               control={control}
                               render={({ field }) => (
-                                <Checkbox
-                                  id="option-wash"
+                                <input
+                                  type="radio"
+                                  id="option-wait"
+                                  name="washType"
+                                  value="Wait wash"
                                   checked={field.value.includes("Wait wash")}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      field.onChange([...field.value, "Wait wash"]);
-                                    } else {
-                                      field.onChange(
-                                        field.value.filter((s) => s !== "Wait wash")
-                                      );
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      field.onChange(["Wait wash"]);
                                     }
                                   }}
+                                  className="w-4 h-4 cursor-pointer"
                                 />
                               )}
                             />
-                            <label htmlFor="option-wash" className="text-sm text-foreground cursor-pointer font-medium">
-                              Wait wash
+                            <label htmlFor="option-wait" className="text-sm text-foreground cursor-pointer font-medium">
+                              ( ) Wait wash - Customer waits while service is completed
                             </label>
                           </div>
+
                           <div className="flex items-center space-x-3">
                             <Controller
                               name="additionalServices"
                               control={control}
                               render={({ field }) => (
-                                <Checkbox
+                                <input
+                                  type="radio"
                                   id="option-drop"
+                                  name="washType"
+                                  value="Drop wash"
                                   checked={field.value.includes("Drop wash")}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      field.onChange([...field.value, "Drop wash"]);
-                                    } else {
-                                      field.onChange(
-                                        field.value.filter((s) => s !== "Drop wash")
-                                      );
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      field.onChange(["Drop wash"]);
                                     }
                                   }}
+                                  className="w-4 h-4 cursor-pointer"
                                 />
                               )}
                             />
                             <label htmlFor="option-drop" className="text-sm text-foreground cursor-pointer font-medium">
-                              Drop wash
+                              ( ) Drop wash - Customer drops off vehicle and picks up later
                             </label>
                           </div>
                         </div>
@@ -1621,11 +1646,13 @@ export default function Dashboard() {
                   <div className="border-t border-border/20 pt-6 space-y-6">
                     <div>
                       <label htmlFor="notes" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                        Special Instructions / Notes
+                        Notes
                       </label>
                       <Textarea
                         id="notes"
-                        placeholder="Any additional details or special instructions for this request..."
+                        placeholder={watch("department") === "service" && mainServices.includes("Other")
+                          ? "Please describe the custom service needed for this request..."
+                          : "Any additional details or special instructions for this request..."}
                         rows={3}
                         {...register("notes")}
                         className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
@@ -2251,8 +2278,7 @@ export default function Dashboard() {
         {/* Show Stats and Requests only on Requests Tab */}
         {activeTab === "requests" && (
           <>
-        {/* Admin View - Stats Cards */}
-        {user?.role === "admin" && (
+        {/* Stats Cards - Shown to all users */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -2337,9 +2363,8 @@ export default function Dashboard() {
           </div>
           )}
         </motion.div>
-        )}
 
-        {/* Search Bar */}
+        {/* Search Bar - Admin Only */}
         {user?.role === "admin" && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -2354,7 +2379,7 @@ export default function Dashboard() {
         </motion.div>
         )}
 
-        {/* Department Filter */}
+        {/* Department Filter - Admin Only */}
         {user?.role === "admin" && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
