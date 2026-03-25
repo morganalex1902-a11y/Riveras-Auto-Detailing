@@ -380,6 +380,14 @@ export default function Dashboard() {
 
   const mainServices = watch("mainServices");
   const additionalServices = watch("additionalServices");
+  const department = watch("department");
+
+  // Auto-set Complementary Service Wash for service department
+  useEffect(() => {
+    if (department === "service") {
+      setValue("mainServices", ["Complementary Service Wash"]);
+    }
+  }, [department, setValue]);
 
   // Listen for new request notifications
   useEffect(() => {
@@ -1039,6 +1047,18 @@ export default function Dashboard() {
     setSubmittingForm(true);
 
     try {
+      // Validate service department requirements
+      if (data.department === "service") {
+        // Ensure Complementary Service Wash is selected
+        if (!data.mainServices.includes("Complementary Service Wash")) {
+          throw new Error("Complementary Service Wash must be selected");
+        }
+        // Ensure a wash type (Wait or Drop) is selected
+        if (!data.additionalServices.includes("Wait wash") && !data.additionalServices.includes("Drop wash")) {
+          throw new Error("Please select a wash type: Wait wash or Drop wash");
+        }
+      }
+
       await addRequest({
         requestNumber: generateRequestNumber(),
         requestedBy: user?.email || "unknown@dealership.com",
@@ -1398,10 +1418,10 @@ export default function Dashboard() {
                       {/* Service Department - Main Services */}
                       <div className="border-t border-border/20 pt-6">
                         <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                          Service Type (Select One)
+                          Service Type <span className="text-destructive">*</span>
                         </h4>
                         <div className="space-y-3">
-                          <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-3 p-3 rounded border border-border/30 bg-primary/5">
                             <Controller
                               name="mainServices"
                               control={control}
@@ -1409,71 +1429,21 @@ export default function Dashboard() {
                                 <Checkbox
                                   id="service-1"
                                   checked={field.value.includes("Complementary Service Wash")}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      field.onChange(["Complementary Service Wash"]);
-                                    } else {
-                                      field.onChange([]);
-                                    }
-                                  }}
+                                  disabled
                                 />
                               )}
                             />
-                            <label htmlFor="service-1" className="text-sm text-foreground cursor-pointer font-medium">
-                              1 - Complementary Service Wash
-                            </label>
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            <Controller
-                              name="mainServices"
-                              control={control}
-                              render={({ field }) => (
-                                <Checkbox
-                                  id="service-2"
-                                  checked={field.value.includes("Service Full Detail")}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      field.onChange(["Service Full Detail"]);
-                                    } else {
-                                      field.onChange([]);
-                                    }
-                                  }}
-                                />
-                              )}
-                            />
-                            <label htmlFor="service-2" className="text-sm text-foreground cursor-pointer font-medium">
-                              2 - Service Full Detail
-                            </label>
-                          </div>
-                          <div className="flex items-center space-x-3">
-                            <Controller
-                              name="mainServices"
-                              control={control}
-                              render={({ field }) => (
-                                <Checkbox
-                                  id="service-3"
-                                  checked={field.value.includes("Other")}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      field.onChange(["Other"]);
-                                    } else {
-                                      field.onChange([]);
-                                    }
-                                  }}
-                                />
-                              )}
-                            />
-                            <label htmlFor="service-3" className="text-sm text-foreground cursor-pointer font-medium">
-                              3 - Other
+                            <label htmlFor="service-1" className="text-sm text-foreground cursor-default font-medium">
+                              ✓ Complementary Service Wash (Standard)
                             </label>
                           </div>
                         </div>
                       </div>
 
-                      {/* Service Department - Additional Options */}
+                      {/* Service Department - Wash Type Selection */}
                       <div className="border-t border-border/20 pt-6">
                         <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                          Service Options (Multi-Select)
+                          Wash Type (Select One) <span className="text-destructive">*</span>
                         </h4>
                         <div className="space-y-3">
                           <div className="flex items-center space-x-3">
@@ -1481,23 +1451,23 @@ export default function Dashboard() {
                               name="additionalServices"
                               control={control}
                               render={({ field }) => (
-                                <Checkbox
-                                  id="option-wash"
+                                <input
+                                  type="radio"
+                                  id="option-wait"
+                                  name="washType"
+                                  value="Wait wash"
                                   checked={field.value.includes("Wait wash")}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      field.onChange([...field.value, "Wait wash"]);
-                                    } else {
-                                      field.onChange(
-                                        field.value.filter((s) => s !== "Wait wash")
-                                      );
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      field.onChange(["Wait wash"]);
                                     }
                                   }}
+                                  className="w-4 h-4 cursor-pointer"
                                 />
                               )}
                             />
-                            <label htmlFor="option-wash" className="text-sm text-foreground cursor-pointer font-medium">
-                              Wait wash
+                            <label htmlFor="option-wait" className="text-sm text-foreground cursor-pointer font-medium">
+                              ( ) Wait wash
                             </label>
                           </div>
                           <div className="flex items-center space-x-3">
@@ -1505,23 +1475,23 @@ export default function Dashboard() {
                               name="additionalServices"
                               control={control}
                               render={({ field }) => (
-                                <Checkbox
+                                <input
+                                  type="radio"
                                   id="option-drop"
+                                  name="washType"
+                                  value="Drop wash"
                                   checked={field.value.includes("Drop wash")}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      field.onChange([...field.value, "Drop wash"]);
-                                    } else {
-                                      field.onChange(
-                                        field.value.filter((s) => s !== "Drop wash")
-                                      );
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      field.onChange(["Drop wash"]);
                                     }
                                   }}
+                                  className="w-4 h-4 cursor-pointer"
                                 />
                               )}
                             />
                             <label htmlFor="option-drop" className="text-sm text-foreground cursor-pointer font-medium">
-                              Drop wash
+                              ( ) Drop wash
                             </label>
                           </div>
                         </div>
