@@ -58,7 +58,6 @@ interface RequestFormData {
   stockVin: string;
   poNumber: string;
   roNumber: string;
-  vehicleDescription: string;
   year: number;
   make: string;
   model: string;
@@ -124,7 +123,6 @@ export default function Dashboard() {
       stockVin: "",
       poNumber: "",
       roNumber: "",
-      vehicleDescription: "",
       year: new Date().getFullYear(),
       make: "",
       model: "",
@@ -1048,7 +1046,7 @@ export default function Dashboard() {
         manager: data.manager || undefined,
         stockVin: data.stockVin,
         poNumber: data.poNumber || undefined,
-        vehicleDescription: data.vehicleDescription,
+        vehicleDescription: `${data.year} ${data.make} ${data.model}`,
         year: data.year,
         make: data.make,
         model: data.model,
@@ -1334,21 +1332,8 @@ export default function Dashboard() {
                   {/* Vehicle Information */}
                   <div className="border-t border-border/20 pt-6">
                     <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
-                      Vehicle Description
+                      Vehicle Information
                     </h4>
-                    <div className="grid grid-cols-1 gap-4 mb-4">
-                      <div>
-                        <label htmlFor="vehicleDescription" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                          Vehicle Description <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                          id="vehicleDescription"
-                          placeholder="e.g., Customer vehicle, Trade-in, Lot vehicle, Fleet vehicle"
-                          {...register("vehicleDescription", { required: true })}
-                          className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
-                        />
-                      </div>
-                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                       <div>
                         <label htmlFor="year" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
