@@ -1298,6 +1298,20 @@ export default function Dashboard() {
                           />
                         </div>
                       )}
+                      {watch("department") === "sales" && (
+                        <div>
+                          <label htmlFor="stockVin" className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
+                            Stock # or VIN <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            id="stockVin"
+                            type="text"
+                            placeholder="Enter stock number or VIN"
+                            {...register("stockVin", { required: watch("department") === "sales" })}
+                            className="bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/50"
+                          />
+                        </div>
+                      )}
                       <div>
                         <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
                           Sales/Service Advisor (Auto-Filled)
