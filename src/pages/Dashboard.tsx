@@ -771,16 +771,15 @@ export default function Dashboard() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await deleteAllRequests();
-      setSelectedRequestIds(new Set());
+      await refreshRequests();
       toast({
-        title: "List Reset",
-        description: "All requests cleared. Starting fresh.",
+        title: "Refreshed",
+        description: "Your request list has been updated.",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to reset request list.",
+        description: "Failed to refresh request list.",
         variant: "destructive",
       });
     } finally {
