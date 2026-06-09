@@ -164,7 +164,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (queryError) {
-        console.error("Database query error:", queryError);
+        console.error("Database query error:", JSON.stringify(queryError, null, 2));
+        console.error("Query error message:", queryError.message);
+        console.error("Query error status:", queryError.status);
         throw new Error("Invalid email or password.");
       }
 
@@ -218,12 +220,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }));
     } catch (error: any) {
       console.error("Login error:", error);
-      console.error("Error details:", {
+      console.error("Error details:", JSON.stringify({
         message: error?.message,
         code: error?.code,
         status: error?.status,
         hint: error?.hint,
-      });
+        fullError: JSON.stringify(error, null, 2),
+      }, null, 2));
       throw new Error(error?.message || "Login failed. Please try again.");
     }
   };
