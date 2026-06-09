@@ -104,11 +104,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const effectiveUserId = userId;
       let hiddenIds = new Set<number>();
       if (effectiveUserId) {
-        const { data: hiddenData } = await supabase
+        const { data: hiddenData, error: hiddenError } = await supabase
           .from("hidden_requests")
           .select("request_id")
           .eq("user_id", effectiveUserId);
-        hiddenIds = new Set((hiddenData || []).map((h: any) => h.request_id));
+        if (!hiddenError) {
+          hiddenIds = new Set((hiddenData || []).map((h: any) => h.request_id));
+        }
       }
 
       let query = supabase
