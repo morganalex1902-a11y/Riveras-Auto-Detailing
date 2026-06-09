@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let hiddenIds = new Set<number>();
       if (effectiveUserId) {
         const { data: hiddenData, error: hiddenError } = await supabase
-          .from("hidden_requests")
+          .from("dismissed_requests")
           .select("request_id")
           .eq("user_id", effectiveUserId);
         if (!hiddenError) {
@@ -468,7 +468,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!user?.id) throw new Error("User not found");
 
       const { error } = await supabase
-        .from("hidden_requests")
+        .from("dismissed_requests")
         .upsert({ user_id: user.id, request_id: id }, { onConflict: "user_id,request_id" });
 
       if (error) throw error;
@@ -493,7 +493,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (currentIds.length > 0) {
         const records = currentIds.map((id) => ({ user_id: user.id!, request_id: id }));
         const { error } = await supabase
-          .from("hidden_requests")
+          .from("dismissed_requests")
           .upsert(records, { onConflict: "user_id,request_id" });
 
         if (error) throw error;

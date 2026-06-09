@@ -870,7 +870,7 @@ export default function Dashboard() {
       if (matchingIds.length > 0 && user?.id) {
         const records = matchingIds.map((id) => ({ user_id: user.id!, request_id: id }));
         const { error } = await supabase
-          .from("hidden_requests")
+          .from("dismissed_requests")
           .upsert(records, { onConflict: "user_id,request_id" });
 
         if (error) throw error;
