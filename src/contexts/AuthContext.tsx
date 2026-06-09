@@ -83,7 +83,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (session?.user) {
             setUser(session.user);
             setIsLoggedIn(true);
-            // Fetch requests for this user's dealership
             if (session.user.dealership_id) {
               fetchRequests(session.user.dealership_id, session.user.role, session.user.email);
             }
@@ -164,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (queryError) {
-        console.error("Database query error:", queryError);
+        console.error("Database query error:", queryError.message);
         throw new Error("Invalid email or password.");
       }
 
@@ -217,13 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }));
     } catch (error: any) {
-      console.error("Login error:", error);
-      console.error("Error details:", {
-        message: error?.message,
-        code: error?.code,
-        status: error?.status,
-        hint: error?.hint,
-      });
+      console.error("Login error:", error?.message);
       throw new Error(error?.message || "Login failed. Please try again.");
     }
   };
