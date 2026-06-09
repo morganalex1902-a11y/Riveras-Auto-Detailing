@@ -199,6 +199,11 @@ export default function Dashboard() {
   const [selectedRequestForDetail, setSelectedRequestForDetail] = useState<ServiceRequest | null>(null);
   const [isDeletingAllRequests, setIsDeletingAllRequests] = useState(false);
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [showDeleteByDateDialog, setShowDeleteByDateDialog] = useState(false);
+  const [deleteByDateOption, setDeleteByDateOption] = useState("thisWeek");
+  const [deleteCustomStartDate, setDeleteCustomStartDate] = useState("");
+  const [deleteCustomEndDate, setDeleteCustomEndDate] = useState("");
+  const [isDeletingByDate, setIsDeletingByDate] = useState(false);
   const [selectedRequestIds, setSelectedRequestIds] = useState<Set<number>>(new Set());
   const [isDeletingSelected, setIsDeletingSelected] = useState(false);
   const [showDeleteSelectedDialog, setShowDeleteSelectedDialog] = useState(false);
@@ -838,6 +843,43 @@ export default function Dashboard() {
       });
     } finally {
       setIsDeletingAllRequests(false);
+    }
+  };
+
+  const handleDeleteByDateRange = async () => {
+    setIsDeletingByDate(true);
+    try {
+      let range: { start: string; end: string };
+      if (deleteByDateOption === "custom") {
+        if (!deleteCustomStartDate || !deleteCustomEndDate) {
+          toast({ title: "Error", description: "Please select both start and end dates.", variant: "destructive" });
+          return;
+        }
+        range = { start: deleteCustomStartDate, end: deleteCustomEndDate };
+      } else {
+        range = getDateRangeFromOption(deleteByDateOption);
+      }
+
+      const endDateObj = new Date(range.end);
+      endDateObj.setDate(endDateObj.getDate() + 1);
+      const adjustedEnd = endDateObj.toISOString().split("T")[0];
+
+      const { error } = await supabase
+        .from("service_requests")
+        .delete()
+        .eq("dealership_id", user!.dealership_id!)
+        .gte("date_requested", range.start)
+        .lt("date_requested", adjustedEnd);
+
+      if (error) throw error;
+
+      await refreshRequests();
+      setShowDeleteByDateDialog(false);
+      toast({ title: "Deleted", description: "Requests in the selected date range have been deleted." });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete requests.", variant: "destructive" });
+    } finally {
+      setIsDeletingByDate(false);
     }
   };
 
@@ -2633,35 +2675,72 @@ export default function Dashboard() {
                   </div>
                 </DialogContent>
               </Dialog>
-              <Dialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
-                <Button
-                  onClick={() => setShowDeleteAllDialog(true)}
-                  className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-display uppercase tracking-widest text-xs"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete All
-                </Button>
-                <DialogContent>
+              <Button
+                onClick={() => setShowDeleteByDateDialog(true)}
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-display uppercase tracking-widest text-xs"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete by Date
+              </Button>
+              <Dialog open={showDeleteByDateDialog} onOpenChange={setShowDeleteByDateDialog}>
+                <DialogContent className="bg-card border-border/30">
                   <DialogHeader>
-                    <DialogTitle>Delete All Requests?</DialogTitle>
-                    <DialogDescription>
-                      This will permanently delete all service requests from your dashboard. This action cannot be undone.
+                    <DialogTitle className="font-display uppercase tracking-wider">Delete by Date Range</DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
+                      Select a date range to permanently delete service requests. This cannot be undone.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="flex gap-3 justify-end mt-6">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowDeleteAllDialog(false)}
-                      disabled={isDeletingAllRequests}
-                    >
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      {[
+                        { value: "thisWeek", label: "This Week" },
+                        { value: "lastWeek", label: "Last Week" },
+                        { value: "thisMonth", label: "This Month" },
+                        { value: "lastMonth", label: "Last Month" },
+                        { value: "custom", label: "Custom Range" },
+                      ].map((opt) => (
+                        <label key={opt.value} className="flex items-center gap-3 cursor-pointer p-3 rounded border border-border/30 hover:bg-background/50 transition-colors">
+                          <input
+                            type="radio"
+                            name="deleteDateRange"
+                            value={opt.value}
+                            checked={deleteByDateOption === opt.value}
+                            onChange={(e) => setDeleteByDateOption(e.target.value)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm font-medium">{opt.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {deleteByDateOption === "custom" && (
+                      <div className="space-y-3 border-t border-border/30 pt-4">
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-1 block">Start Date</label>
+                          <input
+                            type="date"
+                            value={deleteCustomStartDate}
+                            onChange={(e) => setDeleteCustomStartDate(e.target.value)}
+                            className="w-full px-3 py-2 bg-background/50 border border-border/30 rounded text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-1 block">End Date</label>
+                          <input
+                            type="date"
+                            value={deleteCustomEndDate}
+                            onChange={(e) => setDeleteCustomEndDate(e.target.value)}
+                            className="w-full px-3 py-2 bg-background/50 border border-border/30 rounded text-sm"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-3 justify-end mt-6 pt-6 border-t border-border/30">
+                    <Button variant="outline" onClick={() => setShowDeleteByDateDialog(false)} disabled={isDeletingByDate}>
                       Cancel
                     </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={handleDeleteAllRequests}
-                      disabled={isDeletingAllRequests}
-                    >
-                      {isDeletingAllRequests ? "Deleting..." : "Delete All"}
+                    <Button variant="destructive" onClick={handleDeleteByDateRange} disabled={isDeletingByDate}>
+                      {isDeletingByDate ? "Deleting..." : "Delete"}
                     </Button>
                   </div>
                 </DialogContent>
