@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(session.user);
             setIsLoggedIn(true);
             if (session.user.dealership_id) {
-              fetchRequests(session.user.dealership_id, session.user.role, session.user.email);
+              fetchRequests(session.user.dealership_id, session.user.role, session.user.email, session.user.id);
             }
           }
         }
@@ -99,8 +99,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
   }, []);
 
-  const fetchRequests = async (dealershipId: string, role: string, userEmail?: string) => {
+  const fetchRequests = async (dealershipId: string, role: string, userEmail?: string, userId?: string) => {
     try {
+      const effectiveUserId = userId;
+      let hiddenIds = new Set<number>();
+      if (effectiveUserId) {
+        const { data: hiddenData, error: hiddenError } = await supabase
+          .from("dismissed_requests")
+          .select("request_id")
+          .eq("user_id", effectiveUserId);
+        if (!hiddenError) {
+          hiddenIds = new Set((hiddenData || []).map((h: any) => h.request_id));
+        }
+      }
+
       let query = supabase
         .from("service_requests")
         .select("*")
@@ -111,10 +123,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const { data, error } = await query.order("created_at", { ascending: false });
-      
+
       if (error) throw error;
 
-      const formattedRequests: ServiceRequest[] = (data || []).map((req: any) => ({
+      const formattedRequests: ServiceRequest[] = (data || [])
+        .filter((req: any) => !hiddenIds.has(req.id))
+        .map((req: any) => ({
         id: req.id,
         requestNumber: req.request_number,
         requestedBy: req.requested_by,
@@ -201,7 +215,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Fetch requests for this user
       if (userList.dealership_id) {
-        fetchRequests(userList.dealership_id, userList.role, userList.email);
+        fetchRequests(userList.dealership_id, userList.role, userList.email, userList.id);
       }
 
       // Store session in localStorage
@@ -282,7 +296,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Refresh requests list
       if (user.dealership_id) {
-        fetchRequests(user.dealership_id, user.role);
+        fetchRequests(user.dealership_id, user.role, user.email, user.id);
       }
 
       // Notify admins
@@ -451,18 +465,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteRequest = async (id: number) => {
     try {
+      if (!user?.id) throw new Error("User not found");
+
       const { error } = await supabase
-        .from("service_requests")
-        .delete()
-        .eq("id", id);
+        .from("dismissed_requests")
+        .upsert({ user_id: user.id, request_id: id }, { onConflict: "user_id,request_id" });
 
       if (error) throw error;
 
-      // Update local state
       setRequests(requests.filter((r) => r.id !== id));
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
-      console.error("Error deleting request:", errorMessage);
+      console.error("Error hiding request:", errorMessage);
       throw new Error(errorMessage);
     }
   };
@@ -473,21 +487,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteAllRequests = async () => {
     try {
-      if (!user?.dealership_id) throw new Error("User dealership not found");
+      if (!user?.id) throw new Error("User not found");
 
-      const { error } = await supabase
-        .from("service_requests")
-        .delete()
-        .eq("dealership_id", user.dealership_id);
+      const currentIds = requests.map((r) => r.id);
+      if (currentIds.length > 0) {
+        const records = currentIds.map((id) => ({ user_id: user.id!, request_id: id }));
+        const { error } = await supabase
+          .from("dismissed_requests")
+          .upsert(records, { onConflict: "user_id,request_id" });
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
-      // Clear local state
       setRequests([]);
       setNewRequestCount(0);
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
-      console.error("Error deleting all requests:", errorMessage);
+      console.error("Error hiding all requests:", errorMessage);
       throw new Error(errorMessage);
     }
   };
@@ -495,14 +511,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshRequests = useCallback(async () => {
     try {
       if (user?.dealership_id) {
-        await fetchRequests(user.dealership_id, user.role, user.email);
+        await fetchRequests(user.dealership_id, user.role, user.email, user.id);
       }
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
       console.error("Error refreshing requests:", errorMessage);
       throw new Error(errorMessage);
     }
-  }, [user?.dealership_id, user?.role, user?.email]);
+  }, [user?.dealership_id, user?.role, user?.email, user?.id]);
 
   const getRequestsByDateRange = async (startDate: string, endDate: string): Promise<ServiceRequest[]> => {
     try {

@@ -771,16 +771,15 @@ export default function Dashboard() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await deleteAllRequests();
-      setSelectedRequestIds(new Set());
+      await refreshRequests();
       toast({
-        title: "List Reset",
-        description: "All requests cleared. Starting fresh.",
+        title: "Refreshed",
+        description: "Your request list has been updated.",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to reset request list.",
+        description: "Failed to refresh request list.",
         variant: "destructive",
       });
     } finally {
@@ -864,18 +863,22 @@ export default function Dashboard() {
       endDateObj.setDate(endDateObj.getDate() + 1);
       const adjustedEnd = endDateObj.toISOString().split("T")[0];
 
-      const { error } = await supabase
-        .from("service_requests")
-        .delete()
-        .eq("dealership_id", user!.dealership_id!)
-        .gte("date_requested", range.start)
-        .lt("date_requested", adjustedEnd);
+      const matchingIds = requests
+        .filter((r) => r.dateRequested >= range.start && r.dateRequested < adjustedEnd)
+        .map((r) => r.id);
 
-      if (error) throw error;
+      if (matchingIds.length > 0 && user?.id) {
+        const records = matchingIds.map((id) => ({ user_id: user.id!, request_id: id }));
+        const { error } = await supabase
+          .from("dismissed_requests")
+          .upsert(records, { onConflict: "user_id,request_id" });
+
+        if (error) throw error;
+      }
 
       await refreshRequests();
       setShowDeleteByDateDialog(false);
-      toast({ title: "Deleted", description: "Requests in the selected date range have been deleted." });
+      toast({ title: "Removed", description: "Requests in the selected date range have been removed from your view." });
     } catch (error) {
       toast({ title: "Error", description: "Failed to delete requests.", variant: "destructive" });
     } finally {
