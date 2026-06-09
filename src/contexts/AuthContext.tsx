@@ -73,6 +73,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   // Initialize auth session on mount
+  const checkBiweeklyReset = async (dealershipId: string) => {
+    const key = `biweekly_reset_${dealershipId}`;
+    const lastReset = localStorage.getItem(key);
+    const now = new Date();
+
+    if (!lastReset) {
+      localStorage.setItem(key, now.toISOString());
+      return;
+    }
+
+    const daysSinceReset = (now.getTime() - new Date(lastReset).getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceReset >= 14) {
+      try {
+        await supabase.from("service_requests").delete().eq("dealership_id", dealershipId);
+        localStorage.setItem(key, now.toISOString());
+        console.log("Biweekly reset completed for dealership:", dealershipId);
+      } catch (error) {
+        console.error("Biweekly reset failed:", error);
+      }
+    }
+  };
+
   useEffect(() => {
     const initializeAuth = async () => {
       try {
@@ -83,8 +105,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (session?.user) {
             setUser(session.user);
             setIsLoggedIn(true);
-            // Fetch requests for this user's dealership
             if (session.user.dealership_id) {
+              await checkBiweeklyReset(session.user.dealership_id);
               fetchRequests(session.user.dealership_id, session.user.role, session.user.email);
             }
           }
@@ -164,9 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (queryError) {
-        console.error("Database query error:", JSON.stringify(queryError, null, 2));
-        console.error("Query error message:", queryError.message);
-        console.error("Query error status:", queryError.status);
+        console.error("Database query error:", queryError.message);
         throw new Error("Invalid email or password.");
       }
 
@@ -202,8 +222,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       setIsLoggedIn(true);
 
-      // Fetch requests for this user
+      // Fetch requests for this user (after biweekly check)
       if (userList.dealership_id) {
+        await checkBiweeklyReset(userList.dealership_id);
         fetchRequests(userList.dealership_id, userList.role, userList.email);
       }
 
@@ -219,14 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }));
     } catch (error: any) {
-      console.error("Login error:", error);
-      console.error("Error details:", JSON.stringify({
-        message: error?.message,
-        code: error?.code,
-        status: error?.status,
-        hint: error?.hint,
-        fullError: JSON.stringify(error, null, 2),
-      }, null, 2));
+      console.error("Login error:", error?.message);
       throw new Error(error?.message || "Login failed. Please try again.");
     }
   };

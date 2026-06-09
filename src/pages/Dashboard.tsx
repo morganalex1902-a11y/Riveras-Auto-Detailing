@@ -199,6 +199,9 @@ export default function Dashboard() {
   const [selectedRequestForDetail, setSelectedRequestForDetail] = useState<ServiceRequest | null>(null);
   const [isDeletingAllRequests, setIsDeletingAllRequests] = useState(false);
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [selectedRequestIds, setSelectedRequestIds] = useState<Set<number>>(new Set());
+  const [isDeletingSelected, setIsDeletingSelected] = useState(false);
+  const [showDeleteSelectedDialog, setShowDeleteSelectedDialog] = useState(false);
   const [showDateRangeDialog, setShowDateRangeDialog] = useState(false);
   const [dateRangeOption, setDateRangeOption] = useState("thisWeek");
   const [customStartDate, setCustomStartDate] = useState("");
@@ -763,19 +766,58 @@ export default function Dashboard() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refreshRequests();
+      await deleteAllRequests();
+      setSelectedRequestIds(new Set());
       toast({
-        title: "Refreshed",
-        description: "Service request list has been refreshed.",
+        title: "List Reset",
+        description: "All requests cleared. Starting fresh.",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to refresh service requests.",
+        description: "Failed to reset request list.",
         variant: "destructive",
       });
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    setIsDeletingSelected(true);
+    const ids = Array.from(selectedRequestIds);
+    try {
+      await Promise.all(ids.map((id) => deleteRequest(id)));
+      setSelectedRequestIds(new Set());
+      setShowDeleteSelectedDialog(false);
+      toast({
+        title: "Deleted",
+        description: `${ids.length} request(s) have been deleted.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete selected requests.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingSelected(false);
+    }
+  };
+
+  const toggleSelectRequest = (id: number) => {
+    setSelectedRequestIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedRequestIds.size === filteredRequests.length && filteredRequests.length > 0) {
+      setSelectedRequestIds(new Set());
+    } else {
+      setSelectedRequestIds(new Set(filteredRequests.map((r) => r.id)));
     }
   };
 
@@ -2428,14 +2470,43 @@ export default function Dashboard() {
           </Select>
 
           {user?.role === "admin" && (
-            <div className="flex gap-2 ml-auto">
+            <div className="flex gap-2 ml-auto flex-wrap">
+              {selectedRequestIds.size > 0 && (
+                <>
+                  <Button
+                    onClick={() => setShowDeleteSelectedDialog(true)}
+                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-display uppercase tracking-widest text-xs"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Selected ({selectedRequestIds.size})
+                  </Button>
+                  <Dialog open={showDeleteSelectedDialog} onOpenChange={setShowDeleteSelectedDialog}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Delete Selected Requests?</DialogTitle>
+                        <DialogDescription>
+                          This will permanently delete {selectedRequestIds.size} selected request(s). This action cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex gap-3 justify-end mt-6">
+                        <Button variant="outline" onClick={() => setShowDeleteSelectedDialog(false)} disabled={isDeletingSelected}>
+                          Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleDeleteSelected} disabled={isDeletingSelected}>
+                          {isDeletingSelected ? "Deleting..." : `Delete ${selectedRequestIds.size} Request(s)`}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </>
+              )}
               <Button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
                 className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
-                {isRefreshing ? "Refreshing..." : "Refresh"}
+                {isRefreshing ? "Resetting..." : "Refresh"}
               </Button>
               <Button
                 onClick={handleExport}
@@ -2611,6 +2682,13 @@ export default function Dashboard() {
               <Table>
                 <TableHeader className="border-b border-border/30">
                   <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={filteredRequests.length > 0 && selectedRequestIds.size === filteredRequests.length}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                       Request #
                     </TableHead>
@@ -2651,7 +2729,7 @@ export default function Dashboard() {
                 <TableBody>
                   {filteredRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={departmentFilter === "all" ? 12 : 11} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={departmentFilter === "all" ? 13 : 12} className="text-center py-12 text-muted-foreground">
                         No requests found
                       </TableCell>
                     </TableRow>
@@ -2659,8 +2737,15 @@ export default function Dashboard() {
                     filteredRequests.map((request) => (
                       <TableRow
                         key={request.id}
-                        className="border-b border-border/20 hover:bg-card/50 transition-colors"
+                        className={`border-b border-border/20 hover:bg-card/50 transition-colors ${selectedRequestIds.has(request.id) ? "bg-primary/5" : ""}`}
                       >
+                        <TableCell className="w-10">
+                          <Checkbox
+                            checked={selectedRequestIds.has(request.id)}
+                            onCheckedChange={() => toggleSelectRequest(request.id)}
+                            aria-label={`Select request ${request.requestNumber}`}
+                          />
+                        </TableCell>
                         <TableCell className="font-display text-sm text-primary">
                           <HighlightText text={request.requestNumber} searchTerm={searchTerm} />
                         </TableCell>
