@@ -873,12 +873,14 @@ export default function Dashboard() {
         .map((r) => r.id);
 
       if (matchingIds.length > 0 && user?.id) {
-        const records = matchingIds.map((id) => ({ user_id: user.id!, request_id: id }));
-        const { error } = await supabase
-          .from("dismissed_requests")
-          .upsert(records, { onConflict: "user_id,request_id" });
-
-        if (error) throw error;
+        try {
+          const raw = localStorage.getItem(`hidden_requests_${user.id}`);
+          const existing: number[] = raw ? JSON.parse(raw) : [];
+          const updated = new Set([...existing, ...matchingIds]);
+          localStorage.setItem(`hidden_requests_${user.id}`, JSON.stringify([...updated]));
+        } catch {
+          // ignore storage errors
+        }
       }
 
       await refreshRequests();

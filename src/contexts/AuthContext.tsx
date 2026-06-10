@@ -99,19 +99,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
   }, []);
 
+  const getHiddenRequestIds = (userId: string): Set<number> => {
+    try {
+      const raw = localStorage.getItem(`hidden_requests_${userId}`);
+      if (!raw) return new Set();
+      return new Set(JSON.parse(raw) as number[]);
+    } catch {
+      return new Set();
+    }
+  };
+
+  const saveHiddenRequestIds = (userId: string, ids: Set<number>) => {
+    try {
+      localStorage.setItem(`hidden_requests_${userId}`, JSON.stringify([...ids]));
+    } catch {
+      // ignore storage errors
+    }
+  };
+
   const fetchRequests = async (dealershipId: string, role: string, userEmail?: string, userId?: string) => {
     try {
-      const effectiveUserId = userId;
-      let hiddenIds = new Set<number>();
-      if (effectiveUserId) {
-        const { data: hiddenData, error: hiddenError } = await supabase
-          .from("dismissed_requests")
-          .select("request_id")
-          .eq("user_id", effectiveUserId);
-        if (!hiddenError) {
-          hiddenIds = new Set((hiddenData || []).map((h: any) => h.request_id));
-        }
-      }
+      const hiddenIds = userId ? getHiddenRequestIds(userId) : new Set<number>();
 
       let query = supabase
         .from("service_requests")
@@ -467,11 +475,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (!user?.id) throw new Error("User not found");
 
-      const { error } = await supabase
-        .from("dismissed_requests")
-        .upsert({ user_id: user.id, request_id: id }, { onConflict: "user_id,request_id" });
-
-      if (error) throw error;
+      const hiddenIds = getHiddenRequestIds(user.id);
+      hiddenIds.add(id);
+      saveHiddenRequestIds(user.id, hiddenIds);
 
       setRequests(requests.filter((r) => r.id !== id));
     } catch (error) {
@@ -489,15 +495,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (!user?.id) throw new Error("User not found");
 
-      const currentIds = requests.map((r) => r.id);
-      if (currentIds.length > 0) {
-        const records = currentIds.map((id) => ({ user_id: user.id!, request_id: id }));
-        const { error } = await supabase
-          .from("dismissed_requests")
-          .upsert(records, { onConflict: "user_id,request_id" });
-
-        if (error) throw error;
-      }
+      const hiddenIds = getHiddenRequestIds(user.id);
+      requests.forEach((r) => hiddenIds.add(r.id));
+      saveHiddenRequestIds(user.id, hiddenIds);
 
       setRequests([]);
       setNewRequestCount(0);
