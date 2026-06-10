@@ -22,7 +22,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, RefreshCw } from "lucide-react";
+import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, RefreshCw, CalendarIcon } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -65,6 +68,7 @@ interface RequestFormData {
   additionalServices: string[];
   notes: string;
   price?: number;
+  dateRequested: string;
 }
 
 interface AccountFormData {
@@ -129,6 +133,7 @@ export default function Dashboard() {
       mainServices: [],
       additionalServices: [],
       notes: "",
+      dateRequested: new Date().toISOString().split("T")[0],
     },
   });
 
@@ -1163,7 +1168,7 @@ export default function Dashboard() {
         year: data.year,
         make: data.make,
         model: data.model,
-        dateRequested: getTodayDate(),
+        dateRequested: data.dateRequested || getTodayDate(),
         mainServices: data.mainServices,
         additionalServices: data.additionalServices,
         notes: data.notes,
@@ -1476,14 +1481,27 @@ export default function Dashboard() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                          Date Requested (Auto-Filled)
+                          Date Requested
                         </label>
-                        <Input
-                          type="text"
-                          disabled
-                          value={getTodayDate()}
-                          className="bg-background/50 border-border/50 text-foreground"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start text-left font-normal bg-background/50 border-border/50 text-foreground hover:bg-background/70"
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                              {watch("dateRequested") ? format(parseISO(watch("dateRequested")), "PPP") : "Pick a date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={watch("dateRequested") ? parseISO(watch("dateRequested")) : undefined}
+                              onSelect={(date) => setValue("dateRequested", date ? format(date, "yyyy-MM-dd") : "")}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </div>
