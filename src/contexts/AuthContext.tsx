@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { formatErrorMessage } from "@/lib/utils";
 
@@ -99,19 +99,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
   }, []);
 
-  const fetchRequests = async (dealershipId: string, role: string, userEmail?: string, userId?: string) => {
+  const getHiddenRequestIds = useCallback((userId: string): Set<number> => {
     try {
-      const effectiveUserId = userId;
-      let hiddenIds = new Set<number>();
-      if (effectiveUserId) {
-        const { data: hiddenData, error: hiddenError } = await supabase
-          .from("dismissed_requests")
-          .select("request_id")
-          .eq("user_id", effectiveUserId);
-        if (!hiddenError) {
-          hiddenIds = new Set((hiddenData || []).map((h: any) => h.request_id));
-        }
-      }
+      const raw = localStorage.getItem(`hidden_requests_${userId}`);
+      if (!raw) return new Set();
+      return new Set(JSON.parse(raw) as number[]);
+    } catch {
+      return new Set();
+    }
+  }, []);
+
+  const saveHiddenRequestIds = useCallback((userId: string, ids: Set<number>) => {
+    try {
+      localStorage.setItem(`hidden_requests_${userId}`, JSON.stringify([...ids]));
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  const fetchRequests = useCallback(async (dealershipId: string, role: string, userEmail?: string, userId?: string) => {
+    try {
+      const hiddenIds = userId ? getHiddenRequestIds(userId) : new Set<number>();
 
       let query = supabase
         .from("service_requests")
@@ -165,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const errorMessage = formatErrorMessage(error);
       console.error("Error fetching requests:", errorMessage);
     }
-  };
+  }, [getHiddenRequestIds]);
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
@@ -293,6 +301,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) throw error;
+
+      // Broadcast to admins so they refresh instantly (works with anon key, no DB config needed)
+      supabase.channel(`new-requests-${user.dealership_id}`)
+        .send({ type: "broadcast", event: "new_request", payload: { requestNumber: nextRequestNumber } })
+        .catch(() => {/* non-critical */});
 
       // Refresh requests list
       if (user.dealership_id) {
@@ -467,11 +480,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (!user?.id) throw new Error("User not found");
 
-      const { error } = await supabase
-        .from("dismissed_requests")
-        .upsert({ user_id: user.id, request_id: id }, { onConflict: "user_id,request_id" });
-
-      if (error) throw error;
+      const hiddenIds = getHiddenRequestIds(user.id);
+      hiddenIds.add(id);
+      saveHiddenRequestIds(user.id, hiddenIds);
 
       setRequests(requests.filter((r) => r.id !== id));
     } catch (error) {
@@ -489,15 +500,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (!user?.id) throw new Error("User not found");
 
-      const currentIds = requests.map((r) => r.id);
-      if (currentIds.length > 0) {
-        const records = currentIds.map((id) => ({ user_id: user.id!, request_id: id }));
-        const { error } = await supabase
-          .from("dismissed_requests")
-          .upsert(records, { onConflict: "user_id,request_id" });
-
-        if (error) throw error;
-      }
+      const hiddenIds = getHiddenRequestIds(user.id);
+      requests.forEach((r) => hiddenIds.add(r.id));
+      saveHiddenRequestIds(user.id, hiddenIds);
 
       setRequests([]);
       setNewRequestCount(0);
@@ -518,7 +523,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error refreshing requests:", errorMessage);
       throw new Error(errorMessage);
     }
-  }, [user?.dealership_id, user?.role, user?.email, user?.id]);
+  }, [user?.dealership_id, user?.role, user?.email, user?.id, fetchRequests]);
 
   const getRequestsByDateRange = async (startDate: string, endDate: string): Promise<ServiceRequest[]> => {
     try {

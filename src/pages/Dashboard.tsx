@@ -454,10 +454,9 @@ export default function Dashboard() {
 
   // Auto-refresh requests list periodically (every 15 seconds)
   useEffect(() => {
-    // Only start polling for admins to check for new requests
     if (user?.role !== "admin") return;
 
-    const POLL_INTERVAL_MS = 15 * 1000; // 15 seconds
+    const POLL_INTERVAL_MS = 10 * 1000; // 10 seconds
 
     const interval = setInterval(async () => {
       try {
@@ -467,42 +466,60 @@ export default function Dashboard() {
       }
     }, POLL_INTERVAL_MS);
 
-    return () => clearInterval(interval);
+    // Refresh immediately when the admin returns to this tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshRequests().catch(console.error);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [user?.role, refreshRequests]);
 
   // Real-time subscription to service requests changes for all admins
   useEffect(() => {
     if (user?.role !== "admin" || !user?.dealership_id) return;
 
-    // Subscribe to changes on service_requests table for this dealership
-    const subscription = supabase
-      .channel(`requests-${user.dealership_id}`)
+    // Broadcast channel: instant notification when any sales rep submits a request
+    // (works with anon key, no DB replication config required)
+    const broadcastChannel = supabase
+      .channel(`new-requests-${user.dealership_id}`)
+      .on("broadcast", { event: "new_request" }, async (payload) => {
+        try {
+          await refreshRequests();
+          toast({
+            title: "New Request",
+            description: `New request ${payload.payload?.requestNumber} has been submitted.`,
+          });
+        } catch (error) {
+          console.error("Error refreshing on broadcast:", error);
+        }
+      })
+      .subscribe();
+
+    // postgres_changes: also catches admin updates/deletions if Realtime is enabled in Supabase
+    const pgChannel = supabase
+      .channel(`requests-changes-${user.dealership_id}`)
       .on(
         "postgres_changes",
         {
-          event: "*", // Listen for all changes (INSERT, UPDATE, DELETE)
+          event: "*",
           schema: "public",
           table: "service_requests",
           filter: `dealership_id=eq.${user.dealership_id}`,
         },
         async (payload) => {
-          // When any change is detected, refresh the requests list
           try {
             await refreshRequests();
-
-            // Show toast notification if another admin made changes
-            // Only show if the change wasn't made by the current user (by checking timestamps)
             if (payload.eventType === "UPDATE") {
               const updatedRequest = payload.new;
               toast({
                 title: "Request Updated",
-                description: `Request ${updatedRequest.request_number} has been updated by another admin.`,
-              });
-            } else if (payload.eventType === "INSERT") {
-              const newRequest = payload.new;
-              toast({
-                title: "New Request",
-                description: `New request ${newRequest.request_number} has been created.`,
+                description: `Request ${updatedRequest.request_number} has been updated.`,
               });
             }
           } catch (error) {
@@ -513,7 +530,8 @@ export default function Dashboard() {
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      broadcastChannel.unsubscribe();
+      pgChannel.unsubscribe();
     };
   }, [user?.role, user?.dealership_id, refreshRequests, toast]);
 
@@ -873,12 +891,14 @@ export default function Dashboard() {
         .map((r) => r.id);
 
       if (matchingIds.length > 0 && user?.id) {
-        const records = matchingIds.map((id) => ({ user_id: user.id!, request_id: id }));
-        const { error } = await supabase
-          .from("dismissed_requests")
-          .upsert(records, { onConflict: "user_id,request_id" });
-
-        if (error) throw error;
+        try {
+          const raw = localStorage.getItem(`hidden_requests_${user.id}`);
+          const existing: number[] = raw ? JSON.parse(raw) : [];
+          const updated = new Set([...existing, ...matchingIds]);
+          localStorage.setItem(`hidden_requests_${user.id}`, JSON.stringify([...updated]));
+        } catch {
+          // ignore storage errors
+        }
       }
 
       await refreshRequests();
