@@ -65,6 +65,7 @@ interface RequestFormData {
   additionalServices: string[];
   notes: string;
   price?: number;
+  dateRequested: string;
 }
 
 interface AccountFormData {
@@ -129,6 +130,7 @@ export default function Dashboard() {
       mainServices: [],
       additionalServices: [],
       notes: "",
+      dateRequested: new Date().toISOString().split("T")[0],
     },
   });
 
@@ -1163,7 +1165,7 @@ export default function Dashboard() {
         year: data.year,
         make: data.make,
         model: data.model,
-        dateRequested: getTodayDate(),
+        dateRequested: data.dateRequested || getTodayDate(),
         mainServices: data.mainServices,
         additionalServices: data.additionalServices,
         notes: data.notes,
@@ -1476,12 +1478,11 @@ export default function Dashboard() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
-                          Date Requested (Auto-Filled)
+                          Date Requested
                         </label>
                         <Input
-                          type="text"
-                          disabled
-                          value={getTodayDate()}
+                          type="date"
+                          {...register("dateRequested")}
                           className="bg-background/50 border-border/50 text-foreground"
                         />
                       </div>
