@@ -22,7 +22,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, RefreshCw } from "lucide-react";
+import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, RefreshCw, CalendarIcon } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -1480,11 +1483,25 @@ export default function Dashboard() {
                         <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground mb-3">
                           Date Requested
                         </label>
-                        <Input
-                          type="date"
-                          {...register("dateRequested")}
-                          className="bg-background/50 border-border/50 text-foreground"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start text-left font-normal bg-background/50 border-border/50 text-foreground hover:bg-background/70"
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                              {watch("dateRequested") ? format(parseISO(watch("dateRequested")), "PPP") : "Pick a date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={watch("dateRequested") ? parseISO(watch("dateRequested")) : undefined}
+                              onSelect={(date) => setValue("dateRequested", date ? format(date, "yyyy-MM-dd") : "")}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </div>
