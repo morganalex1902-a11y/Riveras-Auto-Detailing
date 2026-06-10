@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { formatErrorMessage } from "@/lib/utils";
 
@@ -99,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
   }, []);
 
-  const getHiddenRequestIds = (userId: string): Set<number> => {
+  const getHiddenRequestIds = useCallback((userId: string): Set<number> => {
     try {
       const raw = localStorage.getItem(`hidden_requests_${userId}`);
       if (!raw) return new Set();
@@ -107,17 +107,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       return new Set();
     }
-  };
+  }, []);
 
-  const saveHiddenRequestIds = (userId: string, ids: Set<number>) => {
+  const saveHiddenRequestIds = useCallback((userId: string, ids: Set<number>) => {
     try {
       localStorage.setItem(`hidden_requests_${userId}`, JSON.stringify([...ids]));
     } catch {
       // ignore storage errors
     }
-  };
+  }, []);
 
-  const fetchRequests = async (dealershipId: string, role: string, userEmail?: string, userId?: string) => {
+  const fetchRequests = useCallback(async (dealershipId: string, role: string, userEmail?: string, userId?: string) => {
     try {
       const hiddenIds = userId ? getHiddenRequestIds(userId) : new Set<number>();
 
@@ -173,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const errorMessage = formatErrorMessage(error);
       console.error("Error fetching requests:", errorMessage);
     }
-  };
+  }, [getHiddenRequestIds]);
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
@@ -301,6 +301,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) throw error;
+
+      // Broadcast to admins so they refresh instantly (works with anon key, no DB config needed)
+      supabase.channel(`new-requests-${user.dealership_id}`)
+        .send({ type: "broadcast", event: "new_request", payload: { requestNumber: nextRequestNumber } })
+        .catch(() => {/* non-critical */});
 
       // Refresh requests list
       if (user.dealership_id) {
@@ -518,7 +523,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error refreshing requests:", errorMessage);
       throw new Error(errorMessage);
     }
-  }, [user?.dealership_id, user?.role, user?.email, user?.id]);
+  }, [user?.dealership_id, user?.role, user?.email, user?.id, fetchRequests]);
 
   const getRequestsByDateRange = async (startDate: string, endDate: string): Promise<ServiceRequest[]> => {
     try {
