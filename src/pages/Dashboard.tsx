@@ -454,10 +454,9 @@ export default function Dashboard() {
 
   // Auto-refresh requests list periodically (every 15 seconds)
   useEffect(() => {
-    // Only start polling for admins to check for new requests
     if (user?.role !== "admin") return;
 
-    const POLL_INTERVAL_MS = 15 * 1000; // 15 seconds
+    const POLL_INTERVAL_MS = 10 * 1000; // 10 seconds
 
     const interval = setInterval(async () => {
       try {
@@ -467,7 +466,18 @@ export default function Dashboard() {
       }
     }, POLL_INTERVAL_MS);
 
-    return () => clearInterval(interval);
+    // Refresh immediately when the admin returns to this tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshRequests().catch(console.error);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [user?.role, refreshRequests]);
 
   // Real-time subscription to service requests changes for all admins
