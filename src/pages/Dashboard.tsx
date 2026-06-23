@@ -22,7 +22,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, RefreshCw, CalendarIcon } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, RefreshCw, CalendarIcon, Undo2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -137,7 +138,7 @@ export default function Dashboard() {
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, softDeleteVisibleRequests, restoreSoftDeletedRequests, hideRequestsByIds, getRequestsByDateRange } = useAuth();
   const { toast } = useToast();
   const { unactedNotifications, addUnactedNotification, markAsActed, clearAll, isLoaded } = useUnactedNotifications();
 
@@ -794,15 +795,34 @@ export default function Dashboard() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refreshRequests();
+      await softDeleteVisibleRequests();
       toast({
-        title: "Refreshed",
-        description: "Your request list has been updated.",
+        title: "Cleared",
+        description: "All requests have been cleared from the list.",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to refresh request list.",
+        description: "Failed to clear request list.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    setIsRefreshing(true);
+    try {
+      await restoreSoftDeletedRequests();
+      toast({
+        title: "Restored",
+        description: "Requests have been restored.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to restore requests.",
         variant: "destructive",
       });
     } finally {
@@ -875,6 +895,7 @@ export default function Dashboard() {
       if (deleteByDateOption === "custom") {
         if (!deleteCustomStartDate || !deleteCustomEndDate) {
           toast({ title: "Error", description: "Please select both start and end dates.", variant: "destructive" });
+          setIsDeletingByDate(false);
           return;
         }
         range = { start: deleteCustomStartDate, end: deleteCustomEndDate };
@@ -886,24 +907,27 @@ export default function Dashboard() {
       endDateObj.setDate(endDateObj.getDate() + 1);
       const adjustedEnd = endDateObj.toISOString().split("T")[0];
 
+      const startMs = new Date(range.start).setHours(0, 0, 0, 0);
+      const endMs = new Date(range.end).setHours(23, 59, 59, 999);
+
       const matchingIds = requests
-        .filter((r) => r.dateRequested >= range.start && r.dateRequested < adjustedEnd)
+        .filter((r) => {
+          if (!r.dateRequested) return false;
+          const reqMs = new Date(r.dateRequested).getTime();
+          return reqMs >= startMs && reqMs <= endMs;
+        })
         .map((r) => r.id);
 
-      if (matchingIds.length > 0 && user?.id) {
-        try {
-          const raw = localStorage.getItem(`hidden_requests_${user.id}`);
-          const existing: number[] = raw ? JSON.parse(raw) : [];
-          const updated = new Set([...existing, ...matchingIds]);
-          localStorage.setItem(`hidden_requests_${user.id}`, JSON.stringify([...updated]));
-        } catch {
-          // ignore storage errors
-        }
+      if (matchingIds.length === 0) {
+        toast({ title: "No Requests Found", description: `No requests found between ${range.start} and ${range.end}.`, variant: "default" });
+        setShowDeleteByDateDialog(false);
+        setIsDeletingByDate(false);
+        return;
       }
 
-      await refreshRequests();
+      hideRequestsByIds(matchingIds);
       setShowDeleteByDateDialog(false);
-      toast({ title: "Removed", description: "Requests in the selected date range have been removed from your view." });
+      toast({ title: "Removed", description: `${matchingIds.length} request(s) in the selected date range have been removed from your view.` });
     } catch (error) {
       toast({ title: "Error", description: "Failed to delete requests.", variant: "destructive" });
     } finally {
@@ -913,37 +937,45 @@ export default function Dashboard() {
 
   const getDateRangeFromOption = (option: string): { start: string; end: string } => {
     const today = new Date();
-    const start = new Date();
 
     switch (option) {
-      case "thisWeek":
-        start.setDate(today.getDate() - today.getDay()); // Sunday
+      case "thisWeek": {
+        const dayOfWeek = today.getDay();
+        const daysToSunday = dayOfWeek === 0 ? 0 : dayOfWeek;
+        const sunday = new Date(today);
+        sunday.setDate(today.getDate() - daysToSunday);
         return {
-          start: start.toISOString().split("T")[0],
+          start: sunday.toISOString().split("T")[0],
           end: today.toISOString().split("T")[0],
         };
-      case "lastWeek":
-        const lastWeekEnd = new Date(start);
-        lastWeekEnd.setDate(today.getDate() - today.getDay() - 1);
-        const lastWeekStart = new Date(lastWeekEnd);
-        lastWeekStart.setDate(lastWeekEnd.getDate() - 6);
+      }
+      case "lastWeek": {
+        const dayOfWeek = today.getDay();
+        const daysToSunday = dayOfWeek === 0 ? 0 : dayOfWeek;
+        const lastSunday = new Date(today);
+        lastSunday.setDate(today.getDate() - daysToSunday - 1);
+        const lastWeekStart = new Date(lastSunday);
+        lastWeekStart.setDate(lastSunday.getDate() - 6);
         return {
           start: lastWeekStart.toISOString().split("T")[0],
-          end: lastWeekEnd.toISOString().split("T")[0],
+          end: lastSunday.toISOString().split("T")[0],
         };
-      case "thisMonth":
-        start.setDate(1);
+      }
+      case "thisMonth": {
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
         return {
-          start: start.toISOString().split("T")[0],
+          start: monthStart.toISOString().split("T")[0],
           end: today.toISOString().split("T")[0],
         };
-      case "lastMonth":
+      }
+      case "lastMonth": {
         const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
         const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         return {
           start: lastMonthStart.toISOString().split("T")[0],
           end: lastMonthEnd.toISOString().split("T")[0],
         };
+      }
       case "custom":
         return {
           start: customStartDate,
@@ -2583,29 +2615,66 @@ export default function Dashboard() {
                   </Dialog>
                 </>
               )}
-              <Button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
-                {isRefreshing ? "Resetting..." : "Refresh"}
-              </Button>
-              <Button
-                onClick={handleExport}
-                className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
-              <Dialog open={showDateRangeDialog} onOpenChange={setShowDateRangeDialog}>
-                <Button
-                  onClick={() => setShowDateRangeDialog(true)}
-                  className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export by Date
-                </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleRefresh}
+                      disabled={isRefreshing}
+                      className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+                      {isRefreshing ? "Resetting..." : "Refresh"}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Clears all {requests.length} visible request(s) from the list
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleRestore}
+                      disabled={isRefreshing}
+                      className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-display uppercase tracking-widest text-xs"
+                    >
+                      <Undo2 className="w-4 h-4 mr-2" />
+                      Undo
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Restores all previously cleared requests
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleExport}
+                      className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Exports all {requests.length} visible request(s) as CSV
+                  </TooltipContent>
+                </Tooltip>
+                <Dialog open={showDateRangeDialog} onOpenChange={setShowDateRangeDialog}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setShowDateRangeDialog(true)}
+                        className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export by Date
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Export requests from a specific date range
+                    </TooltipContent>
+                  </Tooltip>
                 <DialogContent className="bg-card border-border/30">
                   <DialogHeader>
                     <DialogTitle className="font-display uppercase tracking-wider">
@@ -2716,13 +2785,21 @@ export default function Dashboard() {
                   </div>
                 </DialogContent>
               </Dialog>
-              <Button
-                onClick={() => setShowDeleteByDateDialog(true)}
-                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-display uppercase tracking-widest text-xs"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete by Date
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setShowDeleteByDateDialog(true)}
+                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-display uppercase tracking-widest text-xs"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete by Date
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Clear requests from a specific date range
+                </TooltipContent>
+              </Tooltip>
+              </TooltipProvider>
               <Dialog open={showDeleteByDateDialog} onOpenChange={setShowDeleteByDateDialog}>
                 <DialogContent className="bg-card border-border/30">
                   <DialogHeader>

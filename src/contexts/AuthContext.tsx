@@ -59,6 +59,9 @@ interface AuthContextType {
   resetNewRequestCount: () => void;
   deleteAllRequests: () => Promise<void>;
   refreshRequests: () => Promise<void>;
+  softDeleteVisibleRequests: () => Promise<void>;
+  restoreSoftDeletedRequests: () => Promise<void>;
+  hideRequestsByIds: (ids: number[]) => void;
   getRequestsByDateRange: (startDate: string, endDate: string) => Promise<ServiceRequest[]>;
   loading: boolean;
 }
@@ -492,6 +495,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const softDeleteVisibleRequests = async () => {
+    try {
+      if (!user?.id) throw new Error("User not found");
+
+      const hiddenIds = getHiddenRequestIds(user.id);
+      const clearedIds = requests.map(r => r.id);
+
+      clearedIds.forEach(id => hiddenIds.add(id));
+      saveHiddenRequestIds(user.id, hiddenIds);
+
+      setRequests([]);
+      setNewRequestCount(0);
+    } catch (error) {
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error soft deleting visible requests:", errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
+  const hideRequestsByIds = (ids: number[]) => {
+    if (ids.length === 0) return;
+    const idSet = new Set(ids.map(Number));
+    // Persist to localStorage if user is available
+    if (user?.id) {
+      const hiddenIds = getHiddenRequestIds(user.id);
+      ids.forEach(id => hiddenIds.add(id));
+      saveHiddenRequestIds(user.id, hiddenIds);
+    }
+    setRequests(prev => prev.filter(r => !idSet.has(Number(r.id))));
+  };
+
+  const restoreSoftDeletedRequests = async () => {
+    try {
+      if (!user?.id || !user?.dealership_id) throw new Error("User not found");
+
+      const hiddenIds = getHiddenRequestIds(user.id);
+      hiddenIds.clear();
+      saveHiddenRequestIds(user.id, hiddenIds);
+
+      await fetchRequests(user.dealership_id, user.role, user.email, user.id);
+    } catch (error) {
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error restoring deleted requests:", errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
   const resetNewRequestCount = () => {
     setNewRequestCount(0);
   };
@@ -596,6 +646,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetNewRequestCount,
         deleteAllRequests,
         refreshRequests,
+        softDeleteVisibleRequests,
+        restoreSoftDeletedRequests,
+        hideRequestsByIds,
         getRequestsByDateRange,
         loading,
       }}
