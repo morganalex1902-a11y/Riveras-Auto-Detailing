@@ -907,14 +907,12 @@ export default function Dashboard() {
       endDateObj.setDate(endDateObj.getDate() + 1);
       const adjustedEnd = endDateObj.toISOString().split("T")[0];
 
-      console.log("Delete by date range:", { deleteByDateOption, range, adjustedEnd });
-      console.log("All requests:", requests.map(r => ({ id: r.id, dateRequested: r.dateRequested })));
-
       const matchingIds = requests
-        .filter((r) => r.dateRequested >= range.start && r.dateRequested < adjustedEnd)
+        .filter((r) => {
+          const reqDate = r.dateRequested ? r.dateRequested.split("T")[0] : r.dateRequested;
+          return reqDate && reqDate >= range.start && reqDate < adjustedEnd;
+        })
         .map((r) => r.id);
-
-      console.log("Matching IDs:", matchingIds);
 
       if (matchingIds.length === 0) {
         toast({ title: "No Requests Found", description: "No requests found in the selected date range.", variant: "default" });
