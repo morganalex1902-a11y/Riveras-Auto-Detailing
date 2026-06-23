@@ -515,11 +515,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const hideRequestsByIds = (ids: number[]) => {
-    if (!user?.id || ids.length === 0) return;
-    const hiddenIds = getHiddenRequestIds(user.id);
-    ids.forEach(id => hiddenIds.add(id));
-    saveHiddenRequestIds(user.id, hiddenIds);
-    setRequests(prev => prev.filter(r => !hiddenIds.has(r.id)));
+    if (ids.length === 0) return;
+    const idSet = new Set(ids.map(Number));
+    // Persist to localStorage if user is available
+    if (user?.id) {
+      const hiddenIds = getHiddenRequestIds(user.id);
+      ids.forEach(id => hiddenIds.add(id));
+      saveHiddenRequestIds(user.id, hiddenIds);
+    }
+    setRequests(prev => prev.filter(r => !idSet.has(Number(r.id))));
   };
 
   const restoreSoftDeletedRequests = async () => {
