@@ -59,6 +59,7 @@ interface AuthContextType {
   resetNewRequestCount: () => void;
   deleteAllRequests: () => Promise<void>;
   refreshRequests: () => Promise<void>;
+  softDeleteVisibleRequests: () => Promise<void>;
   getRequestsByDateRange: (startDate: string, endDate: string) => Promise<ServiceRequest[]>;
   loading: boolean;
 }
@@ -124,7 +125,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let query = supabase
         .from("service_requests")
         .select("*")
-        .eq("dealership_id", dealershipId);
+        .eq("dealership_id", dealershipId)
+        .is("deleted_at", null);
 
       if (role === "sales_rep" && userEmail) {
         query = query.eq("requested_by", userEmail);
@@ -492,6 +494,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const softDeleteVisibleRequests = async () => {
+    try {
+      if (!user?.dealership_id) throw new Error("User dealership not found");
+
+      const ids = requests.map(r => r.id);
+      if (ids.length === 0) return;
+
+      const { error } = await supabase
+        .from("service_requests")
+        .update({ deleted_at: new Date().toISOString() })
+        .in("id", ids);
+
+      if (error) throw error;
+
+      setRequests([]);
+      setNewRequestCount(0);
+    } catch (error) {
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error soft deleting visible requests:", errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
   const resetNewRequestCount = () => {
     setNewRequestCount(0);
   };
@@ -596,6 +621,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetNewRequestCount,
         deleteAllRequests,
         refreshRequests,
+        softDeleteVisibleRequests,
         getRequestsByDateRange,
         loading,
       }}

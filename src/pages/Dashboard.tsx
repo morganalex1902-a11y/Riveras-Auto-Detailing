@@ -137,7 +137,7 @@ export default function Dashboard() {
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, getRequestsByDateRange } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, softDeleteVisibleRequests, getRequestsByDateRange } = useAuth();
   const { toast } = useToast();
   const { unactedNotifications, addUnactedNotification, markAsActed, clearAll, isLoaded } = useUnactedNotifications();
 
@@ -794,15 +794,15 @@ export default function Dashboard() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refreshRequests();
+      await softDeleteVisibleRequests();
       toast({
-        title: "Refreshed",
-        description: "Your request list has been updated.",
+        title: "Cleared",
+        description: "All requests have been cleared from the list.",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to refresh request list.",
+        description: "Failed to clear request list.",
         variant: "destructive",
       });
     } finally {
