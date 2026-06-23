@@ -907,15 +907,19 @@ export default function Dashboard() {
       endDateObj.setDate(endDateObj.getDate() + 1);
       const adjustedEnd = endDateObj.toISOString().split("T")[0];
 
+      const startMs = new Date(range.start).setHours(0, 0, 0, 0);
+      const endMs = new Date(range.end).setHours(23, 59, 59, 999);
+
       const matchingIds = requests
         .filter((r) => {
-          const reqDate = r.dateRequested ? r.dateRequested.split("T")[0] : r.dateRequested;
-          return reqDate && reqDate >= range.start && reqDate < adjustedEnd;
+          if (!r.dateRequested) return false;
+          const reqMs = new Date(r.dateRequested).getTime();
+          return reqMs >= startMs && reqMs <= endMs;
         })
         .map((r) => r.id);
 
       if (matchingIds.length === 0) {
-        toast({ title: "No Requests Found", description: "No requests found in the selected date range.", variant: "default" });
+        toast({ title: "No Requests Found", description: `No requests found between ${range.start} and ${range.end}.`, variant: "default" });
         setShowDeleteByDateDialog(false);
         setIsDeletingByDate(false);
         return;
