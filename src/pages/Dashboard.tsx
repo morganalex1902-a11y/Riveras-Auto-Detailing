@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, RefreshCw, CalendarIcon } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -2610,36 +2611,65 @@ export default function Dashboard() {
                   </Dialog>
                 </>
               )}
-              <Button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
-                {isRefreshing ? "Resetting..." : "Refresh"}
-              </Button>
-              <Button
-                onClick={handleRestore}
-                disabled={isRefreshing}
-                className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-display uppercase tracking-widest text-xs"
-              >
-                Undo
-              </Button>
-              <Button
-                onClick={handleExport}
-                className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
-              <Dialog open={showDateRangeDialog} onOpenChange={setShowDateRangeDialog}>
-                <Button
-                  onClick={() => setShowDateRangeDialog(true)}
-                  className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export by Date
-                </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleRefresh}
+                      disabled={isRefreshing}
+                      className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+                      {isRefreshing ? "Resetting..." : "Refresh"}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Clears all {requests.length} visible request(s) from the list
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleRestore}
+                      disabled={isRefreshing}
+                      className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-display uppercase tracking-widest text-xs"
+                    >
+                      Undo
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Restores all previously cleared requests
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleExport}
+                      className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Exports all {requests.length} visible request(s) as CSV
+                  </TooltipContent>
+                </Tooltip>
+                <Dialog open={showDateRangeDialog} onOpenChange={setShowDateRangeDialog}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setShowDateRangeDialog(true)}
+                        className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export by Date
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Export requests from a specific date range
+                    </TooltipContent>
+                  </Tooltip>
                 <DialogContent className="bg-card border-border/30">
                   <DialogHeader>
                     <DialogTitle className="font-display uppercase tracking-wider">
@@ -2750,13 +2780,21 @@ export default function Dashboard() {
                   </div>
                 </DialogContent>
               </Dialog>
-              <Button
-                onClick={() => setShowDeleteByDateDialog(true)}
-                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-display uppercase tracking-widest text-xs"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete by Date
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setShowDeleteByDateDialog(true)}
+                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-display uppercase tracking-widest text-xs"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete by Date
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Clear requests from a specific date range
+                </TooltipContent>
+              </Tooltip>
+              </TooltipProvider>
               <Dialog open={showDeleteByDateDialog} onOpenChange={setShowDeleteByDateDialog}>
                 <DialogContent className="bg-card border-border/30">
                   <DialogHeader>
