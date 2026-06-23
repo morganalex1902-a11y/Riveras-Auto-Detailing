@@ -60,6 +60,7 @@ interface AuthContextType {
   deleteAllRequests: () => Promise<void>;
   refreshRequests: () => Promise<void>;
   softDeleteVisibleRequests: () => Promise<void>;
+  restoreSoftDeletedRequests: () => Promise<void>;
   getRequestsByDateRange: (startDate: string, endDate: string) => Promise<ServiceRequest[]>;
   loading: boolean;
 }
@@ -517,6 +518,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const restoreSoftDeletedRequests = async () => {
+    try {
+      if (!user?.dealership_id) throw new Error("User dealership not found");
+
+      const { error } = await supabase
+        .from("service_requests")
+        .update({ deleted_at: null })
+        .eq("dealership_id", user.dealership_id)
+        .not("deleted_at", "is", null);
+
+      if (error) throw error;
+
+      if (user.dealership_id) {
+        await fetchRequests(user.dealership_id, user.role, user.email, user.id);
+      }
+    } catch (error) {
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error restoring deleted requests:", errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
   const resetNewRequestCount = () => {
     setNewRequestCount(0);
   };
@@ -622,6 +645,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteAllRequests,
         refreshRequests,
         softDeleteVisibleRequests,
+        restoreSoftDeletedRequests,
         getRequestsByDateRange,
         loading,
       }}

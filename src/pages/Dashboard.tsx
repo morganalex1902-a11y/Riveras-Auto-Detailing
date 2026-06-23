@@ -137,7 +137,7 @@ export default function Dashboard() {
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, softDeleteVisibleRequests, getRequestsByDateRange } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, softDeleteVisibleRequests, restoreSoftDeletedRequests, getRequestsByDateRange } = useAuth();
   const { toast } = useToast();
   const { unactedNotifications, addUnactedNotification, markAsActed, clearAll, isLoaded } = useUnactedNotifications();
 
@@ -803,6 +803,25 @@ export default function Dashboard() {
       toast({
         title: "Error",
         description: "Failed to clear request list.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    setIsRefreshing(true);
+    try {
+      await restoreSoftDeletedRequests();
+      toast({
+        title: "Restored",
+        description: "Requests have been restored.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to restore requests.",
         variant: "destructive",
       });
     } finally {
@@ -2590,6 +2609,13 @@ export default function Dashboard() {
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
                 {isRefreshing ? "Resetting..." : "Refresh"}
+              </Button>
+              <Button
+                onClick={handleRestore}
+                disabled={isRefreshing}
+                className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-display uppercase tracking-widest text-xs"
+              >
+                Undo
               </Button>
               <Button
                 onClick={handleExport}
