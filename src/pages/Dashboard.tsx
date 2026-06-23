@@ -138,7 +138,7 @@ export default function Dashboard() {
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, softDeleteVisibleRequests, restoreSoftDeletedRequests, getRequestsByDateRange } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, softDeleteVisibleRequests, restoreSoftDeletedRequests, hideRequestsByIds, getRequestsByDateRange } = useAuth();
   const { toast } = useToast();
   const { unactedNotifications, addUnactedNotification, markAsActed, clearAll, isLoaded } = useUnactedNotifications();
 
@@ -925,18 +925,7 @@ export default function Dashboard() {
         return;
       }
 
-      if (user?.id) {
-        try {
-          const raw = localStorage.getItem(`hidden_requests_${user.id}`);
-          const existing: number[] = raw ? JSON.parse(raw) : [];
-          const updated = new Set([...existing, ...matchingIds]);
-          localStorage.setItem(`hidden_requests_${user.id}`, JSON.stringify([...updated]));
-        } catch {
-          // ignore storage errors
-        }
-      }
-
-      await refreshRequests();
+      hideRequestsByIds(matchingIds);
       setShowDeleteByDateDialog(false);
       toast({ title: "Removed", description: `${matchingIds.length} request(s) in the selected date range have been removed from your view.` });
     } catch (error) {

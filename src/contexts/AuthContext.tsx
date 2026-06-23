@@ -61,6 +61,7 @@ interface AuthContextType {
   refreshRequests: () => Promise<void>;
   softDeleteVisibleRequests: () => Promise<void>;
   restoreSoftDeletedRequests: () => Promise<void>;
+  hideRequestsByIds: (ids: number[]) => void;
   getRequestsByDateRange: (startDate: string, endDate: string) => Promise<ServiceRequest[]>;
   loading: boolean;
 }
@@ -513,6 +514,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const hideRequestsByIds = (ids: number[]) => {
+    if (!user?.id || ids.length === 0) return;
+    const hiddenIds = getHiddenRequestIds(user.id);
+    ids.forEach(id => hiddenIds.add(id));
+    saveHiddenRequestIds(user.id, hiddenIds);
+    setRequests(prev => prev.filter(r => !hiddenIds.has(r.id)));
+  };
+
   const restoreSoftDeletedRequests = async () => {
     try {
       if (!user?.id || !user?.dealership_id) throw new Error("User not found");
@@ -635,6 +644,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshRequests,
         softDeleteVisibleRequests,
         restoreSoftDeletedRequests,
+        hideRequestsByIds,
         getRequestsByDateRange,
         loading,
       }}
