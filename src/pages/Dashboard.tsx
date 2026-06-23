@@ -944,37 +944,45 @@ export default function Dashboard() {
 
   const getDateRangeFromOption = (option: string): { start: string; end: string } => {
     const today = new Date();
-    const start = new Date();
 
     switch (option) {
-      case "thisWeek":
-        start.setDate(today.getDate() - today.getDay()); // Sunday
+      case "thisWeek": {
+        const dayOfWeek = today.getDay();
+        const daysToSunday = dayOfWeek === 0 ? 0 : dayOfWeek;
+        const sunday = new Date(today);
+        sunday.setDate(today.getDate() - daysToSunday);
         return {
-          start: start.toISOString().split("T")[0],
+          start: sunday.toISOString().split("T")[0],
           end: today.toISOString().split("T")[0],
         };
-      case "lastWeek":
-        const lastWeekEnd = new Date(start);
-        lastWeekEnd.setDate(today.getDate() - today.getDay() - 1);
-        const lastWeekStart = new Date(lastWeekEnd);
-        lastWeekStart.setDate(lastWeekEnd.getDate() - 6);
+      }
+      case "lastWeek": {
+        const dayOfWeek = today.getDay();
+        const daysToSunday = dayOfWeek === 0 ? 0 : dayOfWeek;
+        const lastSunday = new Date(today);
+        lastSunday.setDate(today.getDate() - daysToSunday - 1);
+        const lastWeekStart = new Date(lastSunday);
+        lastWeekStart.setDate(lastSunday.getDate() - 6);
         return {
           start: lastWeekStart.toISOString().split("T")[0],
-          end: lastWeekEnd.toISOString().split("T")[0],
+          end: lastSunday.toISOString().split("T")[0],
         };
-      case "thisMonth":
-        start.setDate(1);
+      }
+      case "thisMonth": {
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
         return {
-          start: start.toISOString().split("T")[0],
+          start: monthStart.toISOString().split("T")[0],
           end: today.toISOString().split("T")[0],
         };
-      case "lastMonth":
+      }
+      case "lastMonth": {
         const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
         const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         return {
           start: lastMonthStart.toISOString().split("T")[0],
           end: lastMonthEnd.toISOString().split("T")[0],
         };
+      }
       case "custom":
         return {
           start: customStartDate,
