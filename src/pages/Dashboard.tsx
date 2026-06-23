@@ -894,6 +894,7 @@ export default function Dashboard() {
       if (deleteByDateOption === "custom") {
         if (!deleteCustomStartDate || !deleteCustomEndDate) {
           toast({ title: "Error", description: "Please select both start and end dates.", variant: "destructive" });
+          setIsDeletingByDate(false);
           return;
         }
         range = { start: deleteCustomStartDate, end: deleteCustomEndDate };
@@ -909,7 +910,14 @@ export default function Dashboard() {
         .filter((r) => r.dateRequested >= range.start && r.dateRequested < adjustedEnd)
         .map((r) => r.id);
 
-      if (matchingIds.length > 0 && user?.id) {
+      if (matchingIds.length === 0) {
+        toast({ title: "No Requests Found", description: "No requests found in the selected date range.", variant: "default" });
+        setShowDeleteByDateDialog(false);
+        setIsDeletingByDate(false);
+        return;
+      }
+
+      if (user?.id) {
         try {
           const raw = localStorage.getItem(`hidden_requests_${user.id}`);
           const existing: number[] = raw ? JSON.parse(raw) : [];
@@ -922,7 +930,7 @@ export default function Dashboard() {
 
       await refreshRequests();
       setShowDeleteByDateDialog(false);
-      toast({ title: "Removed", description: "Requests in the selected date range have been removed from your view." });
+      toast({ title: "Removed", description: `${matchingIds.length} request(s) in the selected date range have been removed from your view.` });
     } catch (error) {
       toast({ title: "Error", description: "Failed to delete requests.", variant: "destructive" });
     } finally {
