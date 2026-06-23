@@ -126,8 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let query = supabase
         .from("service_requests")
         .select("*")
-        .eq("dealership_id", dealershipId)
-        .is("deleted_at", null);
+        .eq("dealership_id", dealershipId);
 
       if (role === "sales_rep" && userEmail) {
         query = query.eq("requested_by", userEmail);
@@ -497,17 +496,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const softDeleteVisibleRequests = async () => {
     try {
-      if (!user?.dealership_id) throw new Error("User dealership not found");
+      if (!user?.id) throw new Error("User not found");
 
-      const ids = requests.map(r => r.id);
-      if (ids.length === 0) return;
+      const hiddenIds = getHiddenRequestIds(user.id);
+      const clearedIds = requests.map(r => r.id);
 
-      const { error } = await supabase
-        .from("service_requests")
-        .update({ deleted_at: new Date().toISOString() })
-        .in("id", ids);
-
-      if (error) throw error;
+      clearedIds.forEach(id => hiddenIds.add(id));
+      saveHiddenRequestIds(user.id, hiddenIds);
 
       setRequests([]);
       setNewRequestCount(0);
@@ -520,19 +515,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const restoreSoftDeletedRequests = async () => {
     try {
-      if (!user?.dealership_id) throw new Error("User dealership not found");
+      if (!user?.id || !user?.dealership_id) throw new Error("User not found");
 
-      const { error } = await supabase
-        .from("service_requests")
-        .update({ deleted_at: null })
-        .eq("dealership_id", user.dealership_id)
-        .not("deleted_at", "is", null);
+      const hiddenIds = getHiddenRequestIds(user.id);
+      hiddenIds.clear();
+      saveHiddenRequestIds(user.id, hiddenIds);
 
-      if (error) throw error;
-
-      if (user.dealership_id) {
-        await fetchRequests(user.dealership_id, user.role, user.email, user.id);
-      }
+      await fetchRequests(user.dealership_id, user.role, user.email, user.id);
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
       console.error("Error restoring deleted requests:", errorMessage);
