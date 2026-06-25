@@ -83,12 +83,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const savedSession = localStorage.getItem("dealership-session");
         if (savedSession) {
           const session = JSON.parse(savedSession);
-          if (session?.user) {
+          // Invalidate old sessions that are missing required fields
+          if (session?.user && session.user.id && session.user.role) {
             setUser(session.user);
             setIsLoggedIn(true);
             if (session.user.dealership_id) {
               fetchRequests(session.user.dealership_id, session.user.role, session.user.email, session.user.id);
             }
+          } else {
+            localStorage.removeItem("dealership-session");
           }
         }
       } catch (error) {

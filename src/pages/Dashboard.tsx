@@ -261,19 +261,18 @@ export default function Dashboard() {
 
     setDeletingUserId(userToDelete.id);
     try {
-      // Log the activity before deletion
-      await logAccountActivity('delete', userToDelete.id, userToDelete.email, userToDelete.name);
-
       const { error } = await supabase
         .from('users')
-        .delete()
+        .update({ is_active: false })
         .eq('id', userToDelete.id);
 
       if (error) throw error;
 
+      await logAccountActivity('delete', userToDelete.id, userToDelete.email, userToDelete.name);
+
       setTeamUsers(teamUsers.filter(u => u.id !== userToDelete.id));
       toast({
-        title: "Account Deleted",
+        title: "Account Deactivated",
         description: `${userToDelete.email} has been removed from your team.`,
       });
       setShowDeleteDialog(false);
