@@ -795,14 +795,15 @@ export default function Dashboard() {
     setIsRefreshing(true);
     try {
       await softDeleteVisibleRequests();
+      setSelectedRequestIds(new Set());
       toast({
-        title: "Cleared",
-        description: "All requests have been cleared from the list.",
+        title: "Refreshed",
+        description: "Previous-date requests are hidden. Today's requests remain visible.",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to clear request list.",
+        description: "Failed to refresh request list.",
         variant: "destructive",
       });
     } finally {
@@ -814,9 +815,10 @@ export default function Dashboard() {
     setIsRefreshing(true);
     try {
       await restoreSoftDeletedRequests();
+      setSelectedRequestIds(new Set());
       toast({
         title: "Restored",
-        description: "Requests have been restored.",
+        description: "Previously hidden requests have been restored.",
       });
     } catch (error) {
       toast({
@@ -2623,11 +2625,11 @@ export default function Dashboard() {
                       className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
                     >
                       <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
-                      {isRefreshing ? "Resetting..." : "Refresh"}
+                      {isRefreshing ? "Refreshing..." : "Refresh"}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Clears all {requests.length} visible request(s) from the list
+                    Hides previous-date requests and keeps today's requests visible
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
@@ -2642,7 +2644,7 @@ export default function Dashboard() {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Restores all previously cleared requests
+                    Restores previously hidden requests
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
