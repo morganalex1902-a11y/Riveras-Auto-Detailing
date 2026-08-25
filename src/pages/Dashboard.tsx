@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, RefreshCw, CalendarIcon, Undo2 } from "lucide-react";
+import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, CalendarIcon, Undo2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -2617,21 +2617,6 @@ export default function Dashboard() {
                 </>
               )}
               <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleRefresh}
-                      disabled={isRefreshing}
-                      className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
-                    >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
-                      {isRefreshing ? "Refreshing..." : "Refresh"}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Hides previous-date requests and keeps today's requests visible
-                  </TooltipContent>
-                </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
