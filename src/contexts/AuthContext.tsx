@@ -502,17 +502,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (!user?.id) throw new Error("User not found");
 
+      const today = new Date();
+      const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      const previousDateRequests = requests.filter((request) => request.dateRequested < todayDate);
       const hiddenIds = getHiddenRequestIds(user.id);
-      const clearedIds = requests.map(r => r.id);
 
-      clearedIds.forEach(id => hiddenIds.add(id));
+      previousDateRequests.forEach(({ id }) => hiddenIds.add(id));
       saveHiddenRequestIds(user.id, hiddenIds);
 
-      setRequests([]);
+      setRequests((currentRequests) => currentRequests.filter((request) => request.dateRequested >= todayDate));
       setNewRequestCount(0);
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
-      console.error("Error soft deleting visible requests:", errorMessage);
+      console.error("Error hiding previous-date requests:", errorMessage);
       throw new Error(errorMessage);
     }
   };

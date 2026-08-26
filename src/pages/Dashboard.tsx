@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, RefreshCw, CalendarIcon, Undo2 } from "lucide-react";
+import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, CalendarIcon, Undo2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -795,14 +795,15 @@ export default function Dashboard() {
     setIsRefreshing(true);
     try {
       await softDeleteVisibleRequests();
+      setSelectedRequestIds(new Set());
       toast({
-        title: "Cleared",
-        description: "All requests have been cleared from the list.",
+        title: "Refreshed",
+        description: "Previous-date requests are hidden. Today's requests remain visible.",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to clear request list.",
+        description: "Failed to refresh request list.",
         variant: "destructive",
       });
     } finally {
@@ -814,9 +815,10 @@ export default function Dashboard() {
     setIsRefreshing(true);
     try {
       await restoreSoftDeletedRequests();
+      setSelectedRequestIds(new Set());
       toast({
         title: "Restored",
-        description: "Requests have been restored.",
+        description: "Previously hidden requests have been restored.",
       });
     } catch (error) {
       toast({
@@ -2618,21 +2620,6 @@ export default function Dashboard() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      onClick={handleRefresh}
-                      disabled={isRefreshing}
-                      className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs"
-                    >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
-                      {isRefreshing ? "Resetting..." : "Refresh"}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Clears all {requests.length} visible request(s) from the list
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
                       onClick={handleRestore}
                       disabled={isRefreshing}
                       className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-display uppercase tracking-widest text-xs"
@@ -2642,7 +2629,7 @@ export default function Dashboard() {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Restores all previously cleared requests
+                    Restores previously hidden requests
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
