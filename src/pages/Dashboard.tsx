@@ -607,12 +607,8 @@ export default function Dashboard() {
     const total = userRequests.length;
     const pending = userRequests.filter((r) => r.status === "Pending").length;
     const completed = userRequests.filter((r) => r.status === "Completed").length;
-    const amountDue = userRequests
-      .filter((r) => r.status === "Pending")
-      .reduce((sum, r) => sum + r.price, 0);
-    const amountPaid = userRequests
-      .filter((r) => r.status === "Completed")
-      .reduce((sum, r) => sum + r.price, 0);
+    const amountDue = 0;
+    const amountPaid = userRequests.reduce((sum, request) => sum + (request.price ?? 0), 0);
 
     return { total, pending, completed, amountDue, amountPaid };
   }, [userRequests]);
@@ -701,13 +697,13 @@ export default function Dashboard() {
   };
 
   const handleExport = (requestType: "sales" | "service") => {
-    const requestsToExport = filteredRequests.filter((request) => request.requestType === requestType);
+    const requestsToExport = userRequests.filter((request) => request.requestType === requestType);
     const headers = requestType === "service"
-      ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Price Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
-      : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Price Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
+      ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Price Date (Date Requested)", "Payment Status", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
+      : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Price Date (Date Requested)", "Payment Status", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
     const rows = requestsToExport.map((request) => requestType === "service"
-      ? [request.requestNumber, request.roNumber || "-", request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.dateRequested || "-", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${request.price.toFixed(2)}`]
-      : [request.requestNumber, request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.poNumber || "-", request.dateRequested || "-", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${request.price.toFixed(2)}`]
+      ? [request.requestNumber, request.roNumber || "-", request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.dateRequested || "-", "Paid", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${(request.price ?? 0).toFixed(2)}`]
+      : [request.requestNumber, request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.poNumber || "-", request.dateRequested || "-", "Paid", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${(request.price ?? 0).toFixed(2)}`]
     );
     const csv = [
       headers.join(","),
@@ -937,11 +933,11 @@ export default function Dashboard() {
         (request) => request.requestType === dateRangeRequestType
       );
       const headers = dateRangeRequestType === "service"
-        ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Price Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
-        : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Price Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
+        ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Price Date (Date Requested)", "Payment Status", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
+        : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Price Date (Date Requested)", "Payment Status", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
       const rows = dateRangeRequests.map((request) => dateRangeRequestType === "service"
-        ? [request.requestNumber, request.roNumber || "-", request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.dateRequested || "-", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${request.price.toFixed(2)}`]
-        : [request.requestNumber, request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.poNumber || "-", request.dateRequested || "-", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${request.price.toFixed(2)}`]
+        ? [request.requestNumber, request.roNumber || "-", request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.dateRequested || "-", "Paid", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${(request.price ?? 0).toFixed(2)}`]
+        : [request.requestNumber, request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.poNumber || "-", request.dateRequested || "-", "Paid", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${(request.price ?? 0).toFixed(2)}`]
       );
       const filePrefix = `${dateRangeRequestType}-requests`;
 
@@ -2507,7 +2503,7 @@ export default function Dashboard() {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Exports visible Sales requests as CSV
+                    Exports all Sales requests as upfront paid charges dated by request date
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
@@ -2521,7 +2517,7 @@ export default function Dashboard() {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Exports visible Service requests as CSV
+                    Exports all Service requests as upfront paid charges dated by request date
                   </TooltipContent>
                 </Tooltip>
                 <Dialog open={showDateRangeDialog} onOpenChange={setShowDateRangeDialog}>
@@ -2545,7 +2541,7 @@ export default function Dashboard() {
                       Export by Date Range
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground">
-                      Select a request type and payment date range. Payment date is the date requested; completion date is for records only.
+                      Select a request type and request-date range. Requests are marked Paid regardless of completion status; unpriced requests export as $0. Completion date is for records only.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
