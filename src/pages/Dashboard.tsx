@@ -829,20 +829,15 @@ export default function Dashboard() {
         range = getDateRangeFromOption(deleteByDateOption);
       }
 
-      const endDateObj = new Date(range.end);
-      endDateObj.setDate(endDateObj.getDate() + 1);
-      const adjustedEnd = endDateObj.toISOString().split("T")[0];
-
-      const startMs = new Date(range.start).setHours(0, 0, 0, 0);
-      const endMs = new Date(range.end).setHours(23, 59, 59, 999);
-
       const matchingIds = requests
-        .filter((r) => {
-          if (!r.dateRequested) return false;
-          const reqMs = new Date(r.dateRequested).getTime();
-          return reqMs >= startMs && reqMs <= endMs;
+        .filter((request) => {
+          const requestedDate = request.dateRequested?.slice(0, 10);
+          return request.requestType === "service"
+            && !!requestedDate
+            && requestedDate >= range.start
+            && requestedDate <= range.end;
         })
-        .map((r) => r.id);
+        .map((request) => request.id);
 
       if (matchingIds.length === 0) {
         toast({ title: "No Requests Found", description: `No requests found between ${range.start} and ${range.end}.`, variant: "default" });
