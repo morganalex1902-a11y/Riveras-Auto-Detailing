@@ -7,7 +7,26 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
+const fetchWithRetry: typeof fetch = async (input, init) => {
+  const request = input instanceof Request ? input : undefined;
+  const method = (init?.method ?? request?.method ?? "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") return fetch(input, init);
+
+  const signal = init?.signal ?? request?.signal;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await fetch(input, init);
+    } catch (error) {
+      if (!(error instanceof TypeError) || attempt === 2 || signal?.aborted) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+  }
+
+  throw new TypeError("Supabase read request failed after retries");
+};
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: { fetch: fetchWithRetry },
   auth: {
     autoRefreshToken: true,
     persistSession: true,
