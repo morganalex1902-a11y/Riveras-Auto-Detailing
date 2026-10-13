@@ -215,7 +215,6 @@ export default function Dashboard() {
   const [showDeleteSelectedDialog, setShowDeleteSelectedDialog] = useState(false);
   const [showDateRangeDialog, setShowDateRangeDialog] = useState(false);
   const [dateRangeOption, setDateRangeOption] = useState("thisWeek");
-  const [dateRangeRequestType, setDateRangeRequestType] = useState<"sales" | "service">("sales");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
   const [isExportingByDate, setIsExportingByDate] = useState(false);
@@ -929,17 +928,26 @@ export default function Dashboard() {
     setIsExportingByDate(true);
     try {
       const { start, end } = getDateRangeFromOption(dateRangeOption);
-      const dateRangeRequests = (await getRequestsByDateRange(start, end)).filter(
-        (request) => request.requestType === dateRangeRequestType
-      );
-      const headers = dateRangeRequestType === "service"
-        ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Price Date (Date Requested)", "Payment Status", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
-        : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Price Date (Date Requested)", "Payment Status", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
-      const rows = dateRangeRequests.map((request) => dateRangeRequestType === "service"
-        ? [request.requestNumber, request.roNumber || "-", request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.dateRequested || "-", "Paid", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${(request.price ?? 0).toFixed(2)}`]
-        : [request.requestNumber, request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.poNumber || "-", request.dateRequested || "-", "Paid", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${(request.price ?? 0).toFixed(2)}`]
-      );
-      const filePrefix = `${dateRangeRequestType}-requests`;
+      const dateRangeRequests = await getRequestsByDateRange(start, end);
+      const headers = ["Request Type", "Request #", "RO #", "PO#", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Price Date (Date Requested)", "Payment Status", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
+      const rows = dateRangeRequests.map((request) => [
+        request.requestType,
+        request.requestNumber,
+        request.roNumber || "-",
+        request.poNumber || "-",
+        request.requestedBy,
+        request.manager || "-",
+        `${request.year} ${request.make} ${request.model}`,
+        request.stockVin,
+        request.dateRequested || "-",
+        "Paid",
+        request.mainServices.join("; "),
+        request.additionalServices.join("; "),
+        request.status,
+        request.completionDate || "-",
+        `$${(request.price ?? 0).toFixed(2)}`,
+      ]);
+      const filePrefix = "requests";
 
       const csv = [
         headers.join(","),
@@ -2541,26 +2549,10 @@ export default function Dashboard() {
                       Export by Date Range
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground">
-                      Select a request type and request-date range. Requests are marked Paid regardless of completion status; unpriced requests export as $0. Completion date is for records only.
+                      Select a request-date range. Sales and service requests export together in one CSV. Requests are marked Paid regardless of completion status; unpriced requests export as $0. Completion date is for records only.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button
-                        type="button"
-                        variant={dateRangeRequestType === "sales" ? "default" : "outline"}
-                        onClick={() => setDateRangeRequestType("sales")}
-                      >
-                        Sales Requests
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={dateRangeRequestType === "service" ? "default" : "outline"}
-                        onClick={() => setDateRangeRequestType("service")}
-                      >
-                        Service Requests
-                      </Button>
-                    </div>
                     <div className="space-y-3">
                       <label className="flex items-center gap-3 cursor-pointer p-3 rounded border border-border/30 hover:bg-background/50 transition-colors">
                         <input
