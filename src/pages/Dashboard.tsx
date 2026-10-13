@@ -214,7 +214,7 @@ export default function Dashboard() {
   const [isDeletingSelected, setIsDeletingSelected] = useState(false);
   const [showDeleteSelectedDialog, setShowDeleteSelectedDialog] = useState(false);
   const [showDateRangeDialog, setShowDateRangeDialog] = useState(false);
-  const [dateRangeOption, setDateRangeOption] = useState("thisWeek");
+  const [dateRangeOption, setDateRangeOption] = useState("lastTwoWeeks");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
   const [isExportingByDate, setIsExportingByDate] = useState(false);
@@ -887,6 +887,14 @@ export default function Dashboard() {
           end: lastSunday.toISOString().split("T")[0],
         };
       }
+      case "lastTwoWeeks": {
+        const start = new Date(today);
+        start.setDate(today.getDate() - 13);
+        return {
+          start: start.toISOString().split("T")[0],
+          end: today.toISOString().split("T")[0],
+        };
+      }
       case "thisMonth": {
         const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
         return {
@@ -959,13 +967,9 @@ export default function Dashboard() {
       const a = document.createElement("a");
       a.href = url;
 
-      // Create filename with date range
       const { start: startDate, end: endDate } = getDateRangeFromOption(dateRangeOption);
       let fileName = `${filePrefix}-${startDate}-to-${endDate}.csv`;
-      if (dateRangeOption === "thisWeek") fileName = `${filePrefix}-this-week-${new Date().toISOString().split("T")[0]}.csv`;
-      if (dateRangeOption === "lastWeek") fileName = `${filePrefix}-last-week-${new Date().toISOString().split("T")[0]}.csv`;
-      if (dateRangeOption === "thisMonth") fileName = `${filePrefix}-this-month-${new Date().toISOString().split("T")[0]}.csv`;
-      if (dateRangeOption === "lastMonth") fileName = `${filePrefix}-last-month-${new Date().toISOString().split("T")[0]}.csv`;
+      if (dateRangeOption === "lastTwoWeeks") fileName = `${filePrefix}-last-two-weeks-${endDate}.csv`;
 
       a.download = fileName;
       a.click();
@@ -2558,45 +2562,12 @@ export default function Dashboard() {
                         <input
                           type="radio"
                           name="dateRange"
-                          value="thisWeek"
-                          checked={dateRangeOption === "thisWeek"}
+                          value="lastTwoWeeks"
+                          checked={dateRangeOption === "lastTwoWeeks"}
                           onChange={(e) => setDateRangeOption(e.target.value)}
                           className="w-4 h-4"
                         />
-                        <span className="text-sm font-medium">This Week</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded border border-border/30 hover:bg-background/50 transition-colors">
-                        <input
-                          type="radio"
-                          name="dateRange"
-                          value="lastWeek"
-                          checked={dateRangeOption === "lastWeek"}
-                          onChange={(e) => setDateRangeOption(e.target.value)}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-medium">Last Week</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded border border-border/30 hover:bg-background/50 transition-colors">
-                        <input
-                          type="radio"
-                          name="dateRange"
-                          value="thisMonth"
-                          checked={dateRangeOption === "thisMonth"}
-                          onChange={(e) => setDateRangeOption(e.target.value)}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-medium">This Month</span>
-                      </label>
-                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded border border-border/30 hover:bg-background/50 transition-colors">
-                        <input
-                          type="radio"
-                          name="dateRange"
-                          value="lastMonth"
-                          checked={dateRangeOption === "lastMonth"}
-                          onChange={(e) => setDateRangeOption(e.target.value)}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-medium">Last Month</span>
+                        <span className="text-sm font-medium">Last Two Weeks</span>
                       </label>
                       <label className="flex items-center gap-3 cursor-pointer p-3 rounded border border-border/30 hover:bg-background/50 transition-colors">
                         <input
