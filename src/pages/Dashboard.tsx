@@ -703,8 +703,8 @@ export default function Dashboard() {
   const handleExport = (requestType: "sales" | "service") => {
     const requestsToExport = filteredRequests.filter((request) => request.requestType === requestType);
     const headers = requestType === "service"
-      ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Payment Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
-      : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Payment Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
+      ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Price Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
+      : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Price Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
     const rows = requestsToExport.map((request) => requestType === "service"
       ? [request.requestNumber, request.roNumber || "-", request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.dateRequested || "-", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${request.price.toFixed(2)}`]
       : [request.requestNumber, request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.poNumber || "-", request.dateRequested || "-", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${request.price.toFixed(2)}`]
@@ -937,8 +937,8 @@ export default function Dashboard() {
         (request) => request.requestType === dateRangeRequestType
       );
       const headers = dateRangeRequestType === "service"
-        ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Payment Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
-        : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Payment Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
+        ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Price Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
+        : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Price Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
       const rows = dateRangeRequests.map((request) => dateRangeRequestType === "service"
         ? [request.requestNumber, request.roNumber || "-", request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.dateRequested || "-", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${request.price.toFixed(2)}`]
         : [request.requestNumber, request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.poNumber || "-", request.dateRequested || "-", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${request.price.toFixed(2)}`]
