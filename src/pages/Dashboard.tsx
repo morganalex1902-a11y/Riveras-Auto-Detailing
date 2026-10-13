@@ -703,8 +703,8 @@ export default function Dashboard() {
   const handleExport = (requestType: "sales" | "service") => {
     const requestsToExport = filteredRequests.filter((request) => request.requestType === requestType);
     const headers = requestType === "service"
-      ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Date Requested", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
-      : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Date Requested", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
+      ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Payment Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
+      : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Payment Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
     const rows = requestsToExport.map((request) => requestType === "service"
       ? [request.requestNumber, request.roNumber || "-", request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.dateRequested || "-", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${request.price.toFixed(2)}`]
       : [request.requestNumber, request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.poNumber || "-", request.dateRequested || "-", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${request.price.toFixed(2)}`]
@@ -937,8 +937,8 @@ export default function Dashboard() {
         (request) => request.requestType === dateRangeRequestType
       );
       const headers = dateRangeRequestType === "service"
-        ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Date Requested", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
-        : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Date Requested", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
+        ? ["Request #", "RO #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Payment Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"]
+        : ["Request #", "Requested By", "Manager", "Vehicle", "Stock/VIN", "PO#", "Payment Date (Date Requested)", "Main Services", "Additional Services", "Status", "Completion Date", "Price"];
       const rows = dateRangeRequests.map((request) => dateRangeRequestType === "service"
         ? [request.requestNumber, request.roNumber || "-", request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.dateRequested || "-", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${request.price.toFixed(2)}`]
         : [request.requestNumber, request.requestedBy, request.manager || "-", `${request.year} ${request.make} ${request.model}`, request.stockVin, request.poNumber || "-", request.dateRequested || "-", request.mainServices.join("; "), request.additionalServices.join("; "), request.status, request.completionDate || "-", `$${request.price.toFixed(2)}`]
@@ -2545,7 +2545,7 @@ export default function Dashboard() {
                       Export by Date Range
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground">
-                      Select a request type and date range to export.
+                      Select a request type and payment date range. Payment date is the date requested; completion date is for records only.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
