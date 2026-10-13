@@ -1011,7 +1011,7 @@ export default function Dashboard() {
       let rows: any[];
       let filePrefix: string;
 
-      if (departmentFilter === "service") {
+      if (departmentFilter === "service" || (departmentFilter === "all" && dateRangeRequests.some((r) => r.requestType === "service"))) {
         // Service requests export
         headers = [
           "Request #",
@@ -1028,7 +1028,7 @@ export default function Dashboard() {
           "Price",
         ];
 
-        rows = dateRangeRequests.map((r) => [
+        rows = dateRangeRequests.filter((r) => r.requestType === "service").map((r) => [
           r.requestNumber,
           r.roNumber || "-",
           r.requestedBy,
@@ -1060,7 +1060,7 @@ export default function Dashboard() {
           "Price",
         ];
 
-        rows = dateRangeRequests.map((r) => [
+        rows = dateRangeRequests.filter((r) => r.requestType === "sales").map((r) => [
           r.requestNumber,
           r.requestedBy,
           r.manager || "-",

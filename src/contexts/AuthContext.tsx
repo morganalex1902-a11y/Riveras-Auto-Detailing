@@ -603,6 +603,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: req.id,
         requestNumber: req.request_number,
         requestedBy: req.requested_by,
+        requesterRole: req.requester_role,
         manager: req.manager,
         stockVin: req.stock_vin,
         poNumber: req.po_number,
@@ -623,6 +624,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         notes: req.notes,
         status: req.status,
         price: req.price,
+        requestType: req.request_type || "sales",
+        roNumber: req.ro_number,
       }));
 
       return formattedRequests;
