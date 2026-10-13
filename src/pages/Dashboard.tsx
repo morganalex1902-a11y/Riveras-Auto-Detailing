@@ -705,12 +705,7 @@ export default function Dashboard() {
     let rows: any[];
     let filename: string;
 
-    // Filter to only include Completed requests
-    const completedRequests = filteredRequests.filter(
-      (r) => r.status === "Completed"
-    );
-
-    if (departmentFilter === "service" || (departmentFilter === "all" && completedRequests.some(r => r.requestType === "service"))) {
+    if (departmentFilter === "service" || (departmentFilter === "all" && filteredRequests.some(r => r.requestType === "service"))) {
       // Export service requests
       headers = [
         "Request #",
@@ -727,7 +722,7 @@ export default function Dashboard() {
         "Price",
       ];
 
-      const serviceRequests = completedRequests.filter(r => r.requestType === "service");
+      const serviceRequests = filteredRequests.filter(r => r.requestType === "service");
       rows = serviceRequests.map((r) => [
         r.requestNumber,
         r.roNumber || "-",
@@ -760,7 +755,7 @@ export default function Dashboard() {
         "Price",
       ];
 
-      const salesRequests = completedRequests.filter(r => r.requestType === "sales");
+      const salesRequests = filteredRequests.filter(r => r.requestType === "sales");
       rows = salesRequests.map((r) => [
         r.requestNumber,
         r.requestedBy,
