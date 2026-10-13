@@ -829,20 +829,13 @@ export default function Dashboard() {
         range = getDateRangeFromOption(deleteByDateOption);
       }
 
-      const endDateObj = new Date(range.end);
-      endDateObj.setDate(endDateObj.getDate() + 1);
-      const adjustedEnd = endDateObj.toISOString().split("T")[0];
-
-      const startMs = new Date(range.start).setHours(0, 0, 0, 0);
-      const endMs = new Date(range.end).setHours(23, 59, 59, 999);
-
       const matchingIds = requests
-        .filter((r) => {
-          if (!r.dateRequested) return false;
-          const reqMs = new Date(r.dateRequested).getTime();
-          return reqMs >= startMs && reqMs <= endMs;
-        })
-        .map((r) => r.id);
+        .filter((request) =>
+          Boolean(request.dateRequested) &&
+          request.dateRequested >= range.start &&
+          request.dateRequested <= range.end,
+        )
+        .map((request) => request.id);
 
       if (matchingIds.length === 0) {
         toast({ title: "No Requests Found", description: `No requests found between ${range.start} and ${range.end}.`, variant: "default" });
@@ -2644,7 +2637,7 @@ export default function Dashboard() {
                   <DialogHeader>
                     <DialogTitle className="font-display uppercase tracking-wider">Delete by Date Range</DialogTitle>
                     <DialogDescription className="text-muted-foreground">
-                      Select a date range to permanently delete service requests. This cannot be undone.
+                      Remove requests by their request date only. Completion dates are not included.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
