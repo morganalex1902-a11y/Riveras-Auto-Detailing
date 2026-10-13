@@ -998,84 +998,40 @@ export default function Dashboard() {
     setIsExportingByDate(true);
     try {
       const { start, end } = getDateRangeFromOption(dateRangeOption);
-      let dateRangeRequests = await getRequestsByDateRange(start, end);
-
-      // Apply department filter
-      if (departmentFilter === "sales") {
-        dateRangeRequests = dateRangeRequests.filter(r => r.requestType === "sales");
-      } else if (departmentFilter === "service") {
-        dateRangeRequests = dateRangeRequests.filter(r => r.requestType === "service");
-      }
-
-      let headers: string[];
-      let rows: any[];
-      let filePrefix: string;
-
-      if (departmentFilter === "service" || (departmentFilter === "all" && dateRangeRequests.some((r) => r.requestType === "service"))) {
-        // Service requests export
-        headers = [
-          "Request #",
-          "RO #",
-          "Requested By",
-          "Manager",
-          "Vehicle",
-          "Stock/VIN",
-          "Date Requested",
-          "Main Services",
-          "Additional Services",
-          "Status",
-          "Completion Date",
-          "Price",
-        ];
-
-        rows = dateRangeRequests.filter((r) => r.requestType === "service").map((r) => [
-          r.requestNumber,
-          r.roNumber || "-",
-          r.requestedBy,
-          r.manager || "-",
-          `${r.year} ${r.make} ${r.model}`,
-          r.stockVin,
-          r.dateRequested || "-",
-          r.mainServices.join("; "),
-          r.additionalServices.join("; "),
-          r.status,
-          r.completionDate || "-",
-          `$${r.price.toFixed(2)}`,
-        ]);
-        filePrefix = "service-requests";
-      } else {
-        // Sales requests export (default)
-        headers = [
-          "Request #",
-          "Requested By",
-          "Manager",
-          "Vehicle",
-          "Stock/VIN",
-          "PO#",
-          "Date Requested",
-          "Main Services",
-          "Additional Services",
-          "Status",
-          "Completion Date",
-          "Price",
-        ];
-
-        rows = dateRangeRequests.filter((r) => r.requestType === "sales").map((r) => [
-          r.requestNumber,
-          r.requestedBy,
-          r.manager || "-",
-          `${r.year} ${r.make} ${r.model}`,
-          r.stockVin,
-          r.poNumber || "-",
-          r.dateRequested || "-",
-          r.mainServices.join("; "),
-          r.additionalServices.join("; "),
-          r.status,
-          r.completionDate || "-",
-          `$${r.price.toFixed(2)}`,
-        ]);
-        filePrefix = "sales-requests";
-      }
+      const dateRangeRequests = await getRequestsByDateRange(start, end);
+      const headers = [
+        "Request Type",
+        "Request #",
+        "RO #",
+        "PO#",
+        "Requested By",
+        "Manager",
+        "Vehicle",
+        "Stock/VIN",
+        "Date Requested",
+        "Main Services",
+        "Additional Services",
+        "Status",
+        "Completion Date",
+        "Price",
+      ];
+      const rows = dateRangeRequests.map((r) => [
+        r.requestType === "service" ? "Service" : "Sales",
+        r.requestNumber,
+        r.roNumber || "-",
+        r.poNumber || "-",
+        r.requestedBy,
+        r.manager || "-",
+        `${r.year} ${r.make} ${r.model}`,
+        r.stockVin,
+        r.dateRequested || "-",
+        r.mainServices.join("; "),
+        r.additionalServices.join("; "),
+        r.status,
+        r.completionDate || "-",
+        `$${r.price.toFixed(2)}`,
+      ]);
+      const filePrefix = "requests";
 
       const csv = [
         headers.join(","),
