@@ -606,8 +606,12 @@ export default function Dashboard() {
     const total = userRequests.length;
     const pending = userRequests.filter((r) => r.status === "Pending").length;
     const completed = userRequests.filter((r) => r.status === "Completed").length;
-    const amountDue = 0;
-    const amountPaid = userRequests.reduce((sum, request) => sum + (request.price ?? 0), 0);
+    const amountDue = userRequests
+      .filter((request) => request.status === "Pending")
+      .reduce((sum, request) => sum + (request.price ?? 0), 0);
+    const amountPaid = userRequests
+      .filter((request) => request.status === "Completed")
+      .reduce((sum, request) => sum + (request.price ?? 0), 0);
 
     return { total, pending, completed, amountDue, amountPaid };
   }, [userRequests]);
@@ -2307,7 +2311,20 @@ export default function Dashboard() {
           </div>
 
           {/* Pending */}
-          <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter("Pending");
+              setDepartmentFilter("all");
+              setSearchTerm("");
+            }}
+            aria-pressed={statusFilter === "Pending"}
+            className={`glass-card p-6 group text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+              statusFilter === "Pending"
+                ? "border-primary ring-1 ring-primary"
+                : "hover:border-primary/50"
+            }`}
+          >
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
@@ -2318,7 +2335,7 @@ export default function Dashboard() {
               <Clock className="w-10 h-10 text-primary/20" />
             </div>
             <div className="w-8 h-[1px] bg-primary" />
-          </div>
+          </button>
 
           {/* Completed */}
           <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
