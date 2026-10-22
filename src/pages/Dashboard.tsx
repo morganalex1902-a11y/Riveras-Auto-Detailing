@@ -606,8 +606,12 @@ export default function Dashboard() {
     const total = userRequests.length;
     const pending = userRequests.filter((r) => r.status === "Pending").length;
     const completed = userRequests.filter((r) => r.status === "Completed").length;
-    const amountDue = 0;
-    const amountPaid = userRequests.reduce((sum, request) => sum + (request.price ?? 0), 0);
+    const amountDue = userRequests
+      .filter((request) => request.status === "Pending")
+      .reduce((sum, request) => sum + (request.price ?? 0), 0);
+    const amountPaid = userRequests
+      .filter((request) => request.status === "Completed")
+      .reduce((sum, request) => sum + (request.price ?? 0), 0);
 
     return { total, pending, completed, amountDue, amountPaid };
   }, [userRequests]);
