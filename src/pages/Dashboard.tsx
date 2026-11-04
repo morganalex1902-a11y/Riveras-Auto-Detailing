@@ -2297,7 +2297,20 @@ export default function Dashboard() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-12"
         >
           {/* Total Requests */}
-          <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter("All");
+              setDepartmentFilter("all");
+              setSearchTerm("");
+            }}
+            aria-pressed={statusFilter === "All"}
+            className={`glass-card p-6 group text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+              statusFilter === "All"
+                ? "border-primary ring-1 ring-primary"
+                : "hover:border-primary/50"
+            }`}
+          >
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
@@ -2308,7 +2321,7 @@ export default function Dashboard() {
               <AlertCircle className="w-10 h-10 text-primary/20" />
             </div>
             <div className="w-8 h-[1px] bg-primary" />
-          </div>
+          </button>
 
           {/* Pending */}
           <button
@@ -2338,7 +2351,20 @@ export default function Dashboard() {
           </button>
 
           {/* Completed */}
-          <div className="glass-card p-6 group hover:border-primary/50 transition-all duration-300">
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter("Completed");
+              setDepartmentFilter("all");
+              setSearchTerm("");
+            }}
+            aria-pressed={statusFilter === "Completed"}
+            className={`glass-card p-6 group text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+              statusFilter === "Completed"
+                ? "border-primary ring-1 ring-primary"
+                : "hover:border-primary/50"
+            }`}
+          >
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-xs font-display uppercase tracking-wider text-muted-foreground mb-2">
@@ -2349,7 +2375,7 @@ export default function Dashboard() {
               <CheckCircle2 className="w-10 h-10 text-primary/20" />
             </div>
             <div className="w-8 h-[1px] bg-primary" />
-          </div>
+          </button>
 
           {/* Amount Due - Only visible to admins with permission */}
           {user?.can_view_financial_cards && (
