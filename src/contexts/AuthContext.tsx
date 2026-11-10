@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { formatErrorMessage } from "@/lib/utils";
+import { formatErrorMessage, getCentralDate } from "@/lib/utils";
 
 export interface User {
   email: string;
@@ -41,6 +41,7 @@ export interface ServiceRequest {
   due?: string;
   requestType: "sales" | "service";
   roNumber?: string;
+  deletedAt?: string;
 }
 
 interface AuthContextType {
@@ -58,13 +59,84 @@ interface AuthContextType {
   newRequestCount: number;
   resetNewRequestCount: () => void;
   deleteAllRequests: () => Promise<void>;
+  archiveRequestsByIds: (ids: number[]) => Promise<void>;
+  restoreArchivedRequest: (id: number, requestNumber?: string) => Promise<void>;
+  getArchivedRequests: () => Promise<ServiceRequest[]>;
+  isRequestWithinActiveWindow: (request: ServiceRequest) => boolean;
   refreshRequests: () => Promise<void>;
-  softDeleteVisibleRequests: () => Promise<void>;
-  restoreSoftDeletedRequests: () => Promise<void>;
-  hideRequestsByIds: (ids: number[]) => void;
   getRequestsByDateRange: (startDate: string, endDate: string) => Promise<ServiceRequest[]>;
   loading: boolean;
 }
+
+type ServiceRequestRow = {
+  id: number;
+  request_number: string;
+  requested_by: string;
+  requester_role: string | null;
+  manager: string | null;
+  stock_vin: string;
+  po_number: string | null;
+  vehicle_description: string | null;
+  year: number | null;
+  make: string | null;
+  model: string | null;
+  color: string | null;
+  date_requested: string | null;
+  due_date: string | null;
+  due_time: string | null;
+  start_date: string | null;
+  start_time: string | null;
+  completion_date: string | null;
+  completion_time: string | null;
+  main_services: string[] | null;
+  additional_services: string[] | null;
+  notes: string | null;
+  status: string;
+  price: number;
+  request_type: string | null;
+  ro_number: string | null;
+  deleted_at: string | null;
+};
+
+const REQUESTS_START_DATE = "2026-11-09";
+
+const mapServiceRequest = (req: ServiceRequestRow): ServiceRequest => ({
+  id: req.id,
+  requestNumber: req.request_number,
+  requestedBy: req.requested_by,
+  requesterRole: req.requester_role || undefined,
+  manager: req.manager || undefined,
+  stockVin: req.stock_vin,
+  poNumber: req.po_number || undefined,
+  vehicleDescription: req.vehicle_description || "",
+  year: req.year as number,
+  make: req.make || "",
+  model: req.model || "",
+  color: req.color || undefined,
+  dateRequested: req.date_requested || "",
+  dueDate: req.due_date || undefined,
+  dueTime: req.due_time || undefined,
+  startDate: req.start_date || undefined,
+  startTime: req.start_time || undefined,
+  completionDate: req.completion_date || undefined,
+  completionTime: req.completion_time || undefined,
+  mainServices: req.main_services || [],
+  additionalServices: req.additional_services || [],
+  notes: req.notes || "",
+  status: req.status as ServiceRequest["status"],
+  price: req.price,
+  service: req.main_services?.[0],
+  vin: req.stock_vin,
+  due: `${req.due_date} ${req.due_time}`,
+  requestType: (req.request_type || "sales") as ServiceRequest["requestType"],
+  roNumber: req.ro_number || undefined,
+  deletedAt: req.deleted_at || undefined,
+});
+
+const isRequestWithinActiveWindow = (request: ServiceRequest) =>
+  Boolean(request.dateRequested) &&
+  request.dateRequested >= REQUESTS_START_DATE &&
+  request.dateRequested <= getCentralDate();
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -105,81 +177,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
   }, []);
 
-  const getHiddenRequestIds = useCallback((userId: string): Set<number> => {
-    try {
-      const raw = localStorage.getItem(`hidden_requests_${userId}`);
-      if (!raw) return new Set();
-      return new Set(JSON.parse(raw) as number[]);
-    } catch {
-      return new Set();
-    }
-  }, []);
-
-  const saveHiddenRequestIds = useCallback((userId: string, ids: Set<number>) => {
-    try {
-      localStorage.setItem(`hidden_requests_${userId}`, JSON.stringify([...ids]));
-    } catch {
-      // ignore storage errors
-    }
-  }, []);
-
   const fetchRequests = useCallback(async (dealershipId: string, role: string, userEmail?: string, userId?: string) => {
     try {
-      const hiddenIds = userId ? getHiddenRequestIds(userId) : new Set<number>();
+      if (userId) {
+        const hiddenKey = `hidden_requests_${userId}`;
+        const rawHiddenIds = localStorage.getItem(hiddenKey);
+        if (rawHiddenIds) {
+          const hiddenIds = JSON.parse(rawHiddenIds) as number[];
+          if (hiddenIds.length > 0) {
+            const { error: archiveError } = await supabase
+              .from("service_requests")
+              .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
+              .eq("dealership_id", dealershipId)
+              .in("id", hiddenIds)
+              .is("deleted_at", null);
+            if (archiveError) throw archiveError;
+          }
+          localStorage.removeItem(hiddenKey);
+        }
+      }
 
+      const today = getCentralDate();
       let query = supabase
         .from("service_requests")
         .select("*")
-        .eq("dealership_id", dealershipId);
+        .eq("dealership_id", dealershipId)
+        .is("deleted_at", null)
+        .gte("date_requested", REQUESTS_START_DATE)
+        .lte("date_requested", today);
 
       if (role === "sales_rep" && userEmail) {
         query = query.eq("requested_by", userEmail);
       }
 
-      const { data, error } = await query.order("created_at", { ascending: false });
+      const data: ServiceRequestRow[] = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data: page, error } = await query
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(offset, offset + 999);
 
-      if (error) throw error;
+        if (error) throw error;
+        data.push(...(page || []));
+        if (!page || page.length < 1000) break;
+      }
 
-      const formattedRequests: ServiceRequest[] = (data || [])
-        .filter((req: any) => !hiddenIds.has(req.id))
-        .map((req: any) => ({
-        id: req.id,
-        requestNumber: req.request_number,
-        requestedBy: req.requested_by,
-        requesterRole: req.requester_role,
-        manager: req.manager,
-        stockVin: req.stock_vin,
-        poNumber: req.po_number,
-        vehicleDescription: req.vehicle_description,
-        year: req.year,
-        make: req.make,
-        model: req.model,
-        color: req.color,
-        dateRequested: req.date_requested,
-        dueDate: req.due_date,
-        dueTime: req.due_time,
-        startDate: req.start_date,
-        startTime: req.start_time,
-        completionDate: req.completion_date,
-        completionTime: req.completion_time,
-        mainServices: req.main_services || [],
-        additionalServices: req.additional_services || [],
-        notes: req.notes,
-        status: req.status,
-        price: req.price,
-        service: req.main_services?.[0],
-        vin: req.stock_vin,
-        due: `${req.due_date} ${req.due_time}`,
-        requestType: req.request_type || "sales",
-        roNumber: req.ro_number,
-      }));
-
-      setRequests(formattedRequests);
+      setRequests(data.map(mapServiceRequest));
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
       console.error("Error fetching requests:", errorMessage);
     }
-  }, [getHiddenRequestIds]);
+  }, []);
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
@@ -260,6 +308,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const recordAdminRequestActivity = async (
+    actionType: "request_create" | "request_update" | "request_archive" | "request_restore",
+    details: Record<string, unknown>,
+  ) => {
+    if (user?.role !== "admin" || !user.id || !user.dealership_id) return;
+
+    const { error } = await supabase.from("account_activity").insert({
+      dealership_id: user.dealership_id,
+      actor_id: user.id,
+      action_type: actionType,
+      details,
+    });
+
+    if (error) console.error("Error logging request activity:", error.message);
+  };
+
   const addRequest = async (requestData: Omit<ServiceRequest, "id">) => {
     try {
       if (!user?.dealership_id) throw new Error("User dealership not found");
@@ -308,6 +372,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
+      await recordAdminRequestActivity("request_create", {
+        request_id: data.id,
+        request_number: nextRequestNumber,
+        request_type: requestData.requestType,
+      });
+
       // Broadcast to admins so they refresh instantly (works with anon key, no DB config needed)
       supabase.channel(`new-requests-${user.dealership_id}`)
         .send({ type: "broadcast", event: "new_request", payload: { requestNumber: nextRequestNumber } })
@@ -347,6 +417,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
+      await recordAdminRequestActivity("request_update", { request_id: id, request_number: requests.find((request) => request.id === id)?.requestNumber, field: "status", value: status });
       // Update local state
       setRequests(requests.map((r) => {
         if (r.id === id) {
@@ -376,6 +447,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
+      await recordAdminRequestActivity("request_update", { request_id: id, request_number: requests.find((request) => request.id === id)?.requestNumber, field: "price", value: price });
       // Update local state
       setRequests(requests.map((r) => (r.id === id ? { ...r, price } : r)));
     } catch (error) {
@@ -402,6 +474,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
+      await recordAdminRequestActivity("request_update", { request_id: id, request_number: requests.find((request) => request.id === id)?.requestNumber, fields: Object.keys(updateData) });
       // Update local state
       setRequests(requests.map((r) => {
         if (r.id === id) {
@@ -473,6 +546,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
+      if (Object.keys(updateData).length > 0) {
+        await recordAdminRequestActivity("request_update", { request_id: id, request_number: requests.find((request) => request.id === id)?.requestNumber, fields: Object.keys(updateData) });
+      }
       // Update local state
       setRequests(requests.map((r) => (r.id === id ? { ...r, ...stateUpdate } : r)));
     } catch (error) {
@@ -482,90 +558,113 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deleteRequest = async (id: number) => {
+  const archiveRequestsByIds = async (ids: number[]) => {
     try {
-      if (!user?.id) throw new Error("User not found");
+      if (user?.role !== "admin" || !user.id || !user.dealership_id) throw new Error("Admin access required");
+      if (ids.length === 0) return;
 
-      const hiddenIds = getHiddenRequestIds(user.id);
-      hiddenIds.add(id);
-      saveHiddenRequestIds(user.id, hiddenIds);
+      const { error } = await supabase
+        .from("service_requests")
+        .update({ deleted_at: new Date().toISOString(), deleted_by: user.id })
+        .eq("dealership_id", user.dealership_id)
+        .in("id", ids)
+        .is("deleted_at", null);
 
-      setRequests(requests.filter((r) => r.id !== id));
+      if (error) throw error;
+      await recordAdminRequestActivity("request_archive", {
+        request_ids: ids,
+        request_numbers: requests.filter((request) => ids.includes(request.id)).map((request) => request.requestNumber),
+        count: ids.length,
+      });
+      const archivedIds = new Set(ids);
+      setRequests((currentRequests) => currentRequests.filter((request) => !archivedIds.has(request.id)));
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
-      console.error("Error hiding request:", errorMessage);
+      console.error("Error archiving requests:", errorMessage);
       throw new Error(errorMessage);
     }
   };
 
-  const softDeleteVisibleRequests = async () => {
+  const deleteRequest = async (id: number) => archiveRequestsByIds([id]);
+
+  const deleteAllRequests = async () => {
     try {
-      if (!user?.id) throw new Error("User not found");
+      if (user?.role !== "admin" || !user.id || !user.dealership_id) throw new Error("Admin access required");
 
-      const today = new Date();
-      const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-      const previousDateRequests = requests.filter((request) => request.dateRequested < todayDate);
-      const hiddenIds = getHiddenRequestIds(user.id);
+      const { error } = await supabase
+        .from("service_requests")
+        .update({ deleted_at: new Date().toISOString(), deleted_by: user.id })
+        .eq("dealership_id", user.dealership_id)
+        .is("deleted_at", null)
+        .gte("date_requested", REQUESTS_START_DATE)
+        .lte("date_requested", getCentralDate());
 
-      previousDateRequests.forEach(({ id }) => hiddenIds.add(id));
-      saveHiddenRequestIds(user.id, hiddenIds);
-
-      setRequests((currentRequests) => currentRequests.filter((request) => request.dateRequested >= todayDate));
+      if (error) throw error;
+      await recordAdminRequestActivity("request_archive", {
+        scope: "active_window",
+        request_ids: requests.map((request) => request.id),
+        request_numbers: requests.map((request) => request.requestNumber),
+        count: requests.length,
+      });
+      setRequests([]);
       setNewRequestCount(0);
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
-      console.error("Error hiding previous-date requests:", errorMessage);
+      console.error("Error archiving all requests:", errorMessage);
       throw new Error(errorMessage);
     }
   };
 
-  const hideRequestsByIds = (ids: number[]) => {
-    if (ids.length === 0) return;
-    const idSet = new Set(ids.map(Number));
-    // Persist to localStorage if user is available
-    if (user?.id) {
-      const hiddenIds = getHiddenRequestIds(user.id);
-      ids.forEach(id => hiddenIds.add(id));
-      saveHiddenRequestIds(user.id, hiddenIds);
-    }
-    setRequests(prev => prev.filter(r => !idSet.has(Number(r.id))));
-  };
-
-  const restoreSoftDeletedRequests = async () => {
+  const getArchivedRequests = useCallback(async () => {
     try {
-      if (!user?.id || !user?.dealership_id) throw new Error("User not found");
+      if (user?.role !== "admin" || !user.dealership_id) throw new Error("Admin access required");
 
-      const hiddenIds = getHiddenRequestIds(user.id);
-      hiddenIds.clear();
-      saveHiddenRequestIds(user.id, hiddenIds);
+      const today = getCentralDate();
+      const data: ServiceRequestRow[] = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data: page, error } = await supabase
+          .from("service_requests")
+          .select("*")
+          .eq("dealership_id", user.dealership_id)
+          .or(`deleted_at.not.is.null,date_requested.lt.${REQUESTS_START_DATE},date_requested.gt.${today},date_requested.is.null`)
+          .order("deleted_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(offset, offset + 999);
 
-      await fetchRequests(user.dealership_id, user.role, user.email, user.id);
+        if (error) throw error;
+        data.push(...(page || []));
+        if (!page || page.length < 1000) break;
+      }
+      return data.map(mapServiceRequest);
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
-      console.error("Error restoring deleted requests:", errorMessage);
+      console.error("Error fetching archived requests:", errorMessage);
+      throw new Error(errorMessage);
+    }
+  }, [user?.role, user?.dealership_id]);
+
+  const restoreArchivedRequest = async (id: number, requestNumber?: string) => {
+    try {
+      if (user?.role !== "admin" || !user.dealership_id) throw new Error("Admin access required");
+
+      const { error } = await supabase
+        .from("service_requests")
+        .update({ deleted_at: null, deleted_by: null })
+        .eq("dealership_id", user.dealership_id)
+        .eq("id", id)
+        .not("deleted_at", "is", null);
+
+      if (error) throw error;
+      await recordAdminRequestActivity("request_restore", { request_id: id, request_number: requestNumber });
+    } catch (error) {
+      const errorMessage = formatErrorMessage(error);
+      console.error("Error restoring archived request:", errorMessage);
       throw new Error(errorMessage);
     }
   };
 
   const resetNewRequestCount = () => {
     setNewRequestCount(0);
-  };
-
-  const deleteAllRequests = async () => {
-    try {
-      if (!user?.id) throw new Error("User not found");
-
-      const hiddenIds = getHiddenRequestIds(user.id);
-      requests.forEach((r) => hiddenIds.add(r.id));
-      saveHiddenRequestIds(user.id, hiddenIds);
-
-      setRequests([]);
-      setNewRequestCount(0);
-    } catch (error) {
-      const errorMessage = formatErrorMessage(error);
-      console.error("Error hiding all requests:", errorMessage);
-      throw new Error(errorMessage);
-    }
   };
 
   const refreshRequests = useCallback(async () => {
@@ -589,46 +688,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       endDateObj.setDate(endDateObj.getDate() + 1);
       const adjustedEndDate = endDateObj.toISOString().split("T")[0];
 
-      const { data, error } = await supabase
-        .from("service_requests")
-        .select("*")
-        .eq("dealership_id", user.dealership_id)
-        .gte("date_requested", startDate)
-        .lt("date_requested", adjustedEndDate)
-        .order("date_requested", { ascending: false });
+      const data: ServiceRequestRow[] = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data: page, error } = await supabase
+          .from("service_requests")
+          .select("*")
+          .eq("dealership_id", user.dealership_id)
+          .is("deleted_at", null)
+          .gte("date_requested", startDate)
+          .lt("date_requested", adjustedEndDate)
+          .order("date_requested", { ascending: false })
+          .order("id", { ascending: false })
+          .range(offset, offset + 999);
 
-      if (error) throw error;
+        if (error) throw error;
+        data.push(...(page || []));
+        if (!page || page.length < 1000) break;
+      }
 
-      const formattedRequests: ServiceRequest[] = (data || []).map((req: any) => ({
-        id: req.id,
-        requestNumber: req.request_number,
-        requestedBy: req.requested_by,
-        requesterRole: req.requester_role,
-        manager: req.manager,
-        stockVin: req.stock_vin,
-        poNumber: req.po_number,
-        vehicleDescription: req.vehicle_description,
-        year: req.year,
-        make: req.make,
-        model: req.model,
-        color: req.color,
-        dateRequested: req.date_requested,
-        dueDate: req.due_date,
-        dueTime: req.due_time,
-        startDate: req.start_date,
-        startTime: req.start_time,
-        completionDate: req.completion_date,
-        completionTime: req.completion_time,
-        mainServices: req.main_services || [],
-        additionalServices: req.additional_services || [],
-        notes: req.notes,
-        status: req.status,
-        price: req.price,
-        requestType: req.request_type || "sales",
-        roNumber: req.ro_number,
-      }));
-
-      return formattedRequests;
+      return data.map(mapServiceRequest);
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
       console.error("Error fetching requests by date range:", errorMessage);
@@ -653,10 +731,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         newRequestCount,
         resetNewRequestCount,
         deleteAllRequests,
+        archiveRequestsByIds,
+        restoreArchivedRequest,
+        getArchivedRequests,
+        isRequestWithinActiveWindow,
         refreshRequests,
-        softDeleteVisibleRequests,
-        restoreSoftDeletedRequests,
-        hideRequestsByIds,
         getRequestsByDateRange,
         loading,
       }}

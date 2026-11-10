@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, CalendarIcon, Undo2 } from "lucide-react";
+import { Edit2, Download, DollarSign, Clock, CheckCircle2, AlertCircle, Plus, Users, Copy, Eye, EyeOff, Trash2, CalendarIcon, Archive, ArchiveRestore } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -42,6 +42,7 @@ import { NewRequestsNotification } from "@/components/NewRequestsNotification";
 import { RequestDetailModal } from "@/components/RequestDetailModal";
 import { SearchFilters } from "@/components/SearchFilters";
 import { HighlightText } from "@/components/HighlightText";
+import { getCentralDate } from "@/lib/utils";
 
 const formatDateInput = (value: string): string => {
   const cleaned = value.replace(/\D/g, "");
@@ -134,11 +135,11 @@ export default function Dashboard() {
       mainServices: [],
       additionalServices: [],
       notes: "",
-      dateRequested: new Date().toISOString().split("T")[0],
+      dateRequested: getCentralDate(),
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, softDeleteVisibleRequests, restoreSoftDeletedRequests, hideRequestsByIds, getRequestsByDateRange } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, archiveRequestsByIds, restoreArchivedRequest, getArchivedRequests, getRequestsByDateRange, isRequestWithinActiveWindow } = useAuth();
   const { toast } = useToast();
   const { unactedNotifications, addUnactedNotification, markAsActed, clearAll, isLoaded } = useUnactedNotifications();
 
@@ -185,7 +186,10 @@ export default function Dashboard() {
   const [deletingRequestId, setDeletingRequestId] = useState<number | null>(null);
 
   // Admin/Manager account management state
-  const [activeTab, setActiveTab] = useState<"requests" | "accounts" | "activity">("requests");
+  const [activeTab, setActiveTab] = useState<"requests" | "archive" | "accounts" | "activity">("requests");
+  const [archivedRequests, setArchivedRequests] = useState<ServiceRequest[]>([]);
+  const [loadingArchivedRequests, setLoadingArchivedRequests] = useState(false);
+  const [restoringRequestId, setRestoringRequestId] = useState<number | null>(null);
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [creatingAccount, setCreatingAccount] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
@@ -357,18 +361,25 @@ export default function Dashboard() {
 
     setLoadingActivity(true);
     try {
-      const { data, error } = await supabase
-        .from('account_activity')
-        .select(`
-          *,
-          actor:actor_id(name, email),
-          target_user:target_user_id(name, email)
-        `)
-        .eq('dealership_id', user.dealership_id)
-        .order('created_at', { ascending: false });
+      const data: any[] = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data: page, error } = await supabase
+          .from('account_activity')
+          .select(`
+            *,
+            actor:actor_id(name, email),
+            target_user:target_user_id(name, email)
+          `)
+          .eq('dealership_id', user.dealership_id)
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false })
+          .range(offset, offset + 999);
 
-      if (error) throw error;
-      setAccountActivity(data || []);
+        if (error) throw error;
+        data.push(...(page || []));
+        if (!page || page.length < 1000) break;
+      }
+      setAccountActivity(data);
     } catch (error) {
       console.error('Error fetching account activity:', error);
       toast({
@@ -381,7 +392,7 @@ export default function Dashboard() {
     }
   };
 
-  // Load users and activity when switching tabs
+  // Load tab data when switching tabs
   useEffect(() => {
     if (activeTab === "accounts" && user?.role === "admin") {
       fetchTeamUsers();
@@ -389,7 +400,14 @@ export default function Dashboard() {
     if (activeTab === "activity" && user?.role === "admin") {
       fetchAccountActivity();
     }
-  }, [activeTab, user?.role]);
+    if (activeTab === "archive" && user?.role === "admin") {
+      setLoadingArchivedRequests(true);
+      getArchivedRequests()
+        .then(setArchivedRequests)
+        .catch(() => toast({ title: "Error", description: "Failed to load archived requests.", variant: "destructive" }))
+        .finally(() => setLoadingArchivedRequests(false));
+    }
+  }, [activeTab, user?.role, getArchivedRequests, toast]);
 
   const mainServices = watch("mainServices");
   const additionalServices = watch("additionalServices");
@@ -542,10 +560,7 @@ export default function Dashboard() {
   };
 
   // Get today's date formatted (US timezone)
-  const getTodayDate = () => {
-    const today = new Date();
-    return today.toISOString().split("T")[0];
-  };
+  const getTodayDate = () => getCentralDate();
 
   // Filter requests based on user role
   const userRequests = useMemo(() => {
@@ -661,8 +676,8 @@ export default function Dashboard() {
     try {
       await deleteRequest(requestToDelete.id);
       toast({
-        title: "Deleted",
-        description: `Request ${requestToDelete.requestNumber} has been deleted.`,
+        title: "Archived",
+        description: `Request ${requestToDelete.requestNumber} was removed from all active dashboards.`,
       });
       setShowDeleteRequestDialog(false);
       setRequestToDelete(null);
@@ -720,56 +735,56 @@ export default function Dashboard() {
     window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
+  const handleRestoreArchivedRequest = async (request: ServiceRequest) => {
+    setRestoringRequestId(request.id);
     try {
-      await softDeleteVisibleRequests();
-      setSelectedRequestIds(new Set());
-      toast({
-        title: "Refreshed",
-        description: "Previous-date requests are hidden. Today's requests remain visible.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to refresh request list.",
-        variant: "destructive",
-      });
+      await restoreArchivedRequest(request.id, request.requestNumber);
+      setArchivedRequests((currentRequests) => currentRequests.filter((item) => item.id !== request.id));
+      await refreshRequests();
+      toast({ title: "Restored", description: `Request ${request.requestNumber} is back in active requests.` });
+    } catch {
+      toast({ title: "Error", description: "Failed to restore request.", variant: "destructive" });
     } finally {
-      setIsRefreshing(false);
+      setRestoringRequestId(null);
     }
   };
 
-  const handleRestore = async () => {
-    setIsRefreshing(true);
-    try {
-      await restoreSoftDeletedRequests();
-      setSelectedRequestIds(new Set());
-      toast({
-        title: "Restored",
-        description: "Previously hidden requests have been restored.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to restore requests.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
+  const handleExportArchivedRequests = () => {
+    const headers = ["Request #", "Request Type", "RO #", "PO#", "Requested By", "Manager", "Vehicle", "Stock/VIN", "Date Requested", "Status", "Completion Date", "Price", "Archived At"];
+    const rows = archivedRequests.map((request) => [
+      request.requestNumber,
+      request.requestType,
+      request.roNumber || "-",
+      request.poNumber || "-",
+      request.requestedBy,
+      request.manager || "-",
+      `${request.year} ${request.make} ${request.model}`,
+      request.stockVin,
+      request.dateRequested || "-",
+      request.status,
+      request.completionDate || "-",
+      `$${(request.price ?? 0).toFixed(2)}`,
+      request.deletedAt || "-",
+    ]);
+    const csv = [headers, ...rows].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const url = window.URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `archived-requests-${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
   };
 
   const handleDeleteSelected = async () => {
     setIsDeletingSelected(true);
     const ids = Array.from(selectedRequestIds);
     try {
-      await Promise.all(ids.map((id) => deleteRequest(id)));
+      await archiveRequestsByIds(ids);
       setSelectedRequestIds(new Set());
       setShowDeleteSelectedDialog(false);
       toast({
-        title: "Deleted",
-        description: `${ids.length} request(s) have been deleted.`,
+        title: "Archived",
+        description: `${ids.length} request(s) were removed from all active dashboards.`,
       });
     } catch (error) {
       toast({
@@ -804,8 +819,8 @@ export default function Dashboard() {
       await deleteAllRequests();
       setShowDeleteAllDialog(false);
       toast({
-        title: "Deleted",
-        description: "All service requests have been deleted. The list will refresh automatically.",
+        title: "Archived",
+        description: "All active requests were removed from every dashboard and saved in the archive.",
       });
     } catch (error) {
       toast({
@@ -848,9 +863,9 @@ export default function Dashboard() {
         return;
       }
 
-      hideRequestsByIds(matchingIds);
+      await archiveRequestsByIds(matchingIds);
       setShowDeleteByDateDialog(false);
-      toast({ title: "Removed", description: `${matchingIds.length} request(s) in the selected date range have been removed from your view.` });
+      toast({ title: "Archived", description: `${matchingIds.length} request(s) were removed from every dashboard and saved in the archive.` });
     } catch (error) {
       toast({ title: "Error", description: "Failed to delete requests.", variant: "destructive" });
     } finally {
@@ -1166,7 +1181,7 @@ export default function Dashboard() {
                 )}
               </div>
               <p className="text-muted-foreground uppercase tracking-widest text-sm">
-                {activeTab === "requests" ? "Service Requests Management" : "Account Management"}
+                {activeTab === "requests" ? "Service Requests · Nov 9, 2026–Today (Central Time)" : activeTab === "archive" ? "Archived Requests" : activeTab === "activity" ? "Account Activity" : "Account Management"}
               </p>
             </div>
             {activeTab === "requests" && (
@@ -1220,6 +1235,17 @@ export default function Dashboard() {
             {/* Admin-only tabs */}
             {user?.role === "admin" && (
               <>
+                <button
+                  onClick={() => setActiveTab("archive")}
+                  className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
+                    activeTab === "archive"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card border border-border/30 text-foreground hover:border-primary/50"
+                  }`}
+                >
+                  <Archive className="w-4 h-4" />
+                  Archive
+                </button>
                 <button
                   onClick={() => setActiveTab("accounts")}
                   className={`flex items-center gap-2 px-6 py-3 font-display uppercase tracking-wider text-sm transition-all ${
@@ -2201,6 +2227,66 @@ export default function Dashboard() {
           </motion.div>
         )}
 
+        {/* Archived Requests - Admin Only */}
+        {user?.role === "admin" && activeTab === "archive" && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <div className="glass-card overflow-hidden">
+              <div className="p-6 border-b border-border/20 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-display text-xl uppercase tracking-wider">Request <span className="text-primary">Archive</span></h3>
+                  <p className="text-sm text-muted-foreground mt-2">Deleted requests and requests outside the active date window are retained here for history and export.</p>
+                </div>
+                <Button onClick={handleExportArchivedRequests} disabled={archivedRequests.length === 0} className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs">
+                  <Download className="w-4 h-4 mr-2" /> Export Archive CSV
+                </Button>
+              </div>
+              {loadingArchivedRequests ? (
+                <div className="p-12 text-center text-muted-foreground">Loading archive...</div>
+              ) : archivedRequests.length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground">No archived requests</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Request #</TableHead>
+                        <TableHead>Requested By</TableHead>
+                        <TableHead>Date Requested</TableHead>
+                        <TableHead>Vehicle</TableHead>
+                        <TableHead>Archive Status</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {archivedRequests.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-display text-primary">{request.requestNumber}</TableCell>
+                          <TableCell>{request.requestedBy}</TableCell>
+                          <TableCell>{request.dateRequested || "-"}</TableCell>
+                          <TableCell>{`${request.year} ${request.make} ${request.model}`}</TableCell>
+                          <TableCell>{request.deletedAt ? new Date(request.deletedAt).toLocaleString() : "Outside active window"}</TableCell>
+                          <TableCell>${(request.price ?? 0).toFixed(2)}</TableCell>
+                          <TableCell>
+                            {request.deletedAt && isRequestWithinActiveWindow(request) ? (
+                              <Button size="sm" variant="outline" onClick={() => handleRestoreArchivedRequest(request)} disabled={restoringRequestId === request.id}>
+                                <ArchiveRestore className="w-4 h-4 mr-2" />
+                                {restoringRequestId === request.id ? "Restoring..." : "Restore"}
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">History only</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {/* Account Activity Log - Admin Only */}
         {user?.role === "admin" && activeTab === "activity" && (
           <motion.div
@@ -2214,7 +2300,7 @@ export default function Dashboard() {
                   Account <span className="text-primary">Activity Log</span>
                 </h3>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Track all account creation, deletion, and password reset activities
+                  Track account changes and request actions, including which admin performed each action.
                 </p>
               </div>
 
@@ -2238,7 +2324,7 @@ export default function Dashboard() {
                           Action
                         </TableHead>
                         <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
-                          Target Account
+                          Request / Account
                         </TableHead>
                         <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                           Performed By
@@ -2249,7 +2335,7 @@ export default function Dashboard() {
                       {accountActivity.map((activity: any) => (
                         <TableRow key={activity.id} className="border-b border-border/20 hover:bg-card/50 transition-colors">
                           <TableCell className="text-xs text-muted-foreground">
-                            {new Date(activity.created_at).toLocaleString()}
+                            {new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", dateStyle: "short", timeStyle: "short" }).format(new Date(activity.created_at))} CT
                           </TableCell>
                           <TableCell>
                             <span className={`text-xs font-display uppercase tracking-wider px-3 py-1 rounded-sm inline-block ${
@@ -2260,14 +2346,22 @@ export default function Dashboard() {
                                   : 'bg-blue-500/20 text-blue-500'
                             }`}>
                               {activity.action_type === 'create' && 'Account Created'}
-                              {activity.action_type === 'delete' && 'Account Deleted'}
+                              {activity.action_type === 'delete' && 'Account Deactivated'}
                               {activity.action_type === 'password_reset' && 'Password Reset'}
+                              {activity.action_type === 'request_create' && 'Request Created'}
+                              {activity.action_type === 'request_update' && 'Request Updated'}
+                              {activity.action_type === 'request_archive' && 'Request Archived'}
+                              {activity.action_type === 'request_restore' && 'Request Restored'}
                             </span>
                           </TableCell>
                           <TableCell className="text-xs text-foreground">
                             <div>
-                              <p className="font-medium">{activity.target_user_name || activity.target_user?.name || '-'}</p>
-                              <p className="text-muted-foreground">{activity.target_user_email || activity.target_user?.email || '-'}</p>
+                              <p className="font-medium">
+                                {activity.target_user_name || activity.target_user?.name || activity.details?.request_number || (activity.details?.request_id ? `Request #${activity.details.request_id}` : activity.details?.scope === "active_window" ? "All active requests" : "-")}
+                              </p>
+                              <p className="text-muted-foreground">
+                                {activity.target_user_email || activity.target_user?.email || activity.details?.field || (activity.details?.fields ? Object.keys(activity.details.fields).join(", ") : activity.details?.count ? `${activity.details.count} request(s)` : "-")}
+                              </p>
                             </div>
                           </TableCell>
                           <TableCell className="text-xs text-foreground">
@@ -2502,14 +2596,14 @@ export default function Dashboard() {
                     className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-display uppercase tracking-widest text-xs"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Selected ({selectedRequestIds.size})
+                    Archive Selected ({selectedRequestIds.size})
                   </Button>
                   <Dialog open={showDeleteSelectedDialog} onOpenChange={setShowDeleteSelectedDialog}>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Delete Selected Requests?</DialogTitle>
+                        <DialogTitle>Archive Selected Requests?</DialogTitle>
                         <DialogDescription>
-                          This will permanently delete {selectedRequestIds.size} selected request(s). This action cannot be undone.
+                          This will remove {selectedRequestIds.size} selected request(s) from every active dashboard. They will remain available in the admin archive and can be restored.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="flex gap-3 justify-end mt-6">
@@ -2517,7 +2611,7 @@ export default function Dashboard() {
                           Cancel
                         </Button>
                         <Button variant="destructive" onClick={handleDeleteSelected} disabled={isDeletingSelected}>
-                          {isDeletingSelected ? "Deleting..." : `Delete ${selectedRequestIds.size} Request(s)`}
+                          {isDeletingSelected ? "Archiving..." : `Archive ${selectedRequestIds.size} Request(s)`}
                         </Button>
                       </div>
                     </DialogContent>
@@ -2528,16 +2622,15 @@ export default function Dashboard() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      onClick={handleRestore}
-                      disabled={isRefreshing}
+                      onClick={() => setActiveTab("archive")}
                       className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-display uppercase tracking-widest text-xs"
                     >
-                      <Undo2 className="w-4 h-4 mr-2" />
-                      Undo
+                      <Archive className="w-4 h-4 mr-2" />
+                      View Archive
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Restores previously hidden requests
+                    Review, export, or restore archived requests
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
@@ -2667,20 +2760,20 @@ export default function Dashboard() {
                     className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-display uppercase tracking-widest text-xs"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete by Date
+                    Archive by Date
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Clear requests from a specific date range
+                  Archive requests from a specific date range
                 </TooltipContent>
               </Tooltip>
               </TooltipProvider>
               <Dialog open={showDeleteByDateDialog} onOpenChange={setShowDeleteByDateDialog}>
                 <DialogContent className="bg-card border-border/30">
                   <DialogHeader>
-                    <DialogTitle className="font-display uppercase tracking-wider">Delete by Date Range</DialogTitle>
+                    <DialogTitle className="font-display uppercase tracking-wider">Archive by Date Range</DialogTitle>
                     <DialogDescription className="text-muted-foreground">
-                      Remove requests by their request date only. Completion dates are not included.
+                      Archive requests by their request date. They will disappear from every active dashboard but remain available in the archive.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
@@ -2733,7 +2826,7 @@ export default function Dashboard() {
                       Cancel
                     </Button>
                     <Button variant="destructive" onClick={handleDeleteByDateRange} disabled={isDeletingByDate}>
-                      {isDeletingByDate ? "Deleting..." : "Delete"}
+                      {isDeletingByDate ? "Archiving..." : "Archive"}
                     </Button>
                   </div>
                 </DialogContent>
@@ -3400,10 +3493,10 @@ export default function Dashboard() {
         <DialogContent className="bg-card border-border/30">
           <DialogHeader>
             <DialogTitle className="font-display uppercase tracking-wider">
-              Delete Request {requestToDelete?.requestNumber}?
+              Archive Request {requestToDelete?.requestNumber}?
             </DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              This action cannot be undone. The request will be permanently deleted from the system.
+              The request will disappear from all active dashboards but remain in the admin archive for history and export.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-4 justify-end mt-6">
@@ -3420,7 +3513,7 @@ export default function Dashboard() {
               onClick={handleDeleteRequest}
               disabled={deletingRequestId !== null}
             >
-              {deletingRequestId !== null ? "Deleting..." : "Delete Request"}
+              {deletingRequestId !== null ? "Archiving..." : "Archive Request"}
             </Button>
           </div>
         </DialogContent>

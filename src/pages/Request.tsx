@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/contexts/AuthContext";
+import { getCentralDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -118,7 +119,7 @@ export default function Request() {
         status: "Pending",
         price: 0,
         requestNumber: "",
-        dateRequested: new Date().toISOString().split("T")[0],
+        dateRequested: getCentralDate(),
         poNumber: "",
         requestType: data.department,
         roNumber: data.department === "service" ? data.roNumber : undefined,
