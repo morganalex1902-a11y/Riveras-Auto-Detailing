@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { formatErrorMessage } from "@/lib/utils";
+import { formatErrorMessage, getCentralDate } from "@/lib/utils";
 
 export interface User {
   email: string;
@@ -60,8 +60,9 @@ interface AuthContextType {
   resetNewRequestCount: () => void;
   deleteAllRequests: () => Promise<void>;
   archiveRequestsByIds: (ids: number[]) => Promise<void>;
-  restoreArchivedRequest: (id: number) => Promise<void>;
+  restoreArchivedRequest: (id: number, requestNumber?: string) => Promise<void>;
   getArchivedRequests: () => Promise<ServiceRequest[]>;
+  isRequestWithinActiveWindow: (request: ServiceRequest) => boolean;
   refreshRequests: () => Promise<void>;
   getRequestsByDateRange: (startDate: string, endDate: string) => Promise<ServiceRequest[]>;
   loading: boolean;
@@ -97,6 +98,8 @@ type ServiceRequestRow = {
   deleted_at: string | null;
 };
 
+const REQUESTS_START_DATE = "2026-11-09";
+
 const mapServiceRequest = (req: ServiceRequestRow): ServiceRequest => ({
   id: req.id,
   requestNumber: req.request_number,
@@ -129,6 +132,11 @@ const mapServiceRequest = (req: ServiceRequestRow): ServiceRequest => ({
   roNumber: req.ro_number || undefined,
   deletedAt: req.deleted_at || undefined,
 });
+
+const isRequestWithinActiveWindow = (request: ServiceRequest) =>
+  Boolean(request.dateRequested) &&
+  request.dateRequested >= REQUESTS_START_DATE &&
+  request.dateRequested <= getCentralDate();
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -189,11 +197,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
+      const today = getCentralDate();
       let query = supabase
         .from("service_requests")
         .select("*")
         .eq("dealership_id", dealershipId)
-        .is("deleted_at", null);
+        .is("deleted_at", null)
+        .gte("date_requested", REQUESTS_START_DATE)
+        .lte("date_requested", today);
 
       if (role === "sales_rep" && userEmail) {
         query = query.eq("requested_by", userEmail);
@@ -297,6 +308,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const recordAdminRequestActivity = async (
+    actionType: "request_create" | "request_update" | "request_archive" | "request_restore",
+    details: Record<string, unknown>,
+  ) => {
+    if (user?.role !== "admin" || !user.id || !user.dealership_id) return;
+
+    const { error } = await supabase.from("account_activity").insert({
+      dealership_id: user.dealership_id,
+      actor_id: user.id,
+      action_type: actionType,
+      details,
+    });
+
+    if (error) console.error("Error logging request activity:", error.message);
+  };
+
   const addRequest = async (requestData: Omit<ServiceRequest, "id">) => {
     try {
       if (!user?.dealership_id) throw new Error("User dealership not found");
@@ -345,6 +372,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
+      await recordAdminRequestActivity("request_create", {
+        request_id: data.id,
+        request_number: nextRequestNumber,
+        request_type: requestData.requestType,
+      });
+
       // Broadcast to admins so they refresh instantly (works with anon key, no DB config needed)
       supabase.channel(`new-requests-${user.dealership_id}`)
         .send({ type: "broadcast", event: "new_request", payload: { requestNumber: nextRequestNumber } })
@@ -384,6 +417,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
+      await recordAdminRequestActivity("request_update", { request_id: id, request_number: requests.find((request) => request.id === id)?.requestNumber, field: "status", value: status });
       // Update local state
       setRequests(requests.map((r) => {
         if (r.id === id) {
@@ -413,6 +447,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
+      await recordAdminRequestActivity("request_update", { request_id: id, request_number: requests.find((request) => request.id === id)?.requestNumber, field: "price", value: price });
       // Update local state
       setRequests(requests.map((r) => (r.id === id ? { ...r, price } : r)));
     } catch (error) {
@@ -439,6 +474,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
+      await recordAdminRequestActivity("request_update", { request_id: id, request_number: requests.find((request) => request.id === id)?.requestNumber, fields: Object.keys(updateData) });
       // Update local state
       setRequests(requests.map((r) => {
         if (r.id === id) {
@@ -510,6 +546,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
+      if (Object.keys(updateData).length > 0) {
+        await recordAdminRequestActivity("request_update", { request_id: id, request_number: requests.find((request) => request.id === id)?.requestNumber, fields: Object.keys(updateData) });
+      }
       // Update local state
       setRequests(requests.map((r) => (r.id === id ? { ...r, ...stateUpdate } : r)));
     } catch (error) {
@@ -532,6 +571,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .is("deleted_at", null);
 
       if (error) throw error;
+      await recordAdminRequestActivity("request_archive", {
+        request_ids: ids,
+        request_numbers: requests.filter((request) => ids.includes(request.id)).map((request) => request.requestNumber),
+        count: ids.length,
+      });
       const archivedIds = new Set(ids);
       setRequests((currentRequests) => currentRequests.filter((request) => !archivedIds.has(request.id)));
     } catch (error) {
@@ -551,9 +595,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from("service_requests")
         .update({ deleted_at: new Date().toISOString(), deleted_by: user.id })
         .eq("dealership_id", user.dealership_id)
-        .is("deleted_at", null);
+        .is("deleted_at", null)
+        .gte("date_requested", REQUESTS_START_DATE)
+        .lte("date_requested", getCentralDate());
 
       if (error) throw error;
+      await recordAdminRequestActivity("request_archive", {
+        scope: "active_window",
+        request_ids: requests.map((request) => request.id),
+        request_numbers: requests.map((request) => request.requestNumber),
+        count: requests.length,
+      });
       setRequests([]);
       setNewRequestCount(0);
     } catch (error) {
@@ -567,13 +619,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       if (user?.role !== "admin" || !user.dealership_id) throw new Error("Admin access required");
 
+      const today = getCentralDate();
       const data: ServiceRequestRow[] = [];
       for (let offset = 0; ; offset += 1000) {
         const { data: page, error } = await supabase
           .from("service_requests")
           .select("*")
           .eq("dealership_id", user.dealership_id)
-          .not("deleted_at", "is", null)
+          .or(`deleted_at.not.is.null,date_requested.lt.${REQUESTS_START_DATE},date_requested.gt.${today},date_requested.is.null`)
           .order("deleted_at", { ascending: false })
           .order("id", { ascending: false })
           .range(offset, offset + 999);
@@ -590,7 +643,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user?.role, user?.dealership_id]);
 
-  const restoreArchivedRequest = async (id: number) => {
+  const restoreArchivedRequest = async (id: number, requestNumber?: string) => {
     try {
       if (user?.role !== "admin" || !user.dealership_id) throw new Error("Admin access required");
 
@@ -602,6 +655,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .not("deleted_at", "is", null);
 
       if (error) throw error;
+      await recordAdminRequestActivity("request_restore", { request_id: id, request_number: requestNumber });
     } catch (error) {
       const errorMessage = formatErrorMessage(error);
       console.error("Error restoring archived request:", errorMessage);
@@ -680,6 +734,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         archiveRequestsByIds,
         restoreArchivedRequest,
         getArchivedRequests,
+        isRequestWithinActiveWindow,
         refreshRequests,
         getRequestsByDateRange,
         loading,

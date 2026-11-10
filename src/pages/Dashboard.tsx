@@ -42,6 +42,7 @@ import { NewRequestsNotification } from "@/components/NewRequestsNotification";
 import { RequestDetailModal } from "@/components/RequestDetailModal";
 import { SearchFilters } from "@/components/SearchFilters";
 import { HighlightText } from "@/components/HighlightText";
+import { getCentralDate } from "@/lib/utils";
 
 const formatDateInput = (value: string): string => {
   const cleaned = value.replace(/\D/g, "");
@@ -134,11 +135,11 @@ export default function Dashboard() {
       mainServices: [],
       additionalServices: [],
       notes: "",
-      dateRequested: new Date().toISOString().split("T")[0],
+      dateRequested: getCentralDate(),
     },
   });
 
-  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, archiveRequestsByIds, restoreArchivedRequest, getArchivedRequests, getRequestsByDateRange } = useAuth();
+  const { requests, updateRequestStatus, updateRequestPrice, updateRequestDates, updateRequest, deleteRequest, user, addRequest, newRequestCount, resetNewRequestCount, loading, refreshRequests, deleteAllRequests, archiveRequestsByIds, restoreArchivedRequest, getArchivedRequests, getRequestsByDateRange, isRequestWithinActiveWindow } = useAuth();
   const { toast } = useToast();
   const { unactedNotifications, addUnactedNotification, markAsActed, clearAll, isLoaded } = useUnactedNotifications();
 
@@ -360,18 +361,25 @@ export default function Dashboard() {
 
     setLoadingActivity(true);
     try {
-      const { data, error } = await supabase
-        .from('account_activity')
-        .select(`
-          *,
-          actor:actor_id(name, email),
-          target_user:target_user_id(name, email)
-        `)
-        .eq('dealership_id', user.dealership_id)
-        .order('created_at', { ascending: false });
+      const data: any[] = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data: page, error } = await supabase
+          .from('account_activity')
+          .select(`
+            *,
+            actor:actor_id(name, email),
+            target_user:target_user_id(name, email)
+          `)
+          .eq('dealership_id', user.dealership_id)
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false })
+          .range(offset, offset + 999);
 
-      if (error) throw error;
-      setAccountActivity(data || []);
+        if (error) throw error;
+        data.push(...(page || []));
+        if (!page || page.length < 1000) break;
+      }
+      setAccountActivity(data);
     } catch (error) {
       console.error('Error fetching account activity:', error);
       toast({
@@ -552,10 +560,7 @@ export default function Dashboard() {
   };
 
   // Get today's date formatted (US timezone)
-  const getTodayDate = () => {
-    const today = new Date();
-    return today.toISOString().split("T")[0];
-  };
+  const getTodayDate = () => getCentralDate();
 
   // Filter requests based on user role
   const userRequests = useMemo(() => {
@@ -733,7 +738,7 @@ export default function Dashboard() {
   const handleRestoreArchivedRequest = async (request: ServiceRequest) => {
     setRestoringRequestId(request.id);
     try {
-      await restoreArchivedRequest(request.id);
+      await restoreArchivedRequest(request.id, request.requestNumber);
       setArchivedRequests((currentRequests) => currentRequests.filter((item) => item.id !== request.id));
       await refreshRequests();
       toast({ title: "Restored", description: `Request ${request.requestNumber} is back in active requests.` });
@@ -1176,7 +1181,7 @@ export default function Dashboard() {
                 )}
               </div>
               <p className="text-muted-foreground uppercase tracking-widest text-sm">
-                {activeTab === "requests" ? "Service Requests Management" : activeTab === "archive" ? "Archived Requests" : activeTab === "activity" ? "Account Activity" : "Account Management"}
+                {activeTab === "requests" ? "Service Requests · Nov 9, 2026–Today (Central Time)" : activeTab === "archive" ? "Archived Requests" : activeTab === "activity" ? "Account Activity" : "Account Management"}
               </p>
             </div>
             {activeTab === "requests" && (
@@ -2229,7 +2234,7 @@ export default function Dashboard() {
               <div className="p-6 border-b border-border/20 flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <h3 className="font-display text-xl uppercase tracking-wider">Request <span className="text-primary">Archive</span></h3>
-                  <p className="text-sm text-muted-foreground mt-2">Archived requests are hidden from all active dashboards and retained for history.</p>
+                  <p className="text-sm text-muted-foreground mt-2">Deleted requests and requests outside the active date window are retained here for history and export.</p>
                 </div>
                 <Button onClick={handleExportArchivedRequests} disabled={archivedRequests.length === 0} className="bg-primary hover:bg-primary text-primary-foreground font-display uppercase tracking-widest text-xs">
                   <Download className="w-4 h-4 mr-2" /> Export Archive CSV
@@ -2248,7 +2253,7 @@ export default function Dashboard() {
                         <TableHead>Requested By</TableHead>
                         <TableHead>Date Requested</TableHead>
                         <TableHead>Vehicle</TableHead>
-                        <TableHead>Archived At</TableHead>
+                        <TableHead>Archive Status</TableHead>
                         <TableHead>Price</TableHead>
                         <TableHead>Action</TableHead>
                       </TableRow>
@@ -2260,13 +2265,17 @@ export default function Dashboard() {
                           <TableCell>{request.requestedBy}</TableCell>
                           <TableCell>{request.dateRequested || "-"}</TableCell>
                           <TableCell>{`${request.year} ${request.make} ${request.model}`}</TableCell>
-                          <TableCell>{request.deletedAt ? new Date(request.deletedAt).toLocaleString() : "-"}</TableCell>
+                          <TableCell>{request.deletedAt ? new Date(request.deletedAt).toLocaleString() : "Outside active window"}</TableCell>
                           <TableCell>${(request.price ?? 0).toFixed(2)}</TableCell>
                           <TableCell>
-                            <Button size="sm" variant="outline" onClick={() => handleRestoreArchivedRequest(request)} disabled={restoringRequestId === request.id}>
-                              <ArchiveRestore className="w-4 h-4 mr-2" />
-                              {restoringRequestId === request.id ? "Restoring..." : "Restore"}
-                            </Button>
+                            {request.deletedAt && isRequestWithinActiveWindow(request) ? (
+                              <Button size="sm" variant="outline" onClick={() => handleRestoreArchivedRequest(request)} disabled={restoringRequestId === request.id}>
+                                <ArchiveRestore className="w-4 h-4 mr-2" />
+                                {restoringRequestId === request.id ? "Restoring..." : "Restore"}
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">History only</span>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -2291,7 +2300,7 @@ export default function Dashboard() {
                   Account <span className="text-primary">Activity Log</span>
                 </h3>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Track all account creation, deletion, and password reset activities
+                  Track account changes and request actions, including which admin performed each action.
                 </p>
               </div>
 
@@ -2315,7 +2324,7 @@ export default function Dashboard() {
                           Action
                         </TableHead>
                         <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
-                          Target Account
+                          Request / Account
                         </TableHead>
                         <TableHead className="font-display uppercase tracking-wider text-xs text-muted-foreground">
                           Performed By
@@ -2326,7 +2335,7 @@ export default function Dashboard() {
                       {accountActivity.map((activity: any) => (
                         <TableRow key={activity.id} className="border-b border-border/20 hover:bg-card/50 transition-colors">
                           <TableCell className="text-xs text-muted-foreground">
-                            {new Date(activity.created_at).toLocaleString()}
+                            {new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", dateStyle: "short", timeStyle: "short" }).format(new Date(activity.created_at))} CT
                           </TableCell>
                           <TableCell>
                             <span className={`text-xs font-display uppercase tracking-wider px-3 py-1 rounded-sm inline-block ${
@@ -2337,14 +2346,22 @@ export default function Dashboard() {
                                   : 'bg-blue-500/20 text-blue-500'
                             }`}>
                               {activity.action_type === 'create' && 'Account Created'}
-                              {activity.action_type === 'delete' && 'Account Deleted'}
+                              {activity.action_type === 'delete' && 'Account Deactivated'}
                               {activity.action_type === 'password_reset' && 'Password Reset'}
+                              {activity.action_type === 'request_create' && 'Request Created'}
+                              {activity.action_type === 'request_update' && 'Request Updated'}
+                              {activity.action_type === 'request_archive' && 'Request Archived'}
+                              {activity.action_type === 'request_restore' && 'Request Restored'}
                             </span>
                           </TableCell>
                           <TableCell className="text-xs text-foreground">
                             <div>
-                              <p className="font-medium">{activity.target_user_name || activity.target_user?.name || '-'}</p>
-                              <p className="text-muted-foreground">{activity.target_user_email || activity.target_user?.email || '-'}</p>
+                              <p className="font-medium">
+                                {activity.target_user_name || activity.target_user?.name || activity.details?.request_number || (activity.details?.request_id ? `Request #${activity.details.request_id}` : activity.details?.scope === "active_window" ? "All active requests" : "-")}
+                              </p>
+                              <p className="text-muted-foreground">
+                                {activity.target_user_email || activity.target_user?.email || activity.details?.field || (activity.details?.fields ? Object.keys(activity.details.fields).join(", ") : activity.details?.count ? `${activity.details.count} request(s)` : "-")}
+                              </p>
                             </div>
                           </TableCell>
                           <TableCell className="text-xs text-foreground">
